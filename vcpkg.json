@@ -1,0 +1,64 @@
+{
+    "name": "gameenginekiro",
+    "version": "1.0.0",
+    "description": "Game Engine Kiro - 3D Third-Person Open World Game Engine",
+    "homepage": "https://github.com/yourusername/GameEngineKiro",
+    "dependencies": [
+        "glfw3",
+        "glm",
+        "glad",
+        "stb",
+        "nlohmann-json",
+        "fmt"
+    ],
+    "features": {
+        "full": {
+            "description": "Enable all optional features",
+            "dependencies": [
+                "assimp",
+                "openal-soft",
+                "bullet3",
+                "lua"
+            ]
+        },
+        "physx": {
+            "description": "Enable NVIDIA PhysX physics (future)",
+            "dependencies": [
+                "bullet3"
+            ]
+        },
+        "graphics": {
+            "description": "Enhanced graphics features",
+            "dependencies": [
+                "assimp"
+            ]
+        },
+        "audio": {
+            "description": "3D audio support",
+            "dependencies": [
+                "openal-soft"
+            ]
+        },
+        "physics": {
+            "description": "Physics simulation",
+            "dependencies": [
+                "bullet3"
+            ]
+        },
+        "scripting": {
+            "description": "Lua scripting support",
+            "dependencies": [
+                "lua"
+            ]
+        },
+        "vulkan": {
+            "description": "Enable Vulkan support",
+            "dependencies": [
+                "vulkan"
+            ]
+        }
+    },
+    "default-features": [
+        "full"
+    ]
+}

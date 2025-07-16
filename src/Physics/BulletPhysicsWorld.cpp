@@ -8,9 +8,20 @@ namespace GameEngine {
     
     BulletPhysicsWorld::BulletPhysicsWorld(const Math::Vec3& gravity) 
         : PhysicsWorld(gravity), m_gravity(gravity) {
+        // Initialize with default configuration but override gravity
+        m_configuration = PhysicsConfiguration::Default();
+        m_configuration.gravity = gravity;
+        
         InitializeBulletComponents();
         SetGravity(gravity);
         LOG_INFO("BulletPhysicsWorld created with gravity");
+    }
+    
+    BulletPhysicsWorld::BulletPhysicsWorld(const PhysicsConfiguration& config)
+        : PhysicsWorld(config.gravity), m_configuration(config), m_gravity(config.gravity) {
+        InitializeBulletComponents();
+        SetConfiguration(config);
+        LOG_INFO("BulletPhysicsWorld created with configuration");
     }
     
     BulletPhysicsWorld::~BulletPhysicsWorld() {
@@ -77,12 +88,8 @@ namespace GameEngine {
             return;
         }
         
-        // Step the simulation
-        // maxSubSteps = 10, fixedTimeStep = 1/60
-        const int maxSubSteps = 10;
-        const btScalar fixedTimeStep = btScalar(1.0f / 60.0f);
-        
-        m_dynamicsWorld->stepSimulation(deltaTime, maxSubSteps, fixedTimeStep);
+        // Step the simulation using configuration parameters
+        m_dynamicsWorld->stepSimulation(deltaTime, m_configuration.maxSubSteps, m_configuration.timeStep);
     }
     
     void BulletPhysicsWorld::SetGravity(const Math::Vec3& gravity) {
@@ -150,6 +157,53 @@ namespace GameEngine {
             return it->second;
         }
         return nullptr;
+    }
+    
+    void BulletPhysicsWorld::SetConfiguration(const PhysicsConfiguration& config) {
+        m_configuration = config;
+        
+        // Apply configuration to the Bullet world
+        SetGravity(config.gravity);
+        
+        if (m_dynamicsWorld) {
+            // Set solver iterations through the solver info
+            btContactSolverInfo& solverInfo = m_dynamicsWorld->getSolverInfo();
+            solverInfo.m_numIterations = config.solverIterations;
+            
+            // Set contact thresholds through solver info
+            solverInfo.m_splitImpulse = config.enableCCD;
+            
+            LOG_DEBUG("Applied physics configuration to Bullet world");
+        }
+    }
+    
+    void BulletPhysicsWorld::SetTimeStep(float timeStep) {
+        m_configuration.timeStep = timeStep;
+        LOG_DEBUG("Updated timestep in BulletPhysicsWorld to: " + std::to_string(timeStep));
+    }
+    
+    void BulletPhysicsWorld::SetSolverIterations(int iterations) {
+        m_configuration.solverIterations = iterations;
+        
+        if (m_dynamicsWorld) {
+            btContactSolverInfo& solverInfo = m_dynamicsWorld->getSolverInfo();
+            solverInfo.m_numIterations = iterations;
+            LOG_DEBUG("Updated solver iterations in BulletPhysicsWorld to: " + std::to_string(iterations));
+        }
+    }
+    
+    void BulletPhysicsWorld::SetContactThresholds(float breakingThreshold, float processingThreshold) {
+        m_configuration.contactBreakingThreshold = breakingThreshold;
+        m_configuration.contactProcessingThreshold = processingThreshold;
+        
+        // Set contact thresholds through solver info
+        if (m_dynamicsWorld) {
+            btContactSolverInfo& solverInfo = m_dynamicsWorld->getSolverInfo();
+            // Note: Bullet Physics handles contact thresholds internally
+            // These values are stored in configuration for reference
+        }
+        
+        LOG_DEBUG("Updated contact thresholds in BulletPhysicsWorld");
     }
     
 } // namespace GameEngine

@@ -15,9 +15,18 @@ namespace GameEngine {
         Shutdown();
     }
 
-    bool PhysicsEngine::Initialize() {
+    bool PhysicsEngine::Initialize(const PhysicsConfiguration& config) {
+        m_configuration = config;
+        
 #ifdef GAMEENGINE_HAS_BULLET
         LOG_INFO("Physics Engine initialized with Bullet Physics support");
+        LOG_DEBUG("Physics configuration - Gravity: (" + 
+                 std::to_string(config.gravity.x) + ", " + 
+                 std::to_string(config.gravity.y) + ", " + 
+                 std::to_string(config.gravity.z) + ")");
+        LOG_DEBUG("Physics configuration - TimeStep: " + std::to_string(config.timeStep) + 
+                 ", MaxSubSteps: " + std::to_string(config.maxSubSteps) + 
+                 ", SolverIterations: " + std::to_string(config.solverIterations));
         return true;
 #else
         LOG_WARNING("Physics Engine initialized without Bullet Physics support");
@@ -39,11 +48,93 @@ namespace GameEngine {
         }
     }
 
+    void PhysicsEngine::SetConfiguration(const PhysicsConfiguration& config) {
+        m_configuration = config;
+        
+        // Apply configuration to active world if it exists
+        if (m_activeWorld) {
+            m_activeWorld->SetGravity(config.gravity);
+            
+#ifdef GAMEENGINE_HAS_BULLET
+            auto bulletWorldPtr = std::dynamic_pointer_cast<BulletPhysicsWorld>(m_activeWorld);
+            if (bulletWorldPtr) {
+                bulletWorldPtr->SetConfiguration(config);
+            }
+#endif
+        }
+        
+        LOG_DEBUG("Physics configuration updated");
+    }
+
+    void PhysicsEngine::SetGravity(const Math::Vec3& gravity) {
+        m_configuration.gravity = gravity;
+        
+        if (m_activeWorld) {
+            m_activeWorld->SetGravity(gravity);
+        }
+        
+        LOG_DEBUG("Physics gravity updated");
+    }
+
+    void PhysicsEngine::SetTimeStep(float timeStep) {
+        m_configuration.timeStep = timeStep;
+        
+#ifdef GAMEENGINE_HAS_BULLET
+        if (m_activeWorld) {
+            auto bulletWorldPtr = std::dynamic_pointer_cast<BulletPhysicsWorld>(m_activeWorld);
+            if (bulletWorldPtr) {
+                bulletWorldPtr->SetTimeStep(timeStep);
+            }
+        }
+#endif
+        
+        LOG_DEBUG("Physics timestep updated to: " + std::to_string(timeStep));
+    }
+
+    void PhysicsEngine::SetSolverIterations(int iterations) {
+        m_configuration.solverIterations = iterations;
+        
+#ifdef GAMEENGINE_HAS_BULLET
+        if (m_activeWorld) {
+            auto bulletWorldPtr = std::dynamic_pointer_cast<BulletPhysicsWorld>(m_activeWorld);
+            if (bulletWorldPtr) {
+                bulletWorldPtr->SetSolverIterations(iterations);
+            }
+        }
+#endif
+        
+        LOG_DEBUG("Physics solver iterations updated to: " + std::to_string(iterations));
+    }
+
+    void PhysicsEngine::SetContactThresholds(float breakingThreshold, float processingThreshold) {
+        m_configuration.contactBreakingThreshold = breakingThreshold;
+        m_configuration.contactProcessingThreshold = processingThreshold;
+        
+#ifdef GAMEENGINE_HAS_BULLET
+        if (m_activeWorld) {
+            auto bulletWorldPtr = std::dynamic_pointer_cast<BulletPhysicsWorld>(m_activeWorld);
+            if (bulletWorldPtr) {
+                bulletWorldPtr->SetContactThresholds(breakingThreshold, processingThreshold);
+            }
+        }
+#endif
+        
+        LOG_DEBUG("Physics contact thresholds updated");
+    }
+
     std::shared_ptr<PhysicsWorld> PhysicsEngine::CreateWorld(const Math::Vec3& gravity) {
 #ifdef GAMEENGINE_HAS_BULLET
         return std::make_shared<BulletPhysicsWorld>(gravity);
 #else
         return std::make_shared<PhysicsWorld>(gravity);
+#endif
+    }
+
+    std::shared_ptr<PhysicsWorld> PhysicsEngine::CreateWorld(const PhysicsConfiguration& config) {
+#ifdef GAMEENGINE_HAS_BULLET
+        return std::make_shared<BulletPhysicsWorld>(config);
+#else
+        return std::make_shared<PhysicsWorld>(config.gravity);
 #endif
     }
 

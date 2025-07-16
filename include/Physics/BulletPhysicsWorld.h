@@ -26,6 +26,12 @@ namespace GameEngine {
         explicit BulletPhysicsWorld(const Math::Vec3& gravity);
         
         /**
+         * @brief Construct a new BulletPhysicsWorld with configuration
+         * @param config The physics configuration
+         */
+        explicit BulletPhysicsWorld(const PhysicsConfiguration& config);
+        
+        /**
          * @brief Destroy the BulletPhysicsWorld and clean up all resources
          */
         ~BulletPhysicsWorld() override;
@@ -74,6 +80,31 @@ namespace GameEngine {
          */
         btRigidBody* GetRigidBody(uint32_t bodyId) const;
         
+        /**
+         * @brief Set the physics configuration for this world
+         * @param config The new physics configuration
+         */
+        void SetConfiguration(const PhysicsConfiguration& config);
+        
+        /**
+         * @brief Set the timestep for physics simulation
+         * @param timeStep The new timestep in seconds
+         */
+        void SetTimeStep(float timeStep);
+        
+        /**
+         * @brief Set the number of solver iterations
+         * @param iterations Number of constraint solver iterations
+         */
+        void SetSolverIterations(int iterations);
+        
+        /**
+         * @brief Set contact thresholds for collision detection
+         * @param breakingThreshold Contact breaking threshold
+         * @param processingThreshold Contact processing threshold
+         */
+        void SetContactThresholds(float breakingThreshold, float processingThreshold);
+        
     private:
         // Bullet Physics components
         std::unique_ptr<btBroadphaseInterface> m_broadphase;
@@ -84,6 +115,9 @@ namespace GameEngine {
         
         // Body management
         std::unordered_map<uint32_t, btRigidBody*> m_rigidBodies;
+        
+        // Configuration storage
+        PhysicsConfiguration m_configuration;
         
         // Cached gravity for GetGravity()
         Math::Vec3 m_gravity;

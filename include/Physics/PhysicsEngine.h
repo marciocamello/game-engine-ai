@@ -10,6 +10,57 @@
 #endif
 
 namespace GameEngine {
+    /**
+     * @brief Configuration parameters for physics simulation
+     */
+    struct PhysicsConfiguration {
+        Math::Vec3 gravity{0.0f, -9.81f, 0.0f};  ///< Gravity vector (m/s²)
+        float timeStep = 1.0f / 60.0f;           ///< Fixed timestep for simulation (seconds)
+        int maxSubSteps = 10;                    ///< Maximum number of substeps per frame
+        int solverIterations = 10;               ///< Number of constraint solver iterations
+        bool enableCCD = true;                   ///< Enable Continuous Collision Detection
+        float linearDamping = 0.0f;              ///< Default linear damping for rigid bodies
+        float angularDamping = 0.0f;             ///< Default angular damping for rigid bodies
+        float contactBreakingThreshold = 0.02f;  ///< Contact breaking threshold
+        float contactProcessingThreshold = 0.01f; ///< Contact processing threshold
+        
+        /**
+         * @brief Create default physics configuration
+         */
+        static PhysicsConfiguration Default() {
+            return PhysicsConfiguration{};
+        }
+        
+        /**
+         * @brief Create configuration optimized for character movement
+         */
+        static PhysicsConfiguration ForCharacterMovement() {
+            PhysicsConfiguration config;
+            config.gravity = Math::Vec3(0.0f, -9.81f, 0.0f);
+            config.timeStep = 1.0f / 60.0f;
+            config.maxSubSteps = 10;
+            config.solverIterations = 15; // Higher for better character stability
+            config.enableCCD = true;
+            config.linearDamping = 0.1f;  // Some damping for realistic movement
+            config.angularDamping = 0.1f;
+            return config;
+        }
+        
+        /**
+         * @brief Create configuration optimized for high precision simulation
+         */
+        static PhysicsConfiguration HighPrecision() {
+            PhysicsConfiguration config;
+            config.gravity = Math::Vec3(0.0f, -9.81f, 0.0f);
+            config.timeStep = 1.0f / 120.0f; // Higher frequency
+            config.maxSubSteps = 20;
+            config.solverIterations = 20;    // More iterations for accuracy
+            config.enableCCD = true;
+            config.contactBreakingThreshold = 0.01f;
+            config.contactProcessingThreshold = 0.005f;
+            return config;
+        }
+    };
     struct RaycastHit {
         bool hasHit = false;
         uint32_t bodyId = 0;
@@ -55,12 +106,23 @@ namespace GameEngine {
         PhysicsEngine();
         ~PhysicsEngine();
 
-        bool Initialize();
+        bool Initialize(const PhysicsConfiguration& config = PhysicsConfiguration::Default());
         void Shutdown();
         void Update(float deltaTime);
 
+        // Configuration management
+        void SetConfiguration(const PhysicsConfiguration& config);
+        const PhysicsConfiguration& GetConfiguration() const { return m_configuration; }
+        
+        // Runtime parameter modification
+        void SetGravity(const Math::Vec3& gravity);
+        void SetTimeStep(float timeStep);
+        void SetSolverIterations(int iterations);
+        void SetContactThresholds(float breakingThreshold, float processingThreshold);
+
         // World management
         std::shared_ptr<PhysicsWorld> CreateWorld(const Math::Vec3& gravity = Math::Vec3(0.0f, -9.81f, 0.0f));
+        std::shared_ptr<PhysicsWorld> CreateWorld(const PhysicsConfiguration& config);
         void SetActiveWorld(std::shared_ptr<PhysicsWorld> world);
 
         // Rigid body management
@@ -77,6 +139,7 @@ namespace GameEngine {
     private:
         std::shared_ptr<PhysicsWorld> m_activeWorld;
         uint32_t m_nextBodyId = 1;
+        PhysicsConfiguration m_configuration;
         
 #ifdef GAMEENGINE_HAS_BULLET
         // Mapping from body ID to Bullet rigid body for direct access

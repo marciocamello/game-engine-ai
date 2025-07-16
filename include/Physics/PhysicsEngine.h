@@ -131,6 +131,7 @@ namespace GameEngine {
         void SetRigidBodyTransform(uint32_t bodyId, const Math::Vec3& position, const Math::Quat& rotation);
         void ApplyForce(uint32_t bodyId, const Math::Vec3& force);
         void ApplyImpulse(uint32_t bodyId, const Math::Vec3& impulse);
+        void SetAngularFactor(uint32_t bodyId, const Math::Vec3& factor);
 
         // Rigid body queries
         bool GetRigidBodyTransform(uint32_t bodyId, Math::Vec3& position, Math::Quat& rotation);

@@ -313,6 +313,22 @@ namespace GameEngine {
 #endif
     }
 
+    void PhysicsEngine::SetAngularFactor(uint32_t bodyId, const Math::Vec3& factor) {
+#ifdef GAMEENGINE_HAS_BULLET
+        auto bulletBodyIt = m_bulletBodies.find(bodyId);
+        if (bulletBodyIt != m_bulletBodies.end()) {
+            btRigidBody* bulletBody = bulletBodyIt->second;
+            if (bulletBody && !bulletBody->isStaticObject()) {
+                btVector3 bulletFactor = Physics::BulletUtils::ToBullet(factor);
+                bulletBody->setAngularFactor(bulletFactor);
+                LOG_DEBUG("Set angular factor for rigid body with ID: " + std::to_string(bodyId));
+            }
+        } else {
+            LOG_WARNING("Attempted to set angular factor for non-existent rigid body with ID: " + std::to_string(bodyId));
+        }
+#endif
+    }
+
     bool PhysicsEngine::GetRigidBodyTransform(uint32_t bodyId, Math::Vec3& position, Math::Quat& rotation) {
 #ifdef GAMEENGINE_HAS_BULLET
         auto bulletBodyIt = m_bulletBodies.find(bodyId);

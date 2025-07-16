@@ -43,6 +43,10 @@ namespace GameEngine {
                 return false;
             }
             
+            // Set angular constraints to keep character upright (prevent rotation around X and Z axes)
+            Math::Vec3 angularFactor(0.0f, 1.0f, 0.0f); // Only allow Y-axis rotation (yaw)
+            m_physicsEngine->SetAngularFactor(m_rigidBodyId, angularFactor);
+            
             LOG_INFO("Character initialized with physics (rigid body ID: " + std::to_string(m_rigidBodyId) + ")");
         } else {
             LOG_INFO("Character initialized without physics");
@@ -90,7 +94,8 @@ namespace GameEngine {
         // Apply movement through physics engine if available
         if (m_physicsEngine && m_rigidBodyId != 0 && glm::length(inputDirection) > 0.0f) {
             // Apply force for movement instead of directly modifying position
-            Math::Vec3 movementForce = inputDirection * m_moveSpeed * 100.0f; // Scale force appropriately
+            // Use stronger force scaling for better responsiveness
+            Math::Vec3 movementForce = inputDirection * m_moveSpeed * 500.0f; // Increased force scaling
             m_physicsEngine->ApplyForce(m_rigidBodyId, movementForce);
         } else if (glm::length(inputDirection) > 0.0f) {
             // Fallback to direct position modification if no physics
@@ -102,7 +107,8 @@ namespace GameEngine {
         if (input->IsKeyPressed(KeyCode::Space) && m_isGrounded) {
             if (m_physicsEngine && m_rigidBodyId != 0) {
                 // Apply upward impulse for jumping
-                Math::Vec3 jumpImpulse(0.0f, m_jumpSpeed * 70.0f, 0.0f); // Mass * jump speed
+                // Use mass-based impulse calculation: impulse = mass * desired_velocity
+                Math::Vec3 jumpImpulse(0.0f, 70.0f * m_jumpSpeed, 0.0f); // 70kg mass * jump speed
                 m_physicsEngine->ApplyImpulse(m_rigidBodyId, jumpImpulse);
             } else {
                 // Fallback to direct velocity modification
@@ -158,10 +164,7 @@ namespace GameEngine {
                 m_isJumping = false;
             }
 
-            // Keep character in bounds (simple world boundaries)
-            float worldSize = 50.0f;
-            m_position.x = Math::Clamp(m_position.x, -worldSize, worldSize);
-            m_position.z = Math::Clamp(m_position.z, -worldSize, worldSize);
+            // Note: Removed hardcoded world boundaries - physics collision should handle boundaries instead
         }
     }
 

@@ -95,12 +95,12 @@
   - Remove manual gravity/velocity calculations: `m_velocity.y += m_gravity * deltaTime`
   - _Requirements: 2.1, 2.2, 4.1_
 
-- [ ] 11. Replace character movement with physics forces
+- [x] 11. Replace character movement with physics forces
 
-  - Replace direct position updates (`m_position += movement`) with ApplyForce calls
-  - Replace manual jumping (`m_velocity.y = m_jumpSpeed`) with ApplyImpulse for vertical velocity
-  - Add character rotation constraints to keep character upright
-  - Remove hardcoded world boundaries, use physics collision instead
+  - Replace direct position updates (`m_position += movement`) with ApplyForce calls ✓
+  - Replace manual jumping (`m_velocity.y = m_jumpSpeed`) with ApplyImpulse for vertical velocity ✓
+  - Add character rotation constraints to keep character upright ✓
+  - Remove hardcoded world boundaries, use physics collision instead ✓
   - _Requirements: 2.2, 2.3_
 
 - [ ] 12. Replace manual ground collision with physics-based detection

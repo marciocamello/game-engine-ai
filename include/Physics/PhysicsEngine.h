@@ -132,6 +132,11 @@ namespace GameEngine {
         void ApplyForce(uint32_t bodyId, const Math::Vec3& force);
         void ApplyImpulse(uint32_t bodyId, const Math::Vec3& impulse);
 
+        // Rigid body queries
+        bool GetRigidBodyTransform(uint32_t bodyId, Math::Vec3& position, Math::Quat& rotation);
+        bool GetRigidBodyVelocity(uint32_t bodyId, Math::Vec3& velocity, Math::Vec3& angularVelocity);
+        bool IsRigidBodyGrounded(uint32_t bodyId, float groundCheckDistance = 0.1f);
+
         // Queries
         RaycastHit Raycast(const Math::Vec3& origin, const Math::Vec3& direction, float maxDistance);
         std::vector<OverlapResult> OverlapSphere(const Math::Vec3& center, float radius);

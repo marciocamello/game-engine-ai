@@ -313,6 +313,76 @@ namespace GameEngine {
 #endif
     }
 
+    bool PhysicsEngine::GetRigidBodyTransform(uint32_t bodyId, Math::Vec3& position, Math::Quat& rotation) {
+#ifdef GAMEENGINE_HAS_BULLET
+        auto bulletBodyIt = m_bulletBodies.find(bodyId);
+        if (bulletBodyIt != m_bulletBodies.end()) {
+            btRigidBody* bulletBody = bulletBodyIt->second;
+            if (bulletBody) {
+                btTransform transform = bulletBody->getWorldTransform();
+                position = Physics::BulletUtils::FromBullet(transform.getOrigin());
+                rotation = Physics::BulletUtils::FromBullet(transform.getRotation());
+                return true;
+            }
+        }
+#endif
+        return false;
+    }
+
+    bool PhysicsEngine::GetRigidBodyVelocity(uint32_t bodyId, Math::Vec3& velocity, Math::Vec3& angularVelocity) {
+#ifdef GAMEENGINE_HAS_BULLET
+        auto bulletBodyIt = m_bulletBodies.find(bodyId);
+        if (bulletBodyIt != m_bulletBodies.end()) {
+            btRigidBody* bulletBody = bulletBodyIt->second;
+            if (bulletBody) {
+                velocity = Physics::BulletUtils::FromBullet(bulletBody->getLinearVelocity());
+                angularVelocity = Physics::BulletUtils::FromBullet(bulletBody->getAngularVelocity());
+                return true;
+            }
+        }
+#endif
+        return false;
+    }
+
+    bool PhysicsEngine::IsRigidBodyGrounded(uint32_t bodyId, float groundCheckDistance) {
+#ifdef GAMEENGINE_HAS_BULLET
+        auto bulletBodyIt = m_bulletBodies.find(bodyId);
+        if (bulletBodyIt != m_bulletBodies.end()) {
+            btRigidBody* bulletBody = bulletBodyIt->second;
+            if (bulletBody) {
+                // Get the body's current position
+                btTransform transform = bulletBody->getWorldTransform();
+                btVector3 bodyPosition = transform.getOrigin();
+                
+                // Cast a ray downward from the body's position
+                btVector3 rayStart = bodyPosition;
+                btVector3 rayEnd = bodyPosition - btVector3(0, groundCheckDistance, 0);
+                
+                // Get the bullet world
+                auto bulletWorldPtr = std::dynamic_pointer_cast<BulletPhysicsWorld>(m_activeWorld);
+                if (bulletWorldPtr) {
+                    btDiscreteDynamicsWorld* bulletWorld = bulletWorldPtr->GetBulletWorld();
+                    if (bulletWorld) {
+                        btCollisionWorld::ClosestRayResultCallback rayCallback(rayStart, rayEnd);
+                        // Ignore the character's own body in the raycast
+                        rayCallback.m_collisionFilterMask = ~0; // Hit everything
+                        rayCallback.m_collisionFilterGroup = 1;
+                        
+                        bulletWorld->rayTest(rayStart, rayEnd, rayCallback);
+                        
+                        // Check if we hit something that's not ourselves
+                        if (rayCallback.hasHit()) {
+                            const btRigidBody* hitBody = btRigidBody::upcast(rayCallback.m_collisionObject);
+                            return hitBody != bulletBody; // Grounded if we hit something other than ourselves
+                        }
+                    }
+                }
+            }
+        }
+#endif
+        return false;
+    }
+
     RaycastHit PhysicsEngine::Raycast(const Math::Vec3& origin, const Math::Vec3& direction, float maxDistance) {
         RaycastHit result;
         

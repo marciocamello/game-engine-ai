@@ -12,7 +12,7 @@ namespace GameEngine {
         Character();
         ~Character();
 
-        bool Initialize();
+        bool Initialize(PhysicsEngine* physicsEngine = nullptr);
         void Update(float deltaTime, InputManager* input, class ThirdPersonCameraSystem* camera = nullptr);
         void Render(PrimitiveRenderer* renderer);
 
@@ -50,6 +50,10 @@ namespace GameEngine {
         // State
         bool m_isGrounded = true;
         bool m_isJumping = false;
+
+        // Physics
+        PhysicsEngine* m_physicsEngine = nullptr;
+        uint32_t m_rigidBodyId = 0;
 
         // Rendering
         Math::Vec4 m_color{0.2f, 0.6f, 1.0f, 1.0f}; // Blue capsule

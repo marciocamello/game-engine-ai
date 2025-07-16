@@ -87,7 +87,7 @@
 
 ## Phase 4: Character Physics Integration
 
-- [ ] 10. Integrate Character class with physics engine
+- [x] 10. Integrate Character class with physics engine
 
   - Add PhysicsEngine reference and rigid body ID to Character class
   - Create character rigid body during Character::Initialize using capsule shape

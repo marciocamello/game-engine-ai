@@ -2,6 +2,7 @@
 #include "Game/ThirdPersonCameraSystem.h"
 #include "Graphics/PrimitiveRenderer.h"
 #include "Input/InputManager.h"
+#include "Physics/PhysicsEngine.h"
 #include "Core/Logger.h"
 
 namespace GameEngine {
@@ -9,10 +10,44 @@ namespace GameEngine {
     }
 
     Character::~Character() {
+        // Clean up physics rigid body if it exists
+        if (m_physicsEngine && m_rigidBodyId != 0) {
+            m_physicsEngine->DestroyRigidBody(m_rigidBodyId);
+            m_rigidBodyId = 0;
+        }
     }
 
-    bool Character::Initialize() {
-        LOG_INFO("Character initialized");
+    bool Character::Initialize(PhysicsEngine* physicsEngine) {
+        m_physicsEngine = physicsEngine;
+        
+        if (m_physicsEngine) {
+            // Create character rigid body using capsule shape
+            RigidBody bodyDesc;
+            bodyDesc.position = m_position;
+            bodyDesc.rotation = Math::Quat(1.0f, 0.0f, 0.0f, 0.0f); // Identity quaternion
+            bodyDesc.velocity = m_velocity;
+            bodyDesc.mass = 70.0f; // Average human mass in kg
+            bodyDesc.restitution = 0.0f; // No bouncing for character
+            bodyDesc.friction = 0.7f; // Good friction for walking
+            bodyDesc.isStatic = false;
+            bodyDesc.isKinematic = false;
+            
+            CollisionShape shape;
+            shape.type = CollisionShape::Capsule;
+            shape.dimensions = Math::Vec3(m_radius, m_height, m_radius); // radius, height, radius
+            
+            m_rigidBodyId = m_physicsEngine->CreateRigidBody(bodyDesc, shape);
+            
+            if (m_rigidBodyId == 0) {
+                LOG_ERROR("Failed to create character rigid body");
+                return false;
+            }
+            
+            LOG_INFO("Character initialized with physics (rigid body ID: " + std::to_string(m_rigidBodyId) + ")");
+        } else {
+            LOG_INFO("Character initialized without physics");
+        }
+        
         return true;
     }
 
@@ -52,15 +87,27 @@ namespace GameEngine {
             }
         }
 
-        // Apply movement
-        if (glm::length(inputDirection) > 0.0f) {
+        // Apply movement through physics engine if available
+        if (m_physicsEngine && m_rigidBodyId != 0 && glm::length(inputDirection) > 0.0f) {
+            // Apply force for movement instead of directly modifying position
+            Math::Vec3 movementForce = inputDirection * m_moveSpeed * 100.0f; // Scale force appropriately
+            m_physicsEngine->ApplyForce(m_rigidBodyId, movementForce);
+        } else if (glm::length(inputDirection) > 0.0f) {
+            // Fallback to direct position modification if no physics
             Math::Vec3 movement = inputDirection * m_moveSpeed * deltaTime;
             m_position += movement;
         }
 
         // Handle jumping
         if (input->IsKeyPressed(KeyCode::Space) && m_isGrounded) {
-            m_velocity.y = m_jumpSpeed;
+            if (m_physicsEngine && m_rigidBodyId != 0) {
+                // Apply upward impulse for jumping
+                Math::Vec3 jumpImpulse(0.0f, m_jumpSpeed * 70.0f, 0.0f); // Mass * jump speed
+                m_physicsEngine->ApplyImpulse(m_rigidBodyId, jumpImpulse);
+            } else {
+                // Fallback to direct velocity modification
+                m_velocity.y = m_jumpSpeed;
+            }
             m_isGrounded = false;
             m_isJumping = true;
             LOG_INFO("Character jumping!");
@@ -68,27 +115,54 @@ namespace GameEngine {
     }
 
     void Character::UpdatePhysics(float deltaTime) {
-        // Apply gravity
-        if (!m_isGrounded) {
-            m_velocity.y += m_gravity * deltaTime;
+        if (m_physicsEngine && m_rigidBodyId != 0) {
+            // Query rigid body state from physics engine instead of manual calculations
+            Math::Vec3 physicsPosition;
+            Math::Quat physicsRotation;
+            Math::Vec3 physicsVelocity;
+            Math::Vec3 physicsAngularVelocity;
+            
+            // Get current transform from physics engine
+            if (m_physicsEngine->GetRigidBodyTransform(m_rigidBodyId, physicsPosition, physicsRotation)) {
+                m_position = physicsPosition;
+            }
+            
+            // Get current velocity from physics engine
+            if (m_physicsEngine->GetRigidBodyVelocity(m_rigidBodyId, physicsVelocity, physicsAngularVelocity)) {
+                m_velocity = physicsVelocity;
+            }
+            
+            // Check if character is grounded using physics engine
+            m_isGrounded = m_physicsEngine->IsRigidBodyGrounded(m_rigidBodyId, 0.1f);
+            
+            // Update jumping state based on grounded status
+            if (m_isGrounded && m_isJumping) {
+                m_isJumping = false;
+            }
+        } else {
+            // Fallback to manual physics calculations when no physics engine is available
+            // Apply gravity
+            if (!m_isGrounded) {
+                m_velocity.y += m_gravity * deltaTime;
+            }
+
+            // Apply velocity
+            m_position += m_velocity * deltaTime;
+
+            // Simple ground collision (y = 0) - character should sit on ground
+            float groundLevel = m_height * 0.5f;  // Half height to sit properly on ground
+            if (m_position.y <= groundLevel) {
+                m_position.y = groundLevel;
+                m_velocity.y = 0.0f;
+                m_isGrounded = true;
+                m_isJumping = false;
+            }
+
+            // Keep character in bounds (simple world boundaries)
+            float worldSize = 50.0f;
+            m_position.x = Math::Clamp(m_position.x, -worldSize, worldSize);
+            m_position.z = Math::Clamp(m_position.z, -worldSize, worldSize);
         }
-
-        // Apply velocity
-        m_position += m_velocity * deltaTime;
-
-        // Simple ground collision (y = 0) - character should sit on ground
-        float groundLevel = m_height * 0.5f;  // Half height to sit properly on ground
-        if (m_position.y <= groundLevel) {
-            m_position.y = groundLevel;
-            m_velocity.y = 0.0f;
-            m_isGrounded = true;
-            m_isJumping = false;
-        }
-
-        // Keep character in bounds (simple world boundaries)
-        float worldSize = 50.0f;
-        m_position.x = Math::Clamp(m_position.x, -worldSize, worldSize);
-        m_position.z = Math::Clamp(m_position.z, -worldSize, worldSize);
     }
 
     void Character::Render(PrimitiveRenderer* renderer) {

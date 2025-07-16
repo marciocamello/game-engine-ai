@@ -32,7 +32,7 @@ public:
 
     // Initialize character
     m_character = std::make_unique<Character>();
-    if (!m_character->Initialize()) {
+    if (!m_character->Initialize(m_engine.GetPhysics())) {
       LOG_ERROR("Failed to initialize character");
       return false;
     }

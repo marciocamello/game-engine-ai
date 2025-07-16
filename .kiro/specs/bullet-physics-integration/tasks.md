@@ -67,7 +67,7 @@
   - Remove placeholder comments, add real implementations ✓
   - _Requirements: 1.2, 2.2, 4.1_
 
-- [ ] 8. Implement physics queries (raycast and overlap)
+- [x] 8. Implement physics queries (raycast and overlap)
 
   - Replace `Raycast()` stub with btCollisionWorld::rayTest implementation
   - Replace `OverlapSphere()` stub with btCollisionWorld contact testing

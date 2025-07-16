@@ -10,6 +10,21 @@
 #endif
 
 namespace GameEngine {
+    struct RaycastHit {
+        bool hasHit = false;
+        uint32_t bodyId = 0;
+        Math::Vec3 point{0.0f};
+        Math::Vec3 normal{0.0f};
+        float distance = 0.0f;
+    };
+
+    struct OverlapResult {
+        uint32_t bodyId = 0;
+        Math::Vec3 contactPoint{0.0f};
+        Math::Vec3 contactNormal{0.0f};
+        float penetrationDepth = 0.0f;
+    };
+
     struct RigidBody {
         Math::Vec3 position{0.0f};
         Math::Quat rotation{1.0f, 0.0f, 0.0f, 0.0f};
@@ -56,8 +71,8 @@ namespace GameEngine {
         void ApplyImpulse(uint32_t bodyId, const Math::Vec3& impulse);
 
         // Queries
-        bool Raycast(const Math::Vec3& origin, const Math::Vec3& direction, float maxDistance, uint32_t& hitBodyId);
-        std::vector<uint32_t> OverlapSphere(const Math::Vec3& center, float radius);
+        RaycastHit Raycast(const Math::Vec3& origin, const Math::Vec3& direction, float maxDistance);
+        std::vector<OverlapResult> OverlapSphere(const Math::Vec3& center, float radius);
 
     private:
         std::shared_ptr<PhysicsWorld> m_activeWorld;

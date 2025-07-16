@@ -222,23 +222,25 @@ namespace GameEngine {
 #endif
     }
 
-    bool PhysicsEngine::Raycast(const Math::Vec3& origin, const Math::Vec3& direction, float maxDistance, uint32_t& hitBodyId) {
+    RaycastHit PhysicsEngine::Raycast(const Math::Vec3& origin, const Math::Vec3& direction, float maxDistance) {
+        RaycastHit result;
+        
 #ifdef GAMEENGINE_HAS_BULLET
         if (!m_activeWorld) {
             LOG_WARNING("Cannot perform raycast: No active physics world");
-            return false;
+            return result;
         }
         
         auto bulletWorldPtr = std::dynamic_pointer_cast<BulletPhysicsWorld>(m_activeWorld);
         if (!bulletWorldPtr) {
             LOG_WARNING("Cannot perform raycast: Active world is not a BulletPhysicsWorld");
-            return false;
+            return result;
         }
         
         btDiscreteDynamicsWorld* bulletWorld = bulletWorldPtr->GetBulletWorld();
         if (!bulletWorld) {
             LOG_WARNING("Cannot perform raycast: Bullet world is null");
-            return false;
+            return result;
         }
         
         // Calculate ray end point
@@ -260,23 +262,29 @@ namespace GameEngine {
                 // Search for the body ID in our mapping
                 for (const auto& pair : m_bulletBodies) {
                     if (pair.second == hitBody) {
-                        hitBodyId = pair.first;
-                        LOG_DEBUG("Raycast hit rigid body with ID: " + std::to_string(hitBodyId));
-                        return true;
+                        result.hasHit = true;
+                        result.bodyId = pair.first;
+                        result.point = Physics::BulletUtils::FromBullet(rayCallback.m_hitPointWorld);
+                        result.normal = Physics::BulletUtils::FromBullet(rayCallback.m_hitNormalWorld);
+                        result.distance = glm::length(result.point - origin);
+                        
+                        LOG_DEBUG("Raycast hit rigid body with ID: " + std::to_string(result.bodyId) + 
+                                 " at distance: " + std::to_string(result.distance));
+                        break;
                     }
                 }
             }
         }
         
-        return false;
+        return result;
 #else
         LOG_WARNING("Raycast not supported: Bullet Physics not available");
-        return false;
+        return result;
 #endif
     }
 
-    std::vector<uint32_t> PhysicsEngine::OverlapSphere(const Math::Vec3& center, float radius) {
-        std::vector<uint32_t> overlappingBodies;
+    std::vector<OverlapResult> PhysicsEngine::OverlapSphere(const Math::Vec3& center, float radius) {
+        std::vector<OverlapResult> overlappingBodies;
         
 #ifdef GAMEENGINE_HAS_BULLET
         if (!m_activeWorld) {
@@ -311,11 +319,11 @@ namespace GameEngine {
         
         // Perform contact test
         struct OverlapCallback : public btCollisionWorld::ContactResultCallback {
-            std::vector<uint32_t>& bodies;
+            std::vector<OverlapResult>& results;
             const std::unordered_map<uint32_t, btRigidBody*>& bulletBodies;
             
-            OverlapCallback(std::vector<uint32_t>& b, const std::unordered_map<uint32_t, btRigidBody*>& bb) 
-                : bodies(b), bulletBodies(bb) {}
+            OverlapCallback(std::vector<OverlapResult>& r, const std::unordered_map<uint32_t, btRigidBody*>& bb) 
+                : results(r), bulletBodies(bb) {}
             
             btScalar addSingleResult(btManifoldPoint& cp, const btCollisionObjectWrapper* colObj0Wrap, 
                                    int partId0, int index0, const btCollisionObjectWrapper* colObj1Wrap, 
@@ -334,7 +342,13 @@ namespace GameEngine {
                         // Find the body ID in our mapping
                         for (const auto& pair : bulletBodies) {
                             if (pair.second == hitBody) {
-                                bodies.push_back(pair.first);
+                                OverlapResult result;
+                                result.bodyId = pair.first;
+                                result.contactPoint = Physics::BulletUtils::FromBullet(cp.getPositionWorldOnA());
+                                result.contactNormal = Physics::BulletUtils::FromBullet(cp.m_normalWorldOnB);
+                                result.penetrationDepth = cp.getDistance();
+                                
+                                results.push_back(result);
                                 break;
                             }
                         }

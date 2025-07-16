@@ -168,10 +168,16 @@ add_executable(CollisionShapeFactorySimpleTest
     tests/integration/test_collision_shape_factory_simple.cpp
 )
 
+# Physics queries integration test
+add_executable(PhysicsQueriesTest
+    tests/integration/test_physics_queries.cpp
+)
+
 target_link_libraries(BulletIntegrationTest PRIVATE GameEngineKiro)
 target_link_libraries(BulletConversionTest PRIVATE GameEngineKiro)
 target_link_libraries(BulletUtilsSimpleTest PRIVATE GameEngineKiro)
 target_link_libraries(CollisionShapeFactorySimpleTest PRIVATE GameEngineKiro)
+target_link_libraries(PhysicsQueriesTest PRIVATE GameEngineKiro)
 
 if(Bullet_FOUND)
     target_link_libraries(BulletIntegrationTest PRIVATE 
@@ -193,6 +199,12 @@ if(Bullet_FOUND)
     )
     
     target_link_libraries(CollisionShapeFactorySimpleTest PRIVATE 
+        BulletDynamics
+        BulletCollision
+        LinearMath
+    )
+    
+    target_link_libraries(PhysicsQueriesTest PRIVATE 
         BulletDynamics
         BulletCollision
         LinearMath

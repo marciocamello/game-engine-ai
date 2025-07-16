@@ -15,7 +15,7 @@
   - Test build on Windows with PowerShell: `.\build.bat`
   - _Requirements: 1.1, 1.4_
 
-- [ ] 2. Create math type conversion utilities
+- [x] 2. Create math type conversion utilities
 
   - Implement conversion functions between Math::Vec3/Quat and btVector3/btQuaternion
   - Add conversion utilities to a new `include/Physics/BulletUtils.h` file

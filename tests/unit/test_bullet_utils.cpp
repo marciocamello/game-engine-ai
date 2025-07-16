@@ -1,114 +1,174 @@
+#include <gtest/gtest.h>
+
 #ifdef GAMEENGINE_HAS_BULLET
 
-#include <gtest/gtest.h>
 #include "Physics/BulletUtils.h"
-#include <cmath>
+#include <glm/gtc/constants.hpp>
+#include <glm/gtx/quaternion.hpp>
 
 using namespace GameEngine;
 using namespace GameEngine::Physics;
 
 class BulletUtilsTest : public ::testing::Test {
 protected:
-    void SetUp() override {}
-    void TearDown() override {}
-    
-    // Helper function to compare floats with tolerance
-    bool FloatEqual(float a, float b, float tolerance = 1e-6f) {
-        return std::abs(a - b) < tolerance;
+    void SetUp() override {
+        // Set up common test data
+        testVec3 = Math::Vec3(1.5f, -2.3f, 4.7f);
+        testQuat = glm::angleAxis(glm::radians(45.0f), Math::Vec3(0.0f, 1.0f, 0.0f));
+        
+        // Epsilon for floating point comparisons
+        epsilon = 1e-6f;
     }
     
-    // Helper function to compare Vec3 with tolerance
-    bool Vec3Equal(const Math::Vec3& a, const Math::Vec3& b, float tolerance = 1e-6f) {
-        return FloatEqual(a.x, b.x, tolerance) && 
-               FloatEqual(a.y, b.y, tolerance) && 
-               FloatEqual(a.z, b.z, tolerance);
-    }
-    
-    // Helper function to compare quaternions with tolerance
-    bool QuatEqual(const Math::Quat& a, const Math::Quat& b, float tolerance = 1e-6f) {
-        return FloatEqual(a.x, b.x, tolerance) && 
-               FloatEqual(a.y, b.y, tolerance) && 
-               FloatEqual(a.z, b.z, tolerance) && 
-               FloatEqual(a.w, b.w, tolerance);
-    }
+    Math::Vec3 testVec3;
+    Math::Quat testQuat;
+    float epsilon;
 };
 
+// Vec3 conversion tests
 TEST_F(BulletUtilsTest, Vec3ToBulletConversion) {
-    Math::Vec3 engineVec(1.0f, 2.0f, 3.0f);
-    btVector3 bulletVec = BulletUtils::ToBullet(engineVec);
+    btVector3 bulletVec = BulletUtils::ToBullet(testVec3);
     
-    EXPECT_FLOAT_EQ(bulletVec.getX(), 1.0f);
-    EXPECT_FLOAT_EQ(bulletVec.getY(), 2.0f);
-    EXPECT_FLOAT_EQ(bulletVec.getZ(), 3.0f);
+    EXPECT_NEAR(bulletVec.getX(), testVec3.x, epsilon);
+    EXPECT_NEAR(bulletVec.getY(), testVec3.y, epsilon);
+    EXPECT_NEAR(bulletVec.getZ(), testVec3.z, epsilon);
 }
 
 TEST_F(BulletUtilsTest, Vec3FromBulletConversion) {
-    btVector3 bulletVec(4.0f, 5.0f, 6.0f);
-    Math::Vec3 engineVec = BulletUtils::FromBullet(bulletVec);
+    btVector3 bulletVec(1.5f, -2.3f, 4.7f);
+    Math::Vec3 glmVec = BulletUtils::FromBullet(bulletVec);
     
-    EXPECT_FLOAT_EQ(engineVec.x, 4.0f);
-    EXPECT_FLOAT_EQ(engineVec.y, 5.0f);
-    EXPECT_FLOAT_EQ(engineVec.z, 6.0f);
+    EXPECT_NEAR(glmVec.x, bulletVec.getX(), epsilon);
+    EXPECT_NEAR(glmVec.y, bulletVec.getY(), epsilon);
+    EXPECT_NEAR(glmVec.z, bulletVec.getZ(), epsilon);
 }
 
 TEST_F(BulletUtilsTest, Vec3RoundTripConversion) {
-    Math::Vec3 original(7.5f, -2.3f, 0.0f);
-    btVector3 bulletVec = BulletUtils::ToBullet(original);
-    Math::Vec3 converted = BulletUtils::FromBullet(bulletVec);
+    // GLM -> Bullet -> GLM
+    btVector3 bulletVec = BulletUtils::ToBullet(testVec3);
+    Math::Vec3 roundTripVec = BulletUtils::FromBullet(bulletVec);
     
-    EXPECT_TRUE(Vec3Equal(original, converted));
+    EXPECT_NEAR(roundTripVec.x, testVec3.x, epsilon);
+    EXPECT_NEAR(roundTripVec.y, testVec3.y, epsilon);
+    EXPECT_NEAR(roundTripVec.z, testVec3.z, epsilon);
+    
+    // Bullet -> GLM -> Bullet
+    btVector3 originalBullet(3.2f, -1.8f, 0.9f);
+    Math::Vec3 glmVec = BulletUtils::FromBullet(originalBullet);
+    btVector3 roundTripBullet = BulletUtils::ToBullet(glmVec);
+    
+    EXPECT_NEAR(roundTripBullet.getX(), originalBullet.getX(), epsilon);
+    EXPECT_NEAR(roundTripBullet.getY(), originalBullet.getY(), epsilon);
+    EXPECT_NEAR(roundTripBullet.getZ(), originalBullet.getZ(), epsilon);
 }
 
+// Quaternion conversion tests
 TEST_F(BulletUtilsTest, QuatToBulletConversion) {
-    Math::Quat engineQuat(0.707f, 0.0f, 0.707f, 0.0f); // 90 degree rotation around Y
-    btQuaternion bulletQuat = BulletUtils::ToBullet(engineQuat);
+    btQuaternion bulletQuat = BulletUtils::ToBullet(testQuat);
     
-    EXPECT_FLOAT_EQ(bulletQuat.getX(), 0.0f);
-    EXPECT_FLOAT_EQ(bulletQuat.getY(), 0.707f);
-    EXPECT_FLOAT_EQ(bulletQuat.getZ(), 0.0f);
-    EXPECT_FLOAT_EQ(bulletQuat.getW(), 0.707f);
+    EXPECT_NEAR(bulletQuat.getX(), testQuat.x, epsilon);
+    EXPECT_NEAR(bulletQuat.getY(), testQuat.y, epsilon);
+    EXPECT_NEAR(bulletQuat.getZ(), testQuat.z, epsilon);
+    EXPECT_NEAR(bulletQuat.getW(), testQuat.w, epsilon);
 }
 
 TEST_F(BulletUtilsTest, QuatFromBulletConversion) {
-    btQuaternion bulletQuat(0.5f, 0.5f, 0.5f, 0.5f);
-    Math::Quat engineQuat = BulletUtils::FromBullet(bulletQuat);
+    btQuaternion bulletQuat(0.1f, 0.2f, 0.3f, 0.9f);
+    bulletQuat.normalize(); // Ensure normalized quaternion
+    Math::Quat glmQuat = BulletUtils::FromBullet(bulletQuat);
     
-    EXPECT_FLOAT_EQ(engineQuat.x, 0.5f);
-    EXPECT_FLOAT_EQ(engineQuat.y, 0.5f);
-    EXPECT_FLOAT_EQ(engineQuat.z, 0.5f);
-    EXPECT_FLOAT_EQ(engineQuat.w, 0.5f);
+    EXPECT_NEAR(glmQuat.x, bulletQuat.getX(), epsilon);
+    EXPECT_NEAR(glmQuat.y, bulletQuat.getY(), epsilon);
+    EXPECT_NEAR(glmQuat.z, bulletQuat.getZ(), epsilon);
+    EXPECT_NEAR(glmQuat.w, bulletQuat.getW(), epsilon);
 }
 
 TEST_F(BulletUtilsTest, QuatRoundTripConversion) {
-    Math::Quat original(1.0f, 0.0f, 0.0f, 0.0f); // Identity quaternion
-    btQuaternion bulletQuat = BulletUtils::ToBullet(original);
-    Math::Quat converted = BulletUtils::FromBullet(bulletQuat);
+    // Normalize test quaternion
+    Math::Quat normalizedQuat = glm::normalize(testQuat);
     
-    EXPECT_TRUE(QuatEqual(original, converted));
+    // GLM -> Bullet -> GLM
+    btQuaternion bulletQuat = BulletUtils::ToBullet(normalizedQuat);
+    Math::Quat roundTripQuat = BulletUtils::FromBullet(bulletQuat);
+    
+    EXPECT_NEAR(roundTripQuat.x, normalizedQuat.x, epsilon);
+    EXPECT_NEAR(roundTripQuat.y, normalizedQuat.y, epsilon);
+    EXPECT_NEAR(roundTripQuat.z, normalizedQuat.z, epsilon);
+    EXPECT_NEAR(roundTripQuat.w, normalizedQuat.w, epsilon);
+    
+    // Bullet -> GLM -> Bullet
+    btQuaternion originalBullet(0.5f, 0.5f, 0.5f, 0.5f);
+    originalBullet.normalize();
+    Math::Quat glmQuat = BulletUtils::FromBullet(originalBullet);
+    btQuaternion roundTripBullet = BulletUtils::ToBullet(glmQuat);
+    
+    EXPECT_NEAR(roundTripBullet.getX(), originalBullet.getX(), epsilon);
+    EXPECT_NEAR(roundTripBullet.getY(), originalBullet.getY(), epsilon);
+    EXPECT_NEAR(roundTripBullet.getZ(), originalBullet.getZ(), epsilon);
+    EXPECT_NEAR(roundTripBullet.getW(), originalBullet.getW(), epsilon);
 }
 
-TEST_F(BulletUtilsTest, ZeroVectorConversion) {
-    Math::Vec3 zero(0.0f, 0.0f, 0.0f);
-    btVector3 bulletZero = BulletUtils::ToBullet(zero);
-    Math::Vec3 convertedZero = BulletUtils::FromBullet(bulletZero);
+// Transform conversion tests
+TEST_F(BulletUtilsTest, TransformConversion) {
+    Math::Vec3 position(1.0f, 2.0f, 3.0f);
+    Math::Quat rotation = glm::normalize(glm::angleAxis(glm::radians(90.0f), Math::Vec3(0.0f, 0.0f, 1.0f)));
     
-    EXPECT_TRUE(Vec3Equal(zero, convertedZero));
+    btTransform bulletTransform = BulletUtils::ToBullet(position, rotation);
+    
+    Math::Vec3 extractedPos;
+    Math::Quat extractedRot;
+    BulletUtils::FromBullet(bulletTransform, extractedPos, extractedRot);
+    
+    EXPECT_NEAR(extractedPos.x, position.x, epsilon);
+    EXPECT_NEAR(extractedPos.y, position.y, epsilon);
+    EXPECT_NEAR(extractedPos.z, position.z, epsilon);
+    
+    EXPECT_NEAR(extractedRot.x, rotation.x, epsilon);
+    EXPECT_NEAR(extractedRot.y, rotation.y, epsilon);
+    EXPECT_NEAR(extractedRot.z, rotation.z, epsilon);
+    EXPECT_NEAR(extractedRot.w, rotation.w, epsilon);
+}
+
+// Matrix conversion tests
+TEST_F(BulletUtilsTest, MatrixConversion) {
+    Math::Vec3 position(2.0f, 3.0f, 4.0f);
+    Math::Quat rotation = glm::normalize(glm::angleAxis(glm::radians(30.0f), Math::Vec3(1.0f, 0.0f, 0.0f)));
+    Math::Vec3 scale(1.0f, 1.0f, 1.0f);
+    
+    Math::Mat4 originalMatrix = Math::CreateTransform(position, rotation, scale);
+    
+    btTransform bulletTransform = BulletUtils::ToBullet(originalMatrix);
+    Math::Mat4 roundTripMatrix = BulletUtils::FromBullet(bulletTransform);
+    
+    // Compare matrices element by element (with some tolerance for floating point precision)
+    for (int i = 0; i < 4; ++i) {
+        for (int j = 0; j < 4; ++j) {
+            EXPECT_NEAR(roundTripMatrix[i][j], originalMatrix[i][j], epsilon * 10.0f) 
+                << "Matrix element [" << i << "][" << j << "] differs";
+        }
+    }
+}
+
+// Edge case tests
+TEST_F(BulletUtilsTest, ZeroVectorConversion) {
+    Math::Vec3 zeroVec(0.0f, 0.0f, 0.0f);
+    btVector3 bulletZero = BulletUtils::ToBullet(zeroVec);
+    Math::Vec3 roundTripZero = BulletUtils::FromBullet(bulletZero);
+    
+    EXPECT_NEAR(roundTripZero.x, 0.0f, epsilon);
+    EXPECT_NEAR(roundTripZero.y, 0.0f, epsilon);
+    EXPECT_NEAR(roundTripZero.z, 0.0f, epsilon);
 }
 
 TEST_F(BulletUtilsTest, IdentityQuaternionConversion) {
-    Math::Quat identity(1.0f, 0.0f, 0.0f, 0.0f);
-    btQuaternion bulletIdentity = BulletUtils::ToBullet(identity);
-    Math::Quat convertedIdentity = BulletUtils::FromBullet(bulletIdentity);
+    Math::Quat identityQuat(1.0f, 0.0f, 0.0f, 0.0f); // GLM quaternion constructor: w, x, y, z
+    btQuaternion bulletIdentity = BulletUtils::ToBullet(identityQuat);
+    Math::Quat roundTripIdentity = BulletUtils::FromBullet(bulletIdentity);
     
-    EXPECT_TRUE(QuatEqual(identity, convertedIdentity));
-}
-
-TEST_F(BulletUtilsTest, NegativeValuesConversion) {
-    Math::Vec3 negative(-1.0f, -2.0f, -3.0f);
-    btVector3 bulletNegative = BulletUtils::ToBullet(negative);
-    Math::Vec3 convertedNegative = BulletUtils::FromBullet(bulletNegative);
-    
-    EXPECT_TRUE(Vec3Equal(negative, convertedNegative));
+    EXPECT_NEAR(roundTripIdentity.w, 1.0f, epsilon);
+    EXPECT_NEAR(roundTripIdentity.x, 0.0f, epsilon);
+    EXPECT_NEAR(roundTripIdentity.y, 0.0f, epsilon);
+    EXPECT_NEAR(roundTripIdentity.z, 0.0f, epsilon);
 }
 
 #endif // GAMEENGINE_HAS_BULLET

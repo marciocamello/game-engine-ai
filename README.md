@@ -1,232 +1,180 @@
 # Game Engine Kiro
 
-Um engine de jogos 3D moderno desenvolvido em C++ para criação de jogos third-person open world, com suporte para PC e futuras expansões para consoles.
+A modern 3D game engine built with AI assistance, designed for third-person action games and open-world experiences.
 
-## Características Principais
+## 🤖 Built with AI
 
-### Arquitetura Modular
+This game engine is being developed using cutting-edge AI development tools and methodologies:
 
-- **Core**: Utilitários básicos, gerenciamento de memória, logging, biblioteca matemática
-- **Graphics**: Renderização OpenGL/Vulkan, gerenciamento de cena, pipeline de renderização
-- **Resource**: Carregamento e gerenciamento de assets (modelos, texturas, shaders, sons)
-- **Physics**: Simulação física (rigid body, soft body, character physics)
-- **Audio**: Engine de áudio 3D espacial
-- **Input**: Gerenciamento de entrada (teclado, mouse, gamepad)
-- **Scripting**: Sistema de scripts (Lua integration)
+- **KiroDev (AWS)**: AI-powered development assistant for architecture and code generation
+- **Claude 4**: Advanced reasoning for complex system design and optimization
+- **GPT-4.1**: Code analysis, debugging, and feature implementation
+- **GitHub Copilot**: Real-time code completion and suggestions
+- **VS Code**: Enhanced with AI extensions for intelligent development
 
-### Recursos Avançados
+The combination of human expertise and AI assistance allows for rapid prototyping, robust architecture, and innovative solutions in game engine development.
 
-- Suporte para OpenGL e Vulkan
-- Preparado para NVIDIA DLSS e AMD FSR
-- Sistema de câmera third-person
-- Pipeline de assets
-- Sistema de binding de input
-- Logging avançado
+## ✨ Features
 
-## Requisitos
+### Core Architecture
 
-### Dependências
+- **Modular Design**: Clean separation of concerns with well-defined interfaces
+- **Modern C++20**: Leveraging latest language features for performance and safety
+- **Cross-Platform**: Windows support with Linux/macOS planned
+- **AI-Assisted Development**: Continuous improvement through AI code analysis
 
-- CMake 3.20+
-- C++20 compiler
-- OpenGL 4.6+
-- GLFW3
-- GLM (OpenGL Mathematics)
+### Graphics & Rendering
 
-### Opcional
+- **OpenGL 4.6+**: Modern graphics pipeline with PBR shading
+- **Third-Person Camera**: Professional over-the-shoulder camera system with SpringArm
+- **Shader Management**: Hot-reloadable shaders with automatic compilation
+- **Primitive Rendering**: Built-in shapes for rapid prototyping
 
-- Vulkan SDK (para renderer Vulkan)
-- Lua (para scripting)
+### Physics & Simulation
 
-## Compilação
+- **Dual Backend Strategy**: Support for both Bullet Physics and NVIDIA PhysX
+- **Intelligent Selection**: Automatic backend selection based on hardware capabilities
+- **Character Physics**: Specialized character controller for third-person games
+- **Collision Detection**: Efficient spatial partitioning and broad-phase detection
+
+### Input & Controls
+
+- **Multi-Device Support**: Keyboard, mouse, and gamepad input
+- **Action Mapping**: Flexible input binding system
+- **Mouse Capture**: Professional FPS-style mouse handling for camera control
+- **Fullscreen Toggle**: Seamless switching between windowed and fullscreen modes
+
+### Audio System
+
+- **3D Spatial Audio**: Positional audio with distance attenuation
+- **OpenAL Integration**: Cross-platform audio backend
+- **Resource Management**: Automatic loading and caching of audio assets
+
+## 🚀 Quick Start
+
+### Windows (Recommended)
+
+```cmd
+git clone https://github.com/yourusername/GameEngineKiro.git
+cd GameEngineKiro
+setup_dependencies.bat
+build.bat
+```
+
+### Linux/macOS
 
 ```bash
-mkdir build
-cd build
-cmake ..
-cmake --build .
+git clone https://github.com/yourusername/GameEngineKiro.git
+cd GameEngineKiro
+chmod +x setup_dependencies.sh build.sh
+./setup_dependencies.sh
+./build.sh
 ```
 
-### Opções de Compilação
+## 📖 Documentation
 
-```bash
-# Habilitar Vulkan
-cmake -DENABLE_VULKAN=ON ..
+- **[Setup Guide](docs/setup.md)** - Detailed installation instructions
+- **[Quick Start](docs/quickstart.md)** - Get up and running in minutes
+- **[Physics Strategy](docs/physics-strategy.md)** - Dual backend physics architecture
+- **[API Reference](docs/api-reference.md)** - Complete API documentation
+- **[Architecture](docs/architecture.md)** - Engine design and patterns
 
-# Habilitar DLSS
-cmake -DENABLE_DLSS=ON ..
+## 🎮 Controls
 
-# Habilitar FSR
-cmake -DENABLE_FSR=ON ..
-```
+- **Mouse**: 360° camera rotation (captured by default)
+- **WASD**: Character movement relative to camera
+- **Mouse Wheel**: Zoom in/out
+- **Space**: Jump
+- **ESC**: Toggle mouse capture
+- **F11**: Toggle fullscreen
+- **F1**: Exit game
 
-## Uso Básico
-
-```cpp
-#include "Core/Engine.h"
-#include "Graphics/Camera.h"
-
-using namespace GameEngine;
-
-int main() {
-    Engine engine;
-
-    // Inicializar engine
-    if (!engine.Initialize()) {
-        return -1;
-    }
-
-    // Configurar câmera
-    auto camera = std::make_unique<Camera>(CameraType::Perspective);
-    camera->SetPosition(Math::Vec3(0.0f, 2.0f, 5.0f));
-    camera->SetPerspective(45.0f, 16.0f/9.0f, 0.1f, 1000.0f);
-
-    engine.GetRenderer()->SetCamera(camera.get());
-
-    // Loop principal
-    engine.Run();
-
-    return 0;
-}
-```
-
-## Sistema de Input
-
-```cpp
-// Configurar bindings
-auto* input = engine.GetInput();
-input->BindAction("move_forward", KeyCode::W);
-input->BindAction("jump", KeyCode::Space);
-input->BindAction("fire", MouseButton::Left);
-
-// Verificar input no loop de update
-if (input->IsActionPressed("jump")) {
-    // Player jumped
-}
-
-if (input->IsActionDown("move_forward")) {
-    // Player is moving forward
-}
-```
-
-## Sistema de Recursos
-
-```cpp
-auto* resourceManager = engine.GetResourceManager();
-
-// Carregar assets
-auto texture = resourceManager->Load<Texture>("textures/player.png");
-auto model = resourceManager->Load<Model>("models/character.fbx");
-auto sound = resourceManager->Load<AudioClip>("sounds/footstep.wav");
-```
-
-## Sistema de Física
-
-```cpp
-auto* physics = engine.GetPhysics();
-
-// Criar mundo físico
-auto world = physics->CreateWorld(Math::Vec3(0.0f, -9.81f, 0.0f));
-physics->SetActiveWorld(world);
-
-// Criar rigid body
-RigidBody bodyDesc;
-bodyDesc.position = Math::Vec3(0.0f, 10.0f, 0.0f);
-bodyDesc.mass = 1.0f;
-
-CollisionShape shape;
-shape.type = CollisionShape::Box;
-shape.dimensions = Math::Vec3(1.0f, 1.0f, 1.0f);
-
-uint32_t bodyId = physics->CreateRigidBody(bodyDesc, shape);
-```
-
-## Sistema de Áudio
-
-```cpp
-auto* audio = engine.GetAudio();
-
-// Carregar e reproduzir som
-auto clip = audio->LoadAudioClip("sounds/background_music.ogg");
-uint32_t sourceId = audio->CreateAudioSource();
-
-audio->SetAudioSourcePosition(sourceId, Math::Vec3(0.0f, 0.0f, 0.0f));
-audio->PlayAudioSource(sourceId, clip);
-```
-
-## Estrutura de Diretórios
+## 🏗️ Architecture
 
 ```
 GameEngineKiro/
-├── include/           # Headers do engine
-│   ├── Core/         # Sistema core
-│   ├── Graphics/     # Sistema gráfico
-│   ├── Resource/     # Gerenciamento de recursos
-│   ├── Physics/      # Sistema de física
-│   ├── Audio/        # Sistema de áudio
-│   ├── Input/        # Sistema de input
-│   └── Scripting/    # Sistema de scripting
-├── src/              # Implementações
-├── examples/         # Exemplos de uso
-├── assets/           # Assets do jogo
-└── CMakeLists.txt    # Configuração CMake
+├── include/          # Public headers
+│   ├── Core/        # Engine core systems
+│   ├── Graphics/    # Rendering and graphics
+│   ├── Physics/     # Physics simulation
+│   ├── Audio/       # Audio system
+│   ├── Input/       # Input handling
+│   └── Game/        # Game-specific components
+├── src/             # Implementation files
+├── examples/        # Sample applications
+├── assets/          # Game assets (shaders, textures)
+├── docs/            # Documentation
+└── vcpkg/           # Dependencies (auto-generated)
 ```
 
-## Roadmap
+## 🔧 Dependencies
 
-### Versão 1.0 (Atual)
+### Core Dependencies
 
-- [x] Arquitetura básica do engine
-- [x] Sistema de renderização OpenGL
-- [x] Sistema de input
-- [x] Sistema de áudio básico
-- [x] Sistema de física básico
-- [x] Gerenciamento de recursos
+- **CMake 3.20+**: Build system
+- **C++20 Compiler**: MSVC 2019+, GCC 10+, or Clang 10+
+- **GLFW3**: Window management and input
+- **GLM**: OpenGL mathematics library
+- **OpenGL 4.6+**: Graphics API
 
-### Versão 1.1
+### Optional Dependencies
 
-- [ ] Implementação completa do renderer Vulkan
-- [ ] Sistema de shaders avançado
-- [ ] Carregamento de modelos 3D (FBX, OBJ, GLTF)
-- [ ] Sistema de animação skeletal
+- **Assimp**: 3D model loading
+- **OpenAL**: 3D audio
+- **Bullet3**: Physics simulation
+- **Lua**: Scripting support
+- **nlohmann/json**: JSON parsing
 
-### Versão 1.2
+All dependencies are automatically managed through vcpkg.
 
-- [ ] Suporte DLSS/FSR
-- [ ] Sistema de streaming de mundo aberto
-- [ ] Sistema de IA (pathfinding, behavior trees)
-- [ ] Integração completa com Lua
+## 🎯 Roadmap
 
-### Versão 1.5 (Physics Upgrade)
+### Current (v1.0)
 
-- [ ] Integração NVIDIA PhysX
-- [ ] Sistema de seleção de backend de física (PhysX/Bullet)
-- [ ] Comparação de performance e benchmarks
-- [ ] Abstração cross-backend para física
-- [ ] GPU acceleration com PhysX
-- [ ] Fallback automático para Bullet Physics
+- [x] Core engine architecture
+- [x] OpenGL rendering pipeline
+- [x] Third-person camera system
+- [x] Input management
+- [x] Basic physics (Bullet)
+- [x] Audio system
+- [x] Resource management
 
-### Versão 2.0
+### Next (v1.1)
 
-- [ ] Suporte para consoles
-- [ ] Sistema de networking
-- [ ] Editor visual
-- [ ] Sistema de partículas avançado
+- [ ] NVIDIA PhysX integration
+- [ ] Advanced shader system
+- [ ] 3D model loading (FBX, GLTF)
+- [ ] Animation system
+- [ ] Particle effects
 
-## Contribuição
+### Future (v1.5+)
 
-1. Fork o projeto
-2. Crie uma branch para sua feature (`git checkout -b feature/AmazingFeature`)
-3. Commit suas mudanças (`git commit -m 'Add some AmazingFeature'`)
-4. Push para a branch (`git push origin feature/AmazingFeature`)
-5. Abra um Pull Request
+- [ ] Vulkan renderer
+- [ ] DLSS/FSR support
+- [ ] Networking
+- [ ] Visual editor
+- [ ] Console support
 
-## Licença
+## 🤝 Contributing
 
-Este projeto está licenciado sob a MIT License - veja o arquivo [LICENSE](LICENSE) para detalhes.
+We welcome contributions! This project demonstrates how AI-assisted development can accelerate game engine creation while maintaining code quality.
 
-## Contato
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Add tests if applicable
+5. Submit a pull request
 
-Game Engine Kiro - Desenvolvido para criação de jogos 3D modernos
+## 📄 License
 
-Project Link: [https://github.com/yourusername/GameEngineKiro](https://github.com/yourusername/GameEngineKiro)
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- **AI Development Tools**: This project showcases the power of AI-assisted development
+- **Open Source Community**: Built on the shoulders of amazing open-source libraries
+- **Game Development Community**: Inspired by modern game engine design patterns
+
+---
+
+**Game Engine Kiro** - Where AI meets game development. Built for the future of interactive entertainment.

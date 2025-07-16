@@ -61,7 +61,6 @@ namespace GameEngine {
 
     private:
         std::shared_ptr<PhysicsWorld> m_activeWorld;
-        std::unordered_map<uint32_t, std::unique_ptr<RigidBody>> m_rigidBodies;
         uint32_t m_nextBodyId = 1;
         
 #ifdef GAMEENGINE_HAS_BULLET

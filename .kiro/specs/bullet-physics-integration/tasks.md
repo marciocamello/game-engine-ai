@@ -51,7 +51,7 @@
   - Maintain existing method signatures for API compatibility
   - _Requirements: 1.1, 1.2, 4.1_
 
-- [ ] 6. Implement rigid body creation and management
+- [x] 6. Implement rigid body creation and management
 
   - Replace `CreateRigidBody()` stub to create real btRigidBody objects with collision shapes
   - Implement `DestroyRigidBody()` to properly clean up Bullet Physics resources

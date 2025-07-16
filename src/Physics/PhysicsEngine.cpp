@@ -26,7 +26,9 @@ namespace GameEngine {
     }
 
     void PhysicsEngine::Shutdown() {
-        m_rigidBodies.clear();
+#ifdef GAMEENGINE_HAS_BULLET
+        m_bulletBodies.clear();
+#endif
         m_activeWorld.reset();
         LOG_INFO("Physics Engine shutdown");
     }
@@ -52,17 +54,12 @@ namespace GameEngine {
     uint32_t PhysicsEngine::CreateRigidBody(const RigidBody& bodyDesc, const CollisionShape& shape) {
         uint32_t id = m_nextBodyId++;
         
-        // Store the engine rigid body description
-        auto body = std::make_unique<RigidBody>(bodyDesc);
-        m_rigidBodies[id] = std::move(body);
-        
 #ifdef GAMEENGINE_HAS_BULLET
         if (m_activeWorld) {
             // Create Bullet collision shape
             auto bulletShape = Physics::CollisionShapeFactory::CreateShape(shape);
             if (!bulletShape) {
                 LOG_ERROR("Failed to create collision shape for rigid body");
-                m_rigidBodies.erase(id);
                 return 0;
             }
             
@@ -112,7 +109,6 @@ namespace GameEngine {
                 LOG_DEBUG("Created Bullet rigid body with ID: " + std::to_string(id));
             } else {
                 LOG_ERROR("Active world is not a BulletPhysicsWorld");
-                m_rigidBodies.erase(id);
                 return 0;
             }
         }
@@ -122,13 +118,6 @@ namespace GameEngine {
     }
 
     void PhysicsEngine::DestroyRigidBody(uint32_t bodyId) {
-        // Remove from engine rigid bodies
-        auto engineBodyIt = m_rigidBodies.find(bodyId);
-        if (engineBodyIt == m_rigidBodies.end()) {
-            LOG_WARNING("Attempted to destroy non-existent rigid body with ID: " + std::to_string(bodyId));
-            return;
-        }
-        
 #ifdef GAMEENGINE_HAS_BULLET
         // Remove from Bullet world if it exists
         auto bulletBodyIt = m_bulletBodies.find(bodyId);
@@ -159,24 +148,15 @@ namespace GameEngine {
             
             m_bulletBodies.erase(bulletBodyIt);
             LOG_DEBUG("Destroyed Bullet rigid body with ID: " + std::to_string(bodyId));
+        } else {
+            LOG_WARNING("Attempted to destroy non-existent rigid body with ID: " + std::to_string(bodyId));
         }
+#else
+        LOG_WARNING("Attempted to destroy rigid body but Bullet Physics not available");
 #endif
-        
-        // Remove from engine bodies
-        m_rigidBodies.erase(engineBodyIt);
     }
 
     void PhysicsEngine::SetRigidBodyTransform(uint32_t bodyId, const Math::Vec3& position, const Math::Quat& rotation) {
-        // Update engine rigid body
-        auto engineBodyIt = m_rigidBodies.find(bodyId);
-        if (engineBodyIt == m_rigidBodies.end()) {
-            LOG_WARNING("Attempted to set transform for non-existent rigid body with ID: " + std::to_string(bodyId));
-            return;
-        }
-        
-        engineBodyIt->second->position = position;
-        engineBodyIt->second->rotation = rotation;
-        
 #ifdef GAMEENGINE_HAS_BULLET
         // Update Bullet rigid body
         auto bulletBodyIt = m_bulletBodies.find(bodyId);
@@ -200,7 +180,11 @@ namespace GameEngine {
                 
                 LOG_DEBUG("Updated transform for rigid body with ID: " + std::to_string(bodyId));
             }
+        } else {
+            LOG_WARNING("Attempted to set transform for non-existent rigid body with ID: " + std::to_string(bodyId));
         }
+#else
+        LOG_WARNING("Attempted to set transform but Bullet Physics not available");
 #endif
     }
 

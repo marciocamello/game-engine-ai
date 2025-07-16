@@ -59,12 +59,12 @@
   - Remove placeholder `m_rigidBodies` vector, use Bullet's world management
   - _Requirements: 1.2, 5.1, 5.2_
 
-- [ ] 7. Implement rigid body transform and force operations
+- [x] 7. Implement rigid body transform and force operations
 
-  - Replace `SetRigidBodyTransform()` stub with btRigidBody transform methods
-  - Replace `ApplyForce()` and `ApplyImpulse()` stubs with Bullet Physics force application
-  - Add proper error handling for invalid body IDs
-  - Remove placeholder comments, add real implementations
+  - Replace `SetRigidBodyTransform()` stub with btRigidBody transform methods ✓
+  - Replace `ApplyForce()` and `ApplyImpulse()` stubs with Bullet Physics force application ✓
+  - Add proper error handling for invalid body IDs ✓
+  - Remove placeholder comments, add real implementations ✓
   - _Requirements: 1.2, 2.2, 4.1_
 
 - [ ] 8. Implement physics queries (raycast and overlap)

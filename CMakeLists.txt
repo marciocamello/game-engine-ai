@@ -4,6 +4,12 @@ project(GameEngineKiro VERSION 1.0.0 LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Force compile commands generation for clangd
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+if(MSVC)
+    set(CMAKE_EXPORT_COMPILE_COMMANDS ON CACHE BOOL "" FORCE)
+endif()
+
 # Engine configuration
 option(ENABLE_VULKAN "Enable Vulkan renderer" OFF)
 option(ENABLE_OPENGL "Enable OpenGL renderer" ON)

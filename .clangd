@@ -1,0 +1,47 @@
+CompileFlags:
+  Add:
+    - -std=c++20
+    - -Wall
+    - -Wextra
+    - -DUNICODE
+    - -D_UNICODE
+    - -D_WIN32
+    - -D_WIN64
+    - -DGLM_ENABLE_EXPERIMENTAL
+    - -DGAMEENGINE_HAS_ASSIMP
+    - -DGAMEENGINE_HAS_OPENAL
+    - -DGAMEENGINE_HAS_BULLET
+    - -DGAMEENGINE_HAS_LUA
+    - -DGAMEENGINE_HAS_JSON
+    - -DGAMEENGINE_HAS_FMT
+    - -I${workspaceFolder}/include
+    - -I${workspaceFolder}/vcpkg_installed/x64-windows/include
+    - -I${workspaceFolder}/third_party
+  Remove:
+    - -W*
+    - -fcoroutines-ts
+
+Index:
+  Background: Build
+  StandardLibrary: Yes
+
+InlayHints:
+  Enabled: Yes
+  ParameterNames: Yes
+  DeducedTypes: Yes
+
+Hover:
+  ShowAKA: Yes
+
+Diagnostics:
+  ClangTidy:
+    Add:
+      - readability-*
+      - performance-*
+      - modernize-*
+    Remove:
+      - readability-magic-numbers
+      - readability-identifier-length
+
+Completion:
+  AllScopes: Yes

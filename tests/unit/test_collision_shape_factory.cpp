@@ -167,4 +167,72 @@ TEST_F(CollisionShapeFactoryTest, CreateShape_VeryLargeDimensions_ReturnsValidSh
     EXPECT_EQ(shape->getShapeType(), SPHERE_SHAPE_PROXYTYPE);
 }
 
+// Test Direct Static Method Calls (as per task requirements)
+TEST_F(CollisionShapeFactoryTest, CreateBoxShape_DirectCall_ValidDimensions) {
+    Math::Vec3 dimensions(4.0f, 6.0f, 8.0f);
+    
+    auto shape = CollisionShapeFactory::CreateBoxShape(dimensions);
+    
+    ASSERT_NE(shape, nullptr);
+    EXPECT_EQ(shape->getShapeType(), BOX_SHAPE_PROXYTYPE);
+    
+    btVector3 halfExtents = shape->getHalfExtentsWithMargin();
+    EXPECT_FLOAT_EQ(halfExtents.x(), 2.0f);
+    EXPECT_FLOAT_EQ(halfExtents.y(), 3.0f);
+    EXPECT_FLOAT_EQ(halfExtents.z(), 4.0f);
+}
+
+TEST_F(CollisionShapeFactoryTest, CreateSphereShape_DirectCall_ValidRadius) {
+    float radius = 3.5f;
+    
+    auto shape = CollisionShapeFactory::CreateSphereShape(radius);
+    
+    ASSERT_NE(shape, nullptr);
+    EXPECT_EQ(shape->getShapeType(), SPHERE_SHAPE_PROXYTYPE);
+    EXPECT_FLOAT_EQ(shape->getRadius(), 3.5f);
+}
+
+TEST_F(CollisionShapeFactoryTest, CreateCapsuleShape_DirectCall_ValidParameters) {
+    float radius = 1.5f;
+    float height = 4.0f;
+    
+    auto shape = CollisionShapeFactory::CreateCapsuleShape(radius, height);
+    
+    ASSERT_NE(shape, nullptr);
+    EXPECT_EQ(shape->getShapeType(), CAPSULE_SHAPE_PROXYTYPE);
+    EXPECT_FLOAT_EQ(shape->getRadius(), 1.5f);
+    EXPECT_FLOAT_EQ(shape->getHalfHeight(), 2.0f); // Bullet stores half-height
+}
+
+TEST_F(CollisionShapeFactoryTest, CreateBoxShape_DirectCall_ZeroDimensions) {
+    Math::Vec3 dimensions(0.0f, 1.0f, 1.0f);
+    
+    auto shape = CollisionShapeFactory::CreateBoxShape(dimensions);
+    
+    // Should still create shape but with zero dimension (Bullet handles this)
+    ASSERT_NE(shape, nullptr);
+    EXPECT_EQ(shape->getShapeType(), BOX_SHAPE_PROXYTYPE);
+}
+
+TEST_F(CollisionShapeFactoryTest, CreateSphereShape_DirectCall_ZeroRadius) {
+    float radius = 0.0f;
+    
+    auto shape = CollisionShapeFactory::CreateSphereShape(radius);
+    
+    // Should still create shape but with zero radius (Bullet handles this)
+    ASSERT_NE(shape, nullptr);
+    EXPECT_EQ(shape->getShapeType(), SPHERE_SHAPE_PROXYTYPE);
+}
+
+TEST_F(CollisionShapeFactoryTest, CreateCapsuleShape_DirectCall_ZeroParameters) {
+    float radius = 0.0f;
+    float height = 0.0f;
+    
+    auto shape = CollisionShapeFactory::CreateCapsuleShape(radius, height);
+    
+    // Should still create shape but with zero parameters (Bullet handles this)
+    ASSERT_NE(shape, nullptr);
+    EXPECT_EQ(shape->getShapeType(), CAPSULE_SHAPE_PROXYTYPE);
+}
+
 #endif // GAMEENGINE_HAS_BULLET

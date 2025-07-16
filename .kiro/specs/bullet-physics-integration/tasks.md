@@ -23,7 +23,7 @@
   - Verify compilation with Windows/MSVC toolchain
   - _Requirements: 1.2, 1.3_
 
-- [ ] 3. Implement collision shape factory
+- [x] 3. Implement collision shape factory
 
   - Create CollisionShapeFactory class with static methods for each shape type
   - Implement CreateBoxShape, CreateSphereShape, CreateCapsuleShape methods

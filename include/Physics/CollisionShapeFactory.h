@@ -13,12 +13,12 @@ namespace GameEngine {
             // Main factory method to create Bullet collision shapes from engine CollisionShape
             static std::unique_ptr<btCollisionShape> CreateShape(const CollisionShape& desc);
 
-        private:
-            // Specific shape creation methods
+            // Specific shape creation methods (public as per task requirements)
             static std::unique_ptr<btBoxShape> CreateBoxShape(const Math::Vec3& dimensions);
             static std::unique_ptr<btSphereShape> CreateSphereShape(float radius);
             static std::unique_ptr<btCapsuleShape> CreateCapsuleShape(float radius, float height);
-            
+
+        private:
             // Helper method to validate shape parameters
             static bool ValidateShapeParameters(const CollisionShape& desc);
         };

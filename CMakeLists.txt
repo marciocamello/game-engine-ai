@@ -32,10 +32,11 @@ find_package(glad REQUIRED)
 # Optional packages
 find_package(assimp QUIET)
 find_package(OpenAL QUIET)
-find_package(Bullet QUIET)
+find_package(Bullet CONFIG REQUIRED)
 find_package(Lua QUIET)
 find_package(nlohmann_json QUIET)
 find_package(fmt QUIET)
+find_package(GTest QUIET)
 
 # Engine source files
 file(GLOB_RECURSE ENGINE_SOURCES
@@ -96,8 +97,11 @@ if(OpenAL_FOUND)
 endif()
 
 if(Bullet_FOUND)
-    target_link_libraries(GameEngineKiro PUBLIC ${BULLET_LIBRARIES})
-    target_include_directories(GameEngineKiro PUBLIC ${BULLET_INCLUDE_DIRS})
+    target_link_libraries(GameEngineKiro PUBLIC 
+        BulletDynamics
+        BulletCollision
+        LinearMath
+    )
     target_compile_definitions(GameEngineKiro PUBLIC GAMEENGINE_HAS_BULLET)
 endif()
 
@@ -143,6 +147,100 @@ add_executable(GameExample
 )
 
 target_link_libraries(GameExample PRIVATE GameEngineKiro)
+
+# Integration test for Bullet Physics
+add_executable(BulletIntegrationTest
+    tests/integration/test_bullet_integration.cpp
+)
+
+# Integration test for Bullet conversion utilities
+add_executable(BulletConversionTest
+    tests/integration/test_bullet_conversion.cpp
+)
+
+# Simple integration test for Bullet conversion utilities
+add_executable(BulletUtilsSimpleTest
+    tests/integration/test_bullet_utils_simple.cpp
+)
+
+# Simple integration test for CollisionShapeFactory
+add_executable(CollisionShapeFactorySimpleTest
+    tests/integration/test_collision_shape_factory_simple.cpp
+)
+
+target_link_libraries(BulletIntegrationTest PRIVATE GameEngineKiro)
+target_link_libraries(BulletConversionTest PRIVATE GameEngineKiro)
+target_link_libraries(BulletUtilsSimpleTest PRIVATE GameEngineKiro)
+target_link_libraries(CollisionShapeFactorySimpleTest PRIVATE GameEngineKiro)
+
+if(Bullet_FOUND)
+    target_link_libraries(BulletIntegrationTest PRIVATE 
+        BulletDynamics
+        BulletCollision
+        LinearMath
+    )
+    
+    target_link_libraries(BulletConversionTest PRIVATE 
+        BulletDynamics
+        BulletCollision
+        LinearMath
+    )
+    
+    target_link_libraries(BulletUtilsSimpleTest PRIVATE 
+        BulletDynamics
+        BulletCollision
+        LinearMath
+    )
+    
+    target_link_libraries(CollisionShapeFactorySimpleTest PRIVATE 
+        BulletDynamics
+        BulletCollision
+        LinearMath
+    )
+endif()
+
+# Unit tests
+if(GTest_FOUND)
+    enable_testing()
+    
+    add_executable(BulletUtilsTest
+        tests/unit/test_bullet_utils.cpp
+    )
+    
+    target_link_libraries(BulletUtilsTest PRIVATE 
+        GameEngineKiro
+        GTest::gtest_main
+    )
+    
+    if(Bullet_FOUND)
+        target_link_libraries(BulletUtilsTest PRIVATE 
+            BulletDynamics
+            BulletCollision
+            LinearMath
+        )
+    endif()
+    
+    add_executable(CollisionShapeFactoryTest
+        tests/unit/test_collision_shape_factory.cpp
+    )
+    
+    target_link_libraries(CollisionShapeFactoryTest PRIVATE 
+        GameEngineKiro
+        GTest::gtest_main
+    )
+    
+    if(Bullet_FOUND)
+        target_link_libraries(CollisionShapeFactoryTest PRIVATE 
+            BulletDynamics
+            BulletCollision
+            LinearMath
+        )
+    endif()
+    
+    include(GoogleTest)
+    gtest_discover_tests(BulletUtilsTest)
+    gtest_discover_tests(CollisionShapeFactoryTest)
+endif()
 
 # Copy assets to build directory
 add_custom_command(TARGET GameExample POST_BUILD

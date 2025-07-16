@@ -9,7 +9,8 @@
         "glad",
         "stb",
         "nlohmann-json",
-        "fmt"
+        "fmt",
+        "gtest"
     ],
     "features": {
         "full": {

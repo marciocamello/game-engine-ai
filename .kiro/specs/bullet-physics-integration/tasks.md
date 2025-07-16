@@ -33,7 +33,7 @@
 
 ## Phase 2: Core Physics Implementation
 
-- [ ] 4. Create BulletPhysicsWorld wrapper class
+- [x] 4. Create BulletPhysicsWorld wrapper class
 
   - Create `include/Physics/BulletPhysicsWorld.h` and `src/Physics/BulletPhysicsWorld.cpp`
   - Implement BulletPhysicsWorld inheriting from PhysicsWorld

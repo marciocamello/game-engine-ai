@@ -63,12 +63,12 @@ namespace GameEngine {
     class PhysicsWorld {
     public:
         PhysicsWorld(const Math::Vec3& gravity);
-        ~PhysicsWorld();
+        virtual ~PhysicsWorld();
 
-        void SetGravity(const Math::Vec3& gravity) { m_gravity = gravity; }
-        const Math::Vec3& GetGravity() const { return m_gravity; }
+        virtual void SetGravity(const Math::Vec3& gravity) { m_gravity = gravity; }
+        virtual const Math::Vec3& GetGravity() const { return m_gravity; }
 
-        void Step(float deltaTime);
+        virtual void Step(float deltaTime);
 
     private:
         Math::Vec3 m_gravity;

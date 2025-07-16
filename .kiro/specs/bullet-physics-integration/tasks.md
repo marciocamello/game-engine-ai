@@ -43,7 +43,7 @@
   - Test compilation with `.\build.bat` on Windows
   - _Requirements: 1.1, 1.2, 5.3_
 
-- [ ] 5. Replace PhysicsEngine placeholder methods with Bullet implementations
+- [x] 5. Replace PhysicsEngine placeholder methods with Bullet implementations
 
   - Replace `PhysicsEngine::Initialize()` stub with real Bullet Physics initialization
   - Update `CreateWorld()` to return BulletPhysicsWorld instances instead of stub PhysicsWorld

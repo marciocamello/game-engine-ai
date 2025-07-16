@@ -3,6 +3,11 @@
 #include "Core/Math.h"
 #include <vector>
 #include <memory>
+#include <unordered_map>
+
+#ifdef GAMEENGINE_HAS_BULLET
+#include <btBulletDynamicsCommon.h>
+#endif
 
 namespace GameEngine {
     struct RigidBody {
@@ -56,8 +61,13 @@ namespace GameEngine {
 
     private:
         std::shared_ptr<PhysicsWorld> m_activeWorld;
-        std::vector<std::unique_ptr<RigidBody>> m_rigidBodies;
+        std::unordered_map<uint32_t, std::unique_ptr<RigidBody>> m_rigidBodies;
         uint32_t m_nextBodyId = 1;
+        
+#ifdef GAMEENGINE_HAS_BULLET
+        // Mapping from body ID to Bullet rigid body for direct access
+        std::unordered_map<uint32_t, btRigidBody*> m_bulletBodies;
+#endif
     };
 
     class PhysicsWorld {

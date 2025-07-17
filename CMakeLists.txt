@@ -192,12 +192,18 @@ add_executable(PhysicsConfigurationTest
     tests/integration/test_physics_configuration.cpp
 )
 
+# Movement component comparison test
+add_executable(MovementComponentComparisonTest
+    tests/integration/test_movement_component_comparison.cpp
+)
+
 target_link_libraries(BulletIntegrationTest PRIVATE GameEngineKiro)
 target_link_libraries(BulletConversionTest PRIVATE GameEngineKiro)
 target_link_libraries(BulletUtilsSimpleTest PRIVATE GameEngineKiro)
 target_link_libraries(CollisionShapeFactorySimpleTest PRIVATE GameEngineKiro)
 target_link_libraries(PhysicsQueriesTest PRIVATE GameEngineKiro)
 target_link_libraries(PhysicsConfigurationTest PRIVATE GameEngineKiro)
+target_link_libraries(MovementComponentComparisonTest PRIVATE GameEngineKiro)
 
 if(Bullet_FOUND)
     target_link_libraries(BulletIntegrationTest PRIVATE 

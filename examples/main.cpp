@@ -16,8 +16,12 @@ using namespace GameEngine;
 class GameApplication {
 public:
   enum class CharacterType {
-    Physics,      // Original Character with full physics
-    Hybrid        // New CharacterController with hybrid approach
+    CharacterDeterministic,   // Character with DeterministicMovementComponent
+    CharacterHybrid,          // Character with HybridMovementComponent  
+    CharacterPhysics,         // Character with PhysicsMovementComponent
+    ControllerHybrid,         // CharacterController with HybridMovementComponent
+    ControllerDeterministic,  // CharacterController with DeterministicMovementComponent
+    ControllerPhysics         // CharacterController with PhysicsMovementComponent
   };
 
   GameApplication() = default;
@@ -86,8 +90,12 @@ public:
     LOG_INFO("Controls:");
     LOG_INFO("  WASD - Move character");
     LOG_INFO("  Space - Jump");
-    LOG_INFO("  1 - Switch to Physics Character (blue, full physics)");
-    LOG_INFO("  2 - Switch to Hybrid Character Controller (red, collision only)");
+    LOG_INFO("  1 - Character + DeterministicMovement (blue, precise control)");
+    LOG_INFO("  2 - Character + HybridMovement (blue, physics collision + direct control)");
+    LOG_INFO("  3 - Character + PhysicsMovement (blue, full physics simulation)");
+    LOG_INFO("  4 - CharacterController + HybridMovement (red, physics collision + direct control)");
+    LOG_INFO("  5 - CharacterController + DeterministicMovement (red, precise control)");
+    LOG_INFO("  6 - CharacterController + PhysicsMovement (red, full physics simulation)");
     LOG_INFO("  ESC - Toggle mouse capture");
     LOG_INFO("  F1 - Exit");
     return true;
@@ -104,17 +112,42 @@ public:
     auto *input = m_engine.GetInput();
     auto *window = m_engine.GetRenderer()->GetWindow();
 
-    // Character switching
+    // Character switching - always switch regardless of movement state
     if (input->IsKeyPressed(KeyCode::Num1)) {
-      m_activeCharacter = CharacterType::Physics;
+      m_activeCharacter = CharacterType::CharacterDeterministic;
+      m_character->SwitchToDeterministicMovement();
       m_camera->SetTarget(m_character.get());
-      LOG_INFO("Switched to Physics Character (blue, full physics simulation)");
+      LOG_INFO("Switched to Character + DeterministicMovement (blue, precise control)");
     }
     if (input->IsKeyPressed(KeyCode::Num2)) {
-      m_activeCharacter = CharacterType::Hybrid;
-      // Keep the same camera system, but we'll manually sync the Character position
-      // with CharacterController position so the camera follows correctly
-      LOG_INFO("Switched to Hybrid CharacterController (red, collision detection only)");
+      m_activeCharacter = CharacterType::CharacterHybrid;
+      m_character->SwitchToHybridMovement();
+      m_camera->SetTarget(m_character.get());
+      LOG_INFO("Switched to Character + HybridMovement (blue, physics collision + direct control)");
+    }
+    if (input->IsKeyPressed(KeyCode::Num3)) {
+      m_activeCharacter = CharacterType::CharacterPhysics;
+      m_character->SwitchToPhysicsMovement();
+      m_camera->SetTarget(m_character.get());
+      LOG_INFO("Switched to Character + PhysicsMovement (blue, full physics simulation)");
+    }
+    if (input->IsKeyPressed(KeyCode::Num4)) {
+      m_activeCharacter = CharacterType::ControllerHybrid;
+      m_characterController->SwitchToHybridMovement();
+      m_camera->SetTarget(m_character.get()); // Camera still follows Character for consistency
+      LOG_INFO("Switched to CharacterController + HybridMovement (red, physics collision + direct control)");
+    }
+    if (input->IsKeyPressed(KeyCode::Num5)) {
+      m_activeCharacter = CharacterType::ControllerDeterministic;
+      m_characterController->SwitchToDeterministicMovement();
+      m_camera->SetTarget(m_character.get()); // Camera still follows Character for consistency
+      LOG_INFO("Switched to CharacterController + DeterministicMovement (red, precise control)");
+    }
+    if (input->IsKeyPressed(KeyCode::Num6)) {
+      m_activeCharacter = CharacterType::ControllerPhysics;
+      m_characterController->SwitchToPhysicsMovement();
+      m_camera->SetTarget(m_character.get()); // Camera still follows Character for consistency
+      LOG_INFO("Switched to CharacterController + PhysicsMovement (red, full physics simulation)");
     }
 
     // ESC to release mouse cursor (for debugging/exiting)
@@ -155,20 +188,29 @@ public:
     }
 
     // Update active character
-    if (m_activeCharacter == CharacterType::Physics) {
-      m_character->Update(deltaTime, m_engine.GetInput(), m_camera.get());
-      m_camera->Update(deltaTime, m_engine.GetInput());
-    } else {
-      // Update CharacterController WITH camera system so it can rotate correctly
-      m_characterController->Update(deltaTime, m_engine.GetInput(), m_camera.get());
-      
-      // TRICK: Sync Character position with CharacterController so camera follows correctly
-      // This way the ThirdPersonCameraSystem works normally
-      m_character->SetPosition(m_characterController->GetPosition());
-      m_character->SetRotation(m_characterController->GetRotation());
-      
-      // Update camera normally (it follows the Character which now has CharacterController's position)
-      m_camera->Update(deltaTime, m_engine.GetInput());
+    switch (m_activeCharacter) {
+      case CharacterType::CharacterDeterministic:
+      case CharacterType::CharacterHybrid:
+      case CharacterType::CharacterPhysics:
+        // Update Character with its movement component
+        m_character->Update(deltaTime, m_engine.GetInput(), m_camera.get());
+        m_camera->Update(deltaTime, m_engine.GetInput());
+        break;
+        
+      case CharacterType::ControllerHybrid:
+      case CharacterType::ControllerDeterministic:
+      case CharacterType::ControllerPhysics:
+        // Update CharacterController WITH camera system so it can rotate correctly
+        m_characterController->Update(deltaTime, m_engine.GetInput(), m_camera.get());
+        
+        // TRICK: Sync Character position with CharacterController so camera follows correctly
+        // This way the ThirdPersonCameraSystem works normally
+        m_character->SetPosition(m_characterController->GetPosition());
+        m_character->SetRotation(m_characterController->GetRotation());
+        
+        // Update camera normally (it follows the Character which now has CharacterController's position)
+        m_camera->Update(deltaTime, m_engine.GetInput());
+        break;
     }
   }
 
@@ -219,10 +261,18 @@ private:
     DrawGrid();
 
     // Draw active character
-    if (m_activeCharacter == CharacterType::Physics) {
-      m_character->Render(m_primitiveRenderer.get());
-    } else {
-      m_characterController->Render(m_primitiveRenderer.get());
+    switch (m_activeCharacter) {
+      case CharacterType::CharacterDeterministic:
+      case CharacterType::CharacterHybrid:
+      case CharacterType::CharacterPhysics:
+        m_character->Render(m_primitiveRenderer.get());
+        break;
+        
+      case CharacterType::ControllerHybrid:
+      case CharacterType::ControllerDeterministic:
+      case CharacterType::ControllerPhysics:
+        m_characterController->Render(m_primitiveRenderer.get());
+        break;
     }
   }
 
@@ -276,7 +326,7 @@ private:
   std::unique_ptr<CharacterController> m_characterController;
   std::unique_ptr<PrimitiveRenderer> m_primitiveRenderer;
   
-  CharacterType m_activeCharacter = CharacterType::Physics; // Start with physics character
+  CharacterType m_activeCharacter = CharacterType::CharacterDeterministic; // Start with Character + DeterministicMovement
 };
 
 int main() {

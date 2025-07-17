@@ -27,6 +27,15 @@ namespace GameEngine {
         LOG_DEBUG("Physics configuration - TimeStep: " + std::to_string(config.timeStep) + 
                  ", MaxSubSteps: " + std::to_string(config.maxSubSteps) + 
                  ", SolverIterations: " + std::to_string(config.solverIterations));
+        
+        // Create and set default physics world
+        m_activeWorld = CreateWorld(config);
+        if (!m_activeWorld) {
+            LOG_ERROR("Failed to create default physics world");
+            return false;
+        }
+        
+        LOG_INFO("Default physics world created and activated");
         return true;
 #else
         LOG_WARNING("Physics Engine initialized without Bullet Physics support");
@@ -37,6 +46,7 @@ namespace GameEngine {
     void PhysicsEngine::Shutdown() {
 #ifdef GAMEENGINE_HAS_BULLET
         m_bulletBodies.clear();
+        m_bulletGhostObjects.clear();
 #endif
         m_activeWorld.reset();
         LOG_INFO("Physics Engine shutdown");
@@ -329,6 +339,36 @@ namespace GameEngine {
 #endif
     }
 
+    void PhysicsEngine::SetLinearDamping(uint32_t bodyId, float damping) {
+#ifdef GAMEENGINE_HAS_BULLET
+        auto bulletBodyIt = m_bulletBodies.find(bodyId);
+        if (bulletBodyIt != m_bulletBodies.end()) {
+            btRigidBody* bulletBody = bulletBodyIt->second;
+            if (bulletBody && !bulletBody->isStaticObject()) {
+                bulletBody->setDamping(damping, bulletBody->getAngularDamping());
+                LOG_DEBUG("Set linear damping for rigid body with ID: " + std::to_string(bodyId) + " to " + std::to_string(damping));
+            }
+        } else {
+            LOG_WARNING("Attempted to set linear damping for non-existent rigid body with ID: " + std::to_string(bodyId));
+        }
+#endif
+    }
+
+    void PhysicsEngine::SetAngularDamping(uint32_t bodyId, float damping) {
+#ifdef GAMEENGINE_HAS_BULLET
+        auto bulletBodyIt = m_bulletBodies.find(bodyId);
+        if (bulletBodyIt != m_bulletBodies.end()) {
+            btRigidBody* bulletBody = bulletBodyIt->second;
+            if (bulletBody && !bulletBody->isStaticObject()) {
+                bulletBody->setDamping(bulletBody->getLinearDamping(), damping);
+                LOG_DEBUG("Set angular damping for rigid body with ID: " + std::to_string(bodyId) + " to " + std::to_string(damping));
+            }
+        } else {
+            LOG_WARNING("Attempted to set angular damping for non-existent rigid body with ID: " + std::to_string(bodyId));
+        }
+#endif
+    }
+
     bool PhysicsEngine::GetRigidBodyTransform(uint32_t bodyId, Math::Vec3& position, Math::Quat& rotation) {
 #ifdef GAMEENGINE_HAS_BULLET
         auto bulletBodyIt = m_bulletBodies.find(bodyId);
@@ -542,6 +582,216 @@ namespace GameEngine {
         LOG_DEBUG("Overlap sphere found " + std::to_string(overlappingBodies.size()) + " overlapping bodies");
 #else
         LOG_WARNING("Overlap sphere not supported: Bullet Physics not available");
+#endif
+        
+        return overlappingBodies;
+    }
+
+    PhysicsEngine::SweepHit PhysicsEngine::SweepCapsule(const Math::Vec3& from, const Math::Vec3& to, float radius, float height) {
+        SweepHit result;
+        
+#ifdef GAMEENGINE_HAS_BULLET
+        if (!m_activeWorld) {
+            LOG_WARNING("Cannot perform capsule sweep: No active physics world");
+            return result;
+        }
+        
+        auto bulletWorldPtr = std::dynamic_pointer_cast<BulletPhysicsWorld>(m_activeWorld);
+        if (!bulletWorldPtr) {
+            LOG_WARNING("Cannot perform capsule sweep: Active world is not a BulletPhysicsWorld");
+            return result;
+        }
+        
+        btDiscreteDynamicsWorld* bulletWorld = bulletWorldPtr->GetBulletWorld();
+        if (!bulletWorld) {
+            LOG_WARNING("Cannot perform capsule sweep: Bullet world is null");
+            return result;
+        }
+        
+        // Create capsule shape for sweep test
+        btCapsuleShape capsuleShape(radius, height);
+        
+        // Create transforms for start and end positions
+        btTransform fromTransform, toTransform;
+        fromTransform.setIdentity();
+        toTransform.setIdentity();
+        fromTransform.setOrigin(Physics::BulletUtils::ToBullet(from));
+        toTransform.setOrigin(Physics::BulletUtils::ToBullet(to));
+        
+        // Perform convex sweep test
+        btCollisionWorld::ClosestConvexResultCallback sweepCallback(fromTransform.getOrigin(), toTransform.getOrigin());
+        bulletWorld->convexSweepTest(&capsuleShape, fromTransform, toTransform, sweepCallback);
+        
+        if (sweepCallback.hasHit()) {
+            // Find the body ID that corresponds to this Bullet rigid body
+            const btRigidBody* hitBody = btRigidBody::upcast(sweepCallback.m_hitCollisionObject);
+            if (hitBody) {
+                // Search for the body ID in our mapping
+                for (const auto& pair : m_bulletBodies) {
+                    if (pair.second == hitBody) {
+                        result.hasHit = true;
+                        result.bodyId = pair.first;
+                        result.point = Physics::BulletUtils::FromBullet(sweepCallback.m_hitPointWorld);
+                        result.normal = Physics::BulletUtils::FromBullet(sweepCallback.m_hitNormalWorld);
+                        result.fraction = sweepCallback.m_closestHitFraction;
+                        result.distance = glm::length(to - from) * result.fraction;
+                        
+                        LOG_DEBUG("Capsule sweep hit rigid body with ID: " + std::to_string(result.bodyId) + 
+                                 " at fraction: " + std::to_string(result.fraction));
+                        break;
+                    }
+                }
+            }
+        }
+        
+        return result;
+#else
+        LOG_WARNING("Capsule sweep not supported: Bullet Physics not available");
+        return result;
+#endif
+    }
+
+    uint32_t PhysicsEngine::CreateGhostObject(const CollisionShape& shape, const Math::Vec3& position) {
+        uint32_t id = m_nextBodyId++;
+        
+#ifdef GAMEENGINE_HAS_BULLET
+        if (m_activeWorld) {
+            // Create Bullet collision shape
+            auto bulletShape = Physics::CollisionShapeFactory::CreateShape(shape);
+            if (!bulletShape) {
+                LOG_ERROR("Failed to create collision shape for ghost object");
+                return 0;
+            }
+            
+            // Create ghost object
+            auto ghostObject = std::make_unique<btGhostObject>();
+            ghostObject->setCollisionShape(bulletShape.release());
+            
+            // Set initial transform
+            btTransform transform;
+            transform.setIdentity();
+            transform.setOrigin(Physics::BulletUtils::ToBullet(position));
+            ghostObject->setWorldTransform(transform);
+            
+            // Set collision flags for ghost object
+            ghostObject->setCollisionFlags(btCollisionObject::CF_NO_CONTACT_RESPONSE);
+            
+            // Add to the world
+            auto bulletWorldPtr = std::dynamic_pointer_cast<BulletPhysicsWorld>(m_activeWorld);
+            if (bulletWorldPtr) {
+                btDiscreteDynamicsWorld* bulletWorld = bulletWorldPtr->GetBulletWorld();
+                if (bulletWorld) {
+                    btGhostObject* rawGhostPtr = ghostObject.release();
+                    bulletWorld->addCollisionObject(rawGhostPtr, btBroadphaseProxy::SensorTrigger, 
+                                                   btBroadphaseProxy::AllFilter & ~btBroadphaseProxy::SensorTrigger);
+                    m_bulletGhostObjects[id] = rawGhostPtr;
+                    LOG_DEBUG("Created Bullet ghost object with ID: " + std::to_string(id));
+                } else {
+                    LOG_ERROR("Bullet world is null");
+                    return 0;
+                }
+            } else {
+                LOG_ERROR("Active world is not a BulletPhysicsWorld");
+                return 0;
+            }
+        }
+#endif
+        
+        return id;
+    }
+
+    void PhysicsEngine::DestroyGhostObject(uint32_t ghostId) {
+#ifdef GAMEENGINE_HAS_BULLET
+        auto ghostIt = m_bulletGhostObjects.find(ghostId);
+        if (ghostIt != m_bulletGhostObjects.end()) {
+            btGhostObject* ghostObject = ghostIt->second;
+            
+            // Remove from the world
+            auto bulletWorldPtr = std::dynamic_pointer_cast<BulletPhysicsWorld>(m_activeWorld);
+            if (bulletWorldPtr) {
+                btDiscreteDynamicsWorld* bulletWorld = bulletWorldPtr->GetBulletWorld();
+                if (bulletWorld) {
+                    bulletWorld->removeCollisionObject(ghostObject);
+                }
+            }
+            
+            // Clean up the ghost object and its components
+            if (ghostObject) {
+                // Delete collision shape
+                if (ghostObject->getCollisionShape()) {
+                    delete ghostObject->getCollisionShape();
+                }
+                
+                // Delete the ghost object itself
+                delete ghostObject;
+            }
+            
+            m_bulletGhostObjects.erase(ghostIt);
+            LOG_DEBUG("Destroyed Bullet ghost object with ID: " + std::to_string(ghostId));
+        } else {
+            LOG_WARNING("Attempted to destroy non-existent ghost object with ID: " + std::to_string(ghostId));
+        }
+#else
+        LOG_WARNING("Attempted to destroy ghost object but Bullet Physics not available");
+#endif
+    }
+
+    void PhysicsEngine::SetGhostObjectTransform(uint32_t ghostId, const Math::Vec3& position, const Math::Quat& rotation) {
+#ifdef GAMEENGINE_HAS_BULLET
+        auto ghostIt = m_bulletGhostObjects.find(ghostId);
+        if (ghostIt != m_bulletGhostObjects.end()) {
+            btGhostObject* ghostObject = ghostIt->second;
+            if (ghostObject) {
+                btTransform transform = Physics::BulletUtils::ToBullet(position, rotation);
+                ghostObject->setWorldTransform(transform);
+                LOG_DEBUG("Updated transform for ghost object with ID: " + std::to_string(ghostId));
+            }
+        } else {
+            LOG_WARNING("Attempted to set transform for non-existent ghost object with ID: " + std::to_string(ghostId));
+        }
+#else
+        LOG_WARNING("Attempted to set ghost object transform but Bullet Physics not available");
+#endif
+    }
+
+    std::vector<OverlapResult> PhysicsEngine::GetGhostObjectOverlaps(uint32_t ghostId) {
+        std::vector<OverlapResult> overlappingBodies;
+        
+#ifdef GAMEENGINE_HAS_BULLET
+        auto ghostIt = m_bulletGhostObjects.find(ghostId);
+        if (ghostIt != m_bulletGhostObjects.end()) {
+            btGhostObject* ghostObject = ghostIt->second;
+            if (ghostObject) {
+                // Get overlapping objects from the ghost object
+                int numOverlapping = ghostObject->getNumOverlappingObjects();
+                
+                for (int i = 0; i < numOverlapping; ++i) {
+                    const btCollisionObject* overlappingObject = ghostObject->getOverlappingObject(i);
+                    const btRigidBody* overlappingBody = btRigidBody::upcast(overlappingObject);
+                    
+                    if (overlappingBody) {
+                        // Find the body ID in our mapping
+                        for (const auto& pair : m_bulletBodies) {
+                            if (pair.second == overlappingBody) {
+                                OverlapResult result;
+                                result.bodyId = pair.first;
+                                // Note: Ghost objects don't provide detailed contact info
+                                // For detailed collision info, use contact tests
+                                overlappingBodies.push_back(result);
+                                break;
+                            }
+                        }
+                    }
+                }
+                
+                LOG_DEBUG("Ghost object " + std::to_string(ghostId) + " has " + 
+                         std::to_string(overlappingBodies.size()) + " overlapping bodies");
+            }
+        } else {
+            LOG_WARNING("Attempted to get overlaps for non-existent ghost object with ID: " + std::to_string(ghostId));
+        }
+#else
+        LOG_WARNING("Ghost object overlaps not supported: Bullet Physics not available");
 #endif
         
         return overlappingBodies;

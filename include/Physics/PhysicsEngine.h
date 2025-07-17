@@ -7,6 +7,7 @@
 
 #ifdef GAMEENGINE_HAS_BULLET
 #include <btBulletDynamicsCommon.h>
+#include <BulletCollision/CollisionDispatch/btGhostObject.h>
 #endif
 
 namespace GameEngine {
@@ -132,6 +133,8 @@ namespace GameEngine {
         void ApplyForce(uint32_t bodyId, const Math::Vec3& force);
         void ApplyImpulse(uint32_t bodyId, const Math::Vec3& impulse);
         void SetAngularFactor(uint32_t bodyId, const Math::Vec3& factor);
+        void SetLinearDamping(uint32_t bodyId, float damping);
+        void SetAngularDamping(uint32_t bodyId, float damping);
 
         // Rigid body queries
         bool GetRigidBodyTransform(uint32_t bodyId, Math::Vec3& position, Math::Quat& rotation);
@@ -141,6 +144,24 @@ namespace GameEngine {
         // Queries
         RaycastHit Raycast(const Math::Vec3& origin, const Math::Vec3& direction, float maxDistance);
         std::vector<OverlapResult> OverlapSphere(const Math::Vec3& center, float radius);
+        
+        // Sweep tests for character controller
+        struct SweepHit {
+            bool hasHit = false;
+            uint32_t bodyId = 0;
+            Math::Vec3 point{0.0f};
+            Math::Vec3 normal{0.0f};
+            float distance = 0.0f;
+            float fraction = 0.0f; // 0.0 = start, 1.0 = end
+        };
+        
+        SweepHit SweepCapsule(const Math::Vec3& from, const Math::Vec3& to, float radius, float height);
+        
+        // Ghost object management for kinematic collision detection
+        uint32_t CreateGhostObject(const CollisionShape& shape, const Math::Vec3& position);
+        void DestroyGhostObject(uint32_t ghostId);
+        void SetGhostObjectTransform(uint32_t ghostId, const Math::Vec3& position, const Math::Quat& rotation);
+        std::vector<OverlapResult> GetGhostObjectOverlaps(uint32_t ghostId);
 
     private:
         std::shared_ptr<PhysicsWorld> m_activeWorld;
@@ -150,6 +171,8 @@ namespace GameEngine {
 #ifdef GAMEENGINE_HAS_BULLET
         // Mapping from body ID to Bullet rigid body for direct access
         std::unordered_map<uint32_t, btRigidBody*> m_bulletBodies;
+        // Mapping from ghost ID to Bullet ghost object for collision detection
+        std::unordered_map<uint32_t, btGhostObject*> m_bulletGhostObjects;
 #endif
     };
 

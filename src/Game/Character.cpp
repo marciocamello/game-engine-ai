@@ -28,7 +28,7 @@ namespace GameEngine {
             bodyDesc.velocity = m_velocity;
             bodyDesc.mass = 70.0f; // Average human mass in kg
             bodyDesc.restitution = 0.0f; // No bouncing for character
-            bodyDesc.friction = 0.7f; // Good friction for walking
+            bodyDesc.friction = 1.0f; // High friction to prevent sliding like a car
             bodyDesc.isStatic = false;
             bodyDesc.isKinematic = false;
             
@@ -46,6 +46,10 @@ namespace GameEngine {
             // Set angular constraints to keep character upright (prevent rotation around X and Z axes)
             Math::Vec3 angularFactor(0.0f, 1.0f, 0.0f); // Only allow Y-axis rotation (yaw)
             m_physicsEngine->SetAngularFactor(m_rigidBodyId, angularFactor);
+            
+            // Set damping to reduce sliding and make movement more character-like
+            m_physicsEngine->SetLinearDamping(m_rigidBodyId, 0.8f); // High linear damping to stop sliding
+            m_physicsEngine->SetAngularDamping(m_rigidBodyId, 0.9f); // High angular damping for stability
             
             LOG_INFO("Character initialized with physics (rigid body ID: " + std::to_string(m_rigidBodyId) + ")");
         } else {
@@ -93,9 +97,8 @@ namespace GameEngine {
 
         // Apply movement through physics engine if available
         if (m_physicsEngine && m_rigidBodyId != 0 && glm::length(inputDirection) > 0.0f) {
-            // Apply force for movement instead of directly modifying position
-            // Use stronger force scaling for better responsiveness
-            Math::Vec3 movementForce = inputDirection * m_moveSpeed * 500.0f; // Increased force scaling
+            // Apply force for movement - much more controlled for character-like movement
+            Math::Vec3 movementForce = inputDirection * m_moveSpeed * 300.0f; // Increased for better responsiveness
             m_physicsEngine->ApplyForce(m_rigidBodyId, movementForce);
         } else if (glm::length(inputDirection) > 0.0f) {
             // Fallback to direct position modification if no physics
@@ -104,19 +107,26 @@ namespace GameEngine {
         }
 
         // Handle jumping
-        if (input->IsKeyPressed(KeyCode::Space) && m_isGrounded) {
-            if (m_physicsEngine && m_rigidBodyId != 0) {
-                // Apply upward impulse for jumping
-                // Use mass-based impulse calculation: impulse = mass * desired_velocity
-                Math::Vec3 jumpImpulse(0.0f, 70.0f * m_jumpSpeed, 0.0f); // 70kg mass * jump speed
-                m_physicsEngine->ApplyImpulse(m_rigidBodyId, jumpImpulse);
+        if (input->IsKeyPressed(KeyCode::Space)) {
+            LOG_DEBUG("Space key pressed! Grounded state: " + std::string(m_isGrounded ? "true" : "false"));
+            
+            if (m_isGrounded) {
+                if (m_physicsEngine && m_rigidBodyId != 0) {
+                    // Apply upward impulse for jumping
+                    // Use mass-based impulse calculation: impulse = mass * desired_velocity
+                    Math::Vec3 jumpImpulse(0.0f, 70.0f * m_jumpSpeed, 0.0f); // 70kg mass * jump speed
+                    m_physicsEngine->ApplyImpulse(m_rigidBodyId, jumpImpulse);
+                    LOG_INFO("Character jumping with impulse: " + std::to_string(jumpImpulse.y));
+                } else {
+                    // Fallback to direct velocity modification
+                    m_velocity.y = m_jumpSpeed;
+                    LOG_INFO("Character jumping (fallback mode)");
+                }
+                m_isGrounded = false;
+                m_isJumping = true;
             } else {
-                // Fallback to direct velocity modification
-                m_velocity.y = m_jumpSpeed;
+                LOG_DEBUG("Cannot jump - character not grounded");
             }
-            m_isGrounded = false;
-            m_isJumping = true;
-            LOG_INFO("Character jumping!");
         }
     }
 
@@ -138,33 +148,41 @@ namespace GameEngine {
                 m_velocity = physicsVelocity;
             }
             
-            // Check if character is grounded using physics engine
+            // Check if character is grounded using physics-based collision detection
+            // This uses raycasting to detect ground contact instead of hardcoded y-position checks
+            bool wasGrounded = m_isGrounded;
             m_isGrounded = m_physicsEngine->IsRigidBodyGrounded(m_rigidBodyId, 0.1f);
             
-            // Update jumping state based on grounded status
+            // Update jumping state based on physics-detected grounded status
             if (m_isGrounded && m_isJumping) {
                 m_isJumping = false;
+                LOG_DEBUG("Character landed (physics-detected ground contact)");
+            }
+            
+            // Log ground state changes for debugging
+            if (wasGrounded != m_isGrounded) {
+                if (m_isGrounded) {
+                    LOG_DEBUG("Character became grounded (physics collision detection)");
+                } else {
+                    LOG_DEBUG("Character became airborne (physics collision detection)");
+                }
             }
         } else {
-            // Fallback to manual physics calculations when no physics engine is available
-            // Apply gravity
-            if (!m_isGrounded) {
-                m_velocity.y += m_gravity * deltaTime;
-            }
-
-            // Apply velocity
+            // Without physics engine, character cannot function properly
+            // All collision detection now requires physics engine
+            LOG_WARNING("Character physics update called without physics engine - character will not behave correctly");
+            
+            // Set character as not grounded since we can't detect ground without physics
+            // This prevents jumping when no physics engine is available
+            m_isGrounded = false;
+            m_isJumping = true; // Always consider jumping state when no physics
+            
+            // Apply basic gravity but no collision detection
+            m_velocity.y += m_gravity * deltaTime;
             m_position += m_velocity * deltaTime;
-
-            // Simple ground collision (y = 0) - character should sit on ground
-            float groundLevel = m_height * 0.5f;  // Half height to sit properly on ground
-            if (m_position.y <= groundLevel) {
-                m_position.y = groundLevel;
-                m_velocity.y = 0.0f;
-                m_isGrounded = true;
-                m_isJumping = false;
-            }
-
-            // Note: Removed hardcoded world boundaries - physics collision should handle boundaries instead
+            
+            // Note: All manual ground collision code removed
+            // Physics engine is now required for proper character behavior
         }
     }
 

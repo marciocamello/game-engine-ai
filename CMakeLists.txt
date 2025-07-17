@@ -148,6 +148,20 @@ add_executable(GameExample
 
 target_link_libraries(GameExample PRIVATE GameEngineKiro)
 
+# Character comparison example (temporarily disabled due to interface issues)
+# add_executable(CharacterComparison
+#     examples/character_comparison.cpp
+# )
+# 
+# target_link_libraries(CharacterComparison PRIVATE GameEngineKiro)
+
+# Character controller test
+add_executable(CharacterControllerTest
+    examples/character_controller_test.cpp
+)
+
+target_link_libraries(CharacterControllerTest PRIVATE GameEngineKiro)
+
 # Integration test for Bullet Physics
 add_executable(BulletIntegrationTest
     tests/integration/test_bullet_integration.cpp

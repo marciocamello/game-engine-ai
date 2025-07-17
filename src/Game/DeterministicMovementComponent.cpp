@@ -43,7 +43,13 @@ namespace GameEngine {
     }
 
     void DeterministicMovementComponent::Jump() {
-        if (!m_config.canJump || !m_isGrounded) {
+        if (!m_config.canJump) {
+            LOG_DEBUG("DeterministicMovementComponent: Jump disabled in config");
+            return;
+        }
+        
+        if (!m_isGrounded) {
+            LOG_DEBUG("DeterministicMovementComponent: Cannot jump - not grounded");
             return;
         }
 

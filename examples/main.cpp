@@ -50,6 +50,12 @@ public:
       LOG_ERROR("Failed to initialize character");
       return false;
     }
+    
+    // Set spawn position and fall limit for character
+    Math::Vec3 spawnPosition(0.0f, 1.0f, 0.0f);
+    m_character->SetSpawnPosition(spawnPosition);
+    m_character->SetPosition(spawnPosition);
+    m_character->SetFallLimit(-2.0f);  // More sensitive fall detection
 
     // Initialize hybrid character controller
     LOG_INFO("Initializing CharacterController...");
@@ -58,7 +64,11 @@ public:
       LOG_ERROR("Failed to initialize character controller");
       return false;
     }
-    m_characterController->SetPosition(Math::Vec3(0.0f, 1.0f, 0.0f));
+    
+    // Set spawn position and fall limit for character controller
+    m_characterController->SetSpawnPosition(spawnPosition);
+    m_characterController->SetPosition(spawnPosition);
+    m_characterController->SetFallLimit(-2.0f);  // More sensitive fall detection
     LOG_INFO("CharacterController initialized successfully");
 
     // Setup third-person camera system
@@ -98,6 +108,10 @@ public:
     LOG_INFO("  6 - CharacterController + PhysicsMovement (red, full physics simulation)");
     LOG_INFO("  ESC - Toggle mouse capture");
     LOG_INFO("  F1 - Exit");
+    LOG_INFO("  F2 - Test fall detection (teleport character high up)");
+    LOG_INFO("Fall Detection System:");
+    LOG_INFO("  - Characters automatically reset when falling below Y = -2.0");
+    LOG_INFO("  - Test by walking off the ground plane edges or pressing F2");
     return true;
   }
 
@@ -187,6 +201,25 @@ public:
       return;
     }
 
+    // F2 to test fall detection - teleport character high up to test falling
+    if (input->IsKeyPressed(KeyCode::F2)) {
+      Math::Vec3 testFallPosition(0.0f, 20.0f, 0.0f); // High up in the air
+      switch (m_activeCharacter) {
+        case CharacterType::CharacterDeterministic:
+        case CharacterType::CharacterHybrid:
+        case CharacterType::CharacterPhysics:
+          m_character->SetPosition(testFallPosition);
+          LOG_INFO("Testing fall detection - Character teleported to high position");
+          break;
+        case CharacterType::ControllerHybrid:
+        case CharacterType::ControllerDeterministic:
+        case CharacterType::ControllerPhysics:
+          m_characterController->SetPosition(testFallPosition);
+          LOG_INFO("Testing fall detection - CharacterController teleported to high position");
+          break;
+      }
+    }
+
     // Update active character
     switch (m_activeCharacter) {
       case CharacterType::CharacterDeterministic:
@@ -194,6 +227,13 @@ public:
       case CharacterType::CharacterPhysics:
         // Update Character with its movement component
         m_character->Update(deltaTime, m_engine.GetInput(), m_camera.get());
+        
+        // Check for fall and reset if needed
+        if (m_character->HasFallen()) {
+          LOG_INFO("Character has fallen! Resetting to spawn position...");
+          m_character->ResetToSpawnPosition();
+        }
+        
         m_camera->Update(deltaTime, m_engine.GetInput());
         break;
         
@@ -202,6 +242,12 @@ public:
       case CharacterType::ControllerPhysics:
         // Update CharacterController WITH camera system so it can rotate correctly
         m_characterController->Update(deltaTime, m_engine.GetInput(), m_camera.get());
+        
+        // Check for fall and reset if needed
+        if (m_characterController->HasFallen()) {
+          LOG_INFO("CharacterController has fallen! Resetting to spawn position...");
+          m_characterController->ResetToSpawnPosition();
+        }
         
         // TRICK: Sync Character position with CharacterController so camera follows correctly
         // This way the ThirdPersonCameraSystem works normally

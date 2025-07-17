@@ -262,6 +262,28 @@ namespace GameEngine {
         return Math::Vec4(1.0f, 0.3f, 0.3f, 1.0f); // Default red
     }
 
+    bool CharacterController::HasFallen() const {
+        return GetPosition().y < m_fallLimit;
+    }
+
+    void CharacterController::ResetToSpawnPosition() {
+        if (m_movementComponent) {
+            // Reset position to spawn point
+            m_movementComponent->SetPosition(m_spawnPosition);
+            
+            // Reset velocity to zero to stop any falling motion
+            m_movementComponent->SetVelocity(Math::Vec3(0.0f));
+            
+            // Reset rotation to default
+            m_movementComponent->SetRotation(0.0f);
+            
+            LOG_INFO("CharacterController reset to spawn position: (" + 
+                    std::to_string(m_spawnPosition.x) + ", " + 
+                    std::to_string(m_spawnPosition.y) + ", " + 
+                    std::to_string(m_spawnPosition.z) + ")");
+        }
+    }
+
     void CharacterController::InitializeDefaultMovementComponent(PhysicsEngine* physicsEngine) {
         // Use HybridMovementComponent by default for physics collision with direct control
         m_movementComponent = MovementComponentFactory::CreateComponent(MovementComponentFactory::ComponentType::Hybrid);

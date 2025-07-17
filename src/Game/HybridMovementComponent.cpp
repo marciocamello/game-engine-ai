@@ -148,13 +148,8 @@ namespace GameEngine {
         Math::Vec3 verticalMovement(0.0f, m_velocity.y * deltaTime, 0.0f);
         m_position += verticalMovement;
         
-        // 6. Simple ground collision (fallback if no physics collision)
-        if (m_position.y < 0.9f) { // Same ground level as original Character
-            m_position.y = 0.9f;
-            if (m_velocity.y < 0.0f) {
-                m_velocity.y = 0.0f;
-            }
-        }
+        // 6. Physics-based ground collision detection
+        CheckGroundCollision();
         
         // 7. Update movement mode based on grounded state
         bool wasGrounded = (m_movementMode == MovementMode::Walking);
@@ -201,8 +196,8 @@ namespace GameEngine {
 
     bool HybridMovementComponent::IsGroundedCheck() const {
         if (!m_physicsEngine) {
-            // Fallback - simple ground check
-            return m_position.y <= 0.9f;
+            // Fallback - simple ground check (but allow falling)
+            return false; // Let character fall if no physics engine
         }
         
         // Simple raycast downward from character center
@@ -214,11 +209,17 @@ namespace GameEngine {
         
         if (hit.hasHit) {
             // Check if surface is walkable (not too steep)
-            return hit.normal.y > 0.5f; // Surface is somewhat horizontal
+            bool isWalkable = hit.normal.y > 0.5f; // Surface is somewhat horizontal
+            
+            // Also check if we're close enough to the ground
+            float distanceToGround = hit.distance - (m_characterHeight * 0.5f);
+            bool isCloseToGround = distanceToGround <= m_groundCheckDistance;
+            
+            return isWalkable && isCloseToGround;
         }
         
-        // If no physics hit, use simple Y position check
-        return m_position.y <= 0.9f;
+        // If no physics hit, character is not grounded (allow falling)
+        return false;
     }
 
     HybridMovementComponent::StepInfo HybridMovementComponent::CheckStepUp(const Math::Vec3& moveDirection, float moveDistance) {
@@ -312,5 +313,53 @@ namespace GameEngine {
             Math::Quat rotation = Math::Quat(cos(glm::radians(m_yaw) * 0.5f), 0.0f, sin(glm::radians(m_yaw) * 0.5f), 0.0f);
             m_physicsEngine->SetGhostObjectTransform(m_ghostObjectId, m_position, rotation);
         }
+    }
+
+    void HybridMovementComponent::CheckGroundCollision() {
+        // Use physics raycast to check for ground collision
+        if (m_physicsEngine) {
+            // Cast a ray downward from character center
+            Math::Vec3 rayOrigin = m_position;
+            Math::Vec3 rayDirection = Math::Vec3(0.0f, -1.0f, 0.0f); // Downward direction
+            float maxDistance = m_characterHeight + 0.5f; // Character height + small margin
+            
+            RaycastHit hit = m_physicsEngine->Raycast(rayOrigin, rayDirection, maxDistance);
+            if (hit.hasHit) {
+                // Hit something below us
+                float groundLevel = hit.point.y + (m_characterHeight * 0.5f); // Ground level + half character height
+                float characterBottom = m_position.y - (m_characterHeight * 0.5f);
+                
+                if (characterBottom <= groundLevel + 0.1f && m_velocity.y <= 0.0f) { // Small tolerance and falling
+                    // Character is on or very close to ground and falling/stationary
+                    m_position.y = groundLevel; // Position character on ground
+                    m_velocity.y = 0.0f; // Stop vertical movement
+                    
+                    if (!m_isGrounded) {
+                        // Just landed
+                        m_isGrounded = true;
+                        m_isJumping = false;
+                        m_movementMode = MovementMode::Walking;
+                        LOG_DEBUG("HybridMovementComponent: Landed on ground at Y=" + std::to_string(groundLevel));
+                    }
+                } else {
+                    // Character is airborne
+                    if (m_isGrounded) {
+                        // Just left ground
+                        m_isGrounded = false;
+                        m_movementMode = MovementMode::Falling;
+                        LOG_DEBUG("HybridMovementComponent: Became airborne");
+                    }
+                }
+            } else {
+                // No ground detected below - character is falling
+                if (m_isGrounded) {
+                    // Just left ground area
+                    m_isGrounded = false;
+                    m_movementMode = MovementMode::Falling;
+                    LOG_DEBUG("HybridMovementComponent: No ground detected - falling");
+                }
+            }
+        }
+        // If no physics engine, let character fall naturally (no collision correction)
     }
 }

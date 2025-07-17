@@ -213,6 +213,30 @@ namespace GameEngine {
         return Math::Vec4(0.2f, 0.6f, 1.0f, 1.0f); // Default blue
     }
 
+
+
+    bool Character::HasFallen() const {
+        return GetPosition().y < m_fallLimit;
+    }
+
+    void Character::ResetToSpawnPosition() {
+        if (m_movementComponent) {
+            // Reset position to spawn point
+            m_movementComponent->SetPosition(m_spawnPosition);
+            
+            // Reset velocity to zero to stop any falling motion
+            m_movementComponent->SetVelocity(Math::Vec3(0.0f));
+            
+            // Reset rotation to default
+            m_movementComponent->SetRotation(0.0f);
+            
+            LOG_INFO("Character reset to spawn position: (" + 
+                    std::to_string(m_spawnPosition.x) + ", " + 
+                    std::to_string(m_spawnPosition.y) + ", " + 
+                    std::to_string(m_spawnPosition.z) + ")");
+        }
+    }
+
     void Character::InitializeDefaultMovementComponent(PhysicsEngine* physicsEngine) {
         // Use DeterministicMovementComponent by default for precise character control
         m_movementComponent = MovementComponentFactory::CreateComponent(MovementComponentFactory::ComponentType::Deterministic);

@@ -82,6 +82,7 @@ namespace GameEngine {
         bool IsGroundedCheck() const;
         StepInfo CheckStepUp(const Math::Vec3& moveDirection, float moveDistance);
         bool CheckSlope(const Math::Vec3& normal);
+        void CheckGroundCollision();
         
         // Movement resolution methods
         Math::Vec3 ResolveMovement(const Math::Vec3& desiredMovement);

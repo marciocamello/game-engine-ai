@@ -62,6 +62,14 @@ namespace GameEngine {
         // Get color based on movement type
         Math::Vec4 GetMovementTypeColor() const;
 
+        // Fall detection and reset
+        void SetFallLimit(float fallY) { m_fallLimit = fallY; }
+        float GetFallLimit() const { return m_fallLimit; }
+        bool HasFallen() const;
+        void ResetToSpawnPosition();
+        void SetSpawnPosition(const Math::Vec3& position) { m_spawnPosition = position; }
+        const Math::Vec3& GetSpawnPosition() const { return m_spawnPosition; }
+
     private:
         void InitializeDefaultMovementComponent(PhysicsEngine* physicsEngine);
 
@@ -77,5 +85,9 @@ namespace GameEngine {
 
         // Rendering
         Math::Vec4 m_color{0.2f, 0.6f, 1.0f, 1.0f}; // Blue capsule
+
+        // Fall detection and reset system
+        float m_fallLimit = -10.0f;  // Y position below which character is considered fallen
+        Math::Vec3 m_spawnPosition{0.0f, 1.0f, 0.0f};  // Default spawn position
     };
 }

@@ -32,10 +32,11 @@ The combination of human expertise and AI assistance allows for rapid prototypin
 
 ### Physics & Simulation
 
+- **Hybrid Physics Architecture**: Deterministic character movement with physics-based collision detection
+- **Component-Based Movement**: Modular movement system with Physics, Deterministic, and Hybrid components
 - **Dual Backend Strategy**: Support for both Bullet Physics and NVIDIA PhysX
-- **Intelligent Selection**: Automatic backend selection based on hardware capabilities
-- **Character Physics**: Specialized character controller for third-person games
-- **Collision Detection**: Efficient spatial partitioning and broad-phase detection
+- **Intelligent Character Control**: Precise, predictable movement for players and NPCs
+- **Advanced Collision Detection**: Sweep tests, ghost objects, and kinematic collision queries
 
 ### Input & Controls
 
@@ -75,7 +76,8 @@ chmod +x setup_dependencies.sh build.sh
 
 - **[Setup Guide](docs/setup.md)** - Detailed installation instructions
 - **[Quick Start](docs/quickstart.md)** - Get up and running in minutes
-- **[Physics Strategy](docs/physics-strategy.md)** - Dual backend physics architecture
+- **[Deterministic Physics](docs/deterministic-physics.md)** - Revolutionary component-based movement system
+- **[Physics Strategy](docs/physics-strategy.md)** - Hybrid physics architecture and dual backend strategy
 - **[API Reference](docs/api-reference.md)** - Complete API documentation
 - **[Architecture](docs/architecture.md)** - Engine design and patterns
 

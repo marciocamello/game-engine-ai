@@ -52,7 +52,8 @@ After setup, you have a complete game engine with:
 
 ✅ **3D Rendering Pipeline** - Modern OpenGL with PBR shaders  
 ✅ **Third-Person Camera** - Professional over-the-shoulder system  
-✅ **Physics Simulation** - Bullet Physics with character controller  
+✅ **Component-Based Movement** - Deterministic, Hybrid, and Physics movement types  
+✅ **Physics Simulation** - Bullet Physics with advanced collision detection  
 ✅ **Input Management** - Keyboard, mouse, and gamepad support  
 ✅ **Audio System** - 3D spatial audio with OpenAL  
 ✅ **Resource Management** - Automatic asset loading and caching  
@@ -102,6 +103,56 @@ build.bat  # Windows
 ```
 
 Your character is now red! 🔴
+
+## 🎮 Try Different Movement Types
+
+Game Engine Kiro features a revolutionary component-based movement system. Try switching between different movement types:
+
+### 1. Edit the Game Example
+
+Open `examples/main.cpp` and add this to your update loop:
+
+```cpp
+void Update(float deltaTime) {
+    // Switch movement types with number keys
+    if (m_engine.GetInput()->IsKeyPressed(KeyCode::Num1)) {
+        m_character->SwitchToDeterministicMovement();
+        LOG_INFO("Switched to Deterministic Movement - Precise control!");
+    }
+    if (m_engine.GetInput()->IsKeyPressed(KeyCode::Num2)) {
+        m_character->SwitchToHybridMovement();
+        LOG_INFO("Switched to Hybrid Movement - Physics collision with direct control!");
+    }
+    if (m_engine.GetInput()->IsKeyPressed(KeyCode::Num3)) {
+        m_character->SwitchToPhysicsMovement();
+        LOG_INFO("Switched to Physics Movement - Full physics simulation!");
+    }
+
+    // Your existing update code...
+    m_character->Update(deltaTime, m_engine.GetInput(), m_camera.get());
+    m_camera->Update(deltaTime, m_engine.GetInput());
+}
+```
+
+### 2. New Controls
+
+- **1**: Switch to Deterministic Movement (precise, predictable)
+- **2**: Switch to Hybrid Movement (physics collision + direct control)
+- **3**: Switch to Physics Movement (full physics simulation)
+
+### 3. Visual Feedback
+
+Each movement type has a different color:
+
+- **Blue tones**: Deterministic movement (precise control)
+- **Cyan**: Hybrid movement (best of both worlds)
+- **Dark blue**: Physics movement (realistic simulation)
+
+### 4. Feel the Difference
+
+- **Deterministic**: Instant response, perfect for platforming
+- **Hybrid**: Smooth collision detection, great for exploration
+- **Physics**: Realistic momentum, perfect for vehicles
 
 ## 🎨 Customize the Camera
 

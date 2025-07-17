@@ -357,7 +357,7 @@ struct RigidBodyDesc {
 
 ### Character
 
-Third-person character controller with physics integration.
+Component-based character controller with modular movement system.
 
 ```cpp
 class Character {
@@ -365,29 +365,224 @@ public:
     // Lifecycle
     Character();
     ~Character();
-    bool Initialize();
+    bool Initialize(PhysicsEngine* physicsEngine = nullptr);
 
     // Update
     void Update(float deltaTime, InputManager* input, ThirdPersonCameraSystem* camera = nullptr);
     void Render(PrimitiveRenderer* renderer);
 
-    // Transform
+    // Transform (delegated to movement component)
     void SetPosition(const Math::Vec3& position);
     const Math::Vec3& GetPosition() const;
     void SetRotation(float yaw);
     float GetRotation() const;
 
-    // Movement Properties
+    // Movement Properties (delegated to movement component)
     void SetMoveSpeed(float speed);
     float GetMoveSpeed() const;
+    const Math::Vec3& GetVelocity() const;
 
     // Character Properties
     float GetHeight() const;
     float GetRadius() const;
+    void SetCharacterSize(float radius, float height);
 
-    // State Queries
+    // Movement State Queries
     bool IsGrounded() const;
     bool IsJumping() const;
+    bool IsFalling() const;
+
+    // Movement Component Management
+    void SetMovementComponent(std::unique_ptr<CharacterMovementComponent> component);
+    CharacterMovementComponent* GetMovementComponent() const;
+
+    // Convenience Methods for Switching Movement Types
+    void SwitchToPhysicsMovement();
+    void SwitchToDeterministicMovement();
+    void SwitchToHybridMovement();
+
+    // Movement Type Information
+    const char* GetMovementTypeName() const;
+    Math::Vec4 GetMovementTypeColor() const;
+};
+```
+
+### CharacterMovementComponent
+
+Base class for all character movement implementations.
+
+```cpp
+class CharacterMovementComponent {
+public:
+    enum class MovementMode { Walking, Falling, Flying, Swimming, Custom };
+
+    struct MovementConfig {
+        float maxWalkSpeed = 6.0f;          // Maximum walking speed (m/s)
+        float maxAcceleration = 20.0f;      // Maximum acceleration (m/s²)
+        float brakingDeceleration = 20.0f;  // Braking deceleration (m/s²)
+        float jumpZVelocity = 10.0f;        // Initial jump velocity (m/s)
+        float gravityScale = 1.0f;          // Gravity multiplier
+        float airControl = 0.2f;            // Air control factor (0-1)
+        float groundFriction = 8.0f;        // Ground friction coefficient
+        float maxStepHeight = 0.3f;         // Maximum step height (m)
+        float maxSlopeAngle = 45.0f;        // Maximum walkable slope (degrees)
+        bool canJump = true;                // Whether jumping is allowed
+        bool canWalkOffLedges = true;       // Whether character can walk off edges
+    };
+
+    // Component Lifecycle
+    virtual bool Initialize(PhysicsEngine* physicsEngine) = 0;
+    virtual void Update(float deltaTime, InputManager* input, ThirdPersonCameraSystem* camera = nullptr) = 0;
+    virtual void Shutdown() = 0;
+
+    // Transform Interface
+    virtual void SetPosition(const Math::Vec3& position) = 0;
+    virtual const Math::Vec3& GetPosition() const = 0;
+    virtual void SetRotation(float yaw) = 0;
+    virtual float GetRotation() const = 0;
+
+    // Velocity Interface
+    virtual const Math::Vec3& GetVelocity() const = 0;
+    virtual void SetVelocity(const Math::Vec3& velocity) = 0;
+    virtual void AddVelocity(const Math::Vec3& deltaVelocity) = 0;
+
+    // Movement State
+    virtual MovementMode GetMovementMode() const;
+    virtual bool IsGrounded() const = 0;
+    virtual bool IsJumping() const = 0;
+    virtual bool IsFalling() const = 0;
+
+    // Configuration
+    virtual void SetMovementConfig(const MovementConfig& config);
+    virtual const MovementConfig& GetMovementConfig() const;
+
+    // Character Properties
+    virtual void SetCharacterSize(float radius, float height);
+    virtual float GetCharacterRadius() const;
+    virtual float GetCharacterHeight() const;
+
+    // Movement Commands
+    virtual void Jump() = 0;
+    virtual void StopJumping() = 0;
+    virtual void AddMovementInput(const Math::Vec3& worldDirection, float scaleValue = 1.0f) = 0;
+
+    // Component Type Identification
+    virtual const char* GetComponentTypeName() const = 0;
+};
+```
+
+### DeterministicMovementComponent
+
+Precise character control without physics simulation.
+
+```cpp
+class DeterministicMovementComponent : public CharacterMovementComponent {
+public:
+    // Component Lifecycle
+    bool Initialize(PhysicsEngine* physicsEngine) override;
+    void Update(float deltaTime, InputManager* input, ThirdPersonCameraSystem* camera = nullptr) override;
+    void Shutdown() override;
+
+    // Component Identification
+    const char* GetComponentTypeName() const override { return "DeterministicMovementComponent"; }
+
+    // Deterministic-Specific Configuration
+    void SetGroundLevel(float groundLevel);
+    float GetGroundLevel() const;
+    void SetGravity(float gravity);
+    float GetGravity() const;
+
+    // All other methods inherited from CharacterMovementComponent
+};
+```
+
+### HybridMovementComponent
+
+Physics collision detection with direct position control.
+
+```cpp
+class HybridMovementComponent : public CharacterMovementComponent {
+public:
+    struct CollisionInfo {
+        bool hasCollision = false;
+        Math::Vec3 contactPoint{0.0f};
+        Math::Vec3 contactNormal{0.0f};
+        float penetrationDepth = 0.0f;
+        float distance = 0.0f;
+        uint32_t hitBodyId = 0;
+    };
+
+    struct StepInfo {
+        bool canStepUp = false;
+        float stepHeight = 0.0f;
+        Math::Vec3 stepPosition{0.0f};
+    };
+
+    // Component Lifecycle
+    bool Initialize(PhysicsEngine* physicsEngine) override;
+    void Update(float deltaTime, InputManager* input, ThirdPersonCameraSystem* camera = nullptr) override;
+    void Shutdown() override;
+
+    // Component Identification
+    const char* GetComponentTypeName() const override { return "HybridMovementComponent"; }
+
+    // Hybrid-Specific Configuration
+    void SetSkinWidth(float width);
+    float GetSkinWidth() const;
+    void SetGroundCheckDistance(float distance);
+    float GetGroundCheckDistance() const;
+
+    // All other methods inherited from CharacterMovementComponent
+};
+```
+
+### PhysicsMovementComponent
+
+Full physics simulation for dynamic character movement.
+
+```cpp
+class PhysicsMovementComponent : public CharacterMovementComponent {
+public:
+    // Component Lifecycle
+    bool Initialize(PhysicsEngine* physicsEngine) override;
+    void Update(float deltaTime, InputManager* input, ThirdPersonCameraSystem* camera = nullptr) override;
+    void Shutdown() override;
+
+    // Component Identification
+    const char* GetComponentTypeName() const override { return "PhysicsMovementComponent"; }
+
+    // Physics-Specific Methods
+    uint32_t GetRigidBodyId() const;
+    void SetMass(float mass);
+    float GetMass() const;
+    void SetLinearDamping(float damping);
+    void SetAngularDamping(float damping);
+
+    // All other methods inherited from CharacterMovementComponent
+};
+```
+
+### MovementComponentFactory
+
+Factory for creating movement components.
+
+```cpp
+class MovementComponentFactory {
+public:
+    enum class ComponentType {
+        Deterministic,  // Precise control without physics simulation
+        Hybrid,         // Physics collision with direct control
+        Physics         // Full physics simulation
+    };
+
+    // Component Creation
+    static std::unique_ptr<CharacterMovementComponent> CreateComponent(ComponentType type);
+
+    // Configuration Presets
+    static CharacterMovementComponent::MovementConfig GetDefaultConfig(ComponentType type);
+    static CharacterMovementComponent::MovementConfig GetPlatformingConfig();
+    static CharacterMovementComponent::MovementConfig GetRealisticConfig();
+    static CharacterMovementComponent::MovementConfig GetArcadeConfig();
 };
 ```
 
@@ -641,6 +836,84 @@ audio->SetAudioSourcePosition(source, Math::Vec3(0.0f, 0.0f, 0.0f));
 audio->PlayAudioSource(source, jumpSound);
 ```
 
+### Movement Component System Usage
+
+```cpp
+// Create character with default deterministic movement
+auto character = std::make_unique<Character>();
+character->Initialize(engine.GetPhysics());
+
+// Switch to hybrid movement for better collision detection
+character->SwitchToHybridMovement();
+
+// Configure movement parameters
+auto config = character->GetMovementComponent()->GetMovementConfig();
+config.maxWalkSpeed = 8.0f;
+config.jumpZVelocity = 12.0f;
+config.maxStepHeight = 0.4f;
+character->GetMovementComponent()->SetMovementConfig(config);
+
+// Runtime movement type switching based on game state
+if (player->IsInVehicle()) {
+    player->SwitchToPhysicsMovement();  // Full physics for vehicles
+} else if (player->IsInPrecisionMode()) {
+    player->SwitchToDeterministicMovement();  // Precise platforming
+} else {
+    player->SwitchToHybridMovement();  // Best balance
+}
+
+// Check current movement type
+LOG_INFO("Character using: " + std::string(character->GetMovementTypeName()));
+```
+
+### Custom Movement Component
+
+```cpp
+class CustomMovementComponent : public CharacterMovementComponent {
+public:
+    bool Initialize(PhysicsEngine* physicsEngine) override {
+        m_physicsEngine = physicsEngine;
+        return true;
+    }
+
+    void Update(float deltaTime, InputManager* input, ThirdPersonCameraSystem* camera) override {
+        // Custom movement logic here
+        HandleCustomMovement(deltaTime, input, camera);
+    }
+
+    const char* GetComponentTypeName() const override {
+        return "CustomMovementComponent";
+    }
+
+    // Implement all pure virtual methods...
+};
+
+// Use custom component
+auto customComponent = std::make_unique<CustomMovementComponent>();
+character->SetMovementComponent(std::move(customComponent));
+```
+
+### Movement Component Factory Usage
+
+```cpp
+// Create different movement types using factory
+auto deterministicComponent = MovementComponentFactory::CreateComponent(
+    MovementComponentFactory::ComponentType::Deterministic);
+
+auto hybridComponent = MovementComponentFactory::CreateComponent(
+    MovementComponentFactory::ComponentType::Hybrid);
+
+auto physicsComponent = MovementComponentFactory::CreateComponent(
+    MovementComponentFactory::ComponentType::Physics);
+
+// Use configuration presets
+auto platformingConfig = MovementComponentFactory::GetPlatformingConfig();
+auto realisticConfig = MovementComponentFactory::GetRealisticConfig();
+auto arcadeConfig = MovementComponentFactory::GetArcadeConfig();
+
+deterministicComponent->SetMovementConfig(platformingConfig);
+```
+
 ---
 
-This API reference provides comprehensive coverage of all public interfaces in Game Engine Kiro. For implementation details and advanced usage patterns, refer to the examples in the `examples/` directory and the architecture documentation.
+This API reference provides comprehensive coverage of all public interfaces in Game Engine Kiro, including the new component-based movement system that enables deterministic character physics and hybrid collision detection. For implementation details and advanced usage patterns, refer to the examples in the `examples/` directory and the architecture documentation.

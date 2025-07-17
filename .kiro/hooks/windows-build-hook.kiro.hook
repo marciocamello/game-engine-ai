@@ -1,0 +1,21 @@
+{
+  "enabled": true,
+  "name": "Windows Build Manager",
+  "description": "Monitors CMakeLists.txt and source files to ensure proper Windows build process using build.bat and PowerShell commands, with all features implemented in CMake",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "CMakeLists.txt",
+      "src/**/*.cpp",
+      "src/**/*.h",
+      "include/**/*.h",
+      "examples/**/*.cpp",
+      "tests/**/*.cpp"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "When building the application, always use `.\\build.bat` as we are in a Windows environment. All commands should be Windows-compatible using PowerShell. All new features must be implemented in CMakeLists.txt rather than creating separate files, so we can test with the same features and dependencies. Ensure the build system maintains consistency and all functionality is centralized in the CMake configuration."
+  }
+}

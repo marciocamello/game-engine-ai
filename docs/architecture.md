@@ -101,25 +101,34 @@ public:
 
 ### Physics System
 
-Dual-backend physics architecture for maximum flexibility:
+Hybrid physics architecture with component-based movement system:
 
 ```cpp
 class PhysicsEngine {
 public:
-    bool Initialize(const PhysicsConfig& config = {});
+    bool Initialize(const PhysicsConfiguration& config = {});
     void Update(float deltaTime);
-    uint32_t CreateRigidBody(const RigidBodyDesc& desc);
-    bool Raycast(const Ray& ray, RaycastHit& hit);
+    uint32_t CreateRigidBody(const RigidBody& bodyDesc, const CollisionShape& shape);
+    RaycastHit Raycast(const Math::Vec3& origin, const Math::Vec3& direction, float maxDistance);
+    SweepHit SweepCapsule(const Math::Vec3& from, const Math::Vec3& to, float radius, float height);
+    uint32_t CreateGhostObject(const CollisionShape& shape, const Math::Vec3& position);
 
 private:
-    std::unique_ptr<IPhysicsBackend> m_backend;
-    PhysicsBackend m_currentBackend;
+    std::shared_ptr<PhysicsWorld> m_activeWorld;
+    std::unordered_map<uint32_t, btRigidBody*> m_bulletBodies;
+    std::unordered_map<uint32_t, btGhostObject*> m_bulletGhostObjects;
 };
 ```
 
+**Movement Component System:**
+
+- **DeterministicMovementComponent**: Precise character control without physics simulation
+- **HybridMovementComponent**: Physics collision detection with direct position control
+- **PhysicsMovementComponent**: Full physics simulation for dynamic objects
+
 **Supported Backends:**
 
-- **Bullet Physics**: Open source, highly compatible
+- **Bullet Physics**: Open source, highly compatible, deterministic
 - **NVIDIA PhysX**: High performance, GPU acceleration (planned)
 
 ### Input System
@@ -179,24 +188,57 @@ private:
 
 ### Character System
 
-Specialized third-person character controller:
+Component-based character controller with modular movement system:
 
 ```cpp
 class Character {
 public:
-    void Update(float deltaTime, InputManager* input,
-                ThirdPersonCameraSystem* camera);
-    void HandleMovementInput(float deltaTime, InputManager* input,
-                           ThirdPersonCameraSystem* camera);
-    void UpdatePhysics(float deltaTime);
+    bool Initialize(PhysicsEngine* physicsEngine = nullptr);
+    void Update(float deltaTime, InputManager* input, ThirdPersonCameraSystem* camera);
     void Render(PrimitiveRenderer* renderer);
 
+    // Movement component management
+    void SetMovementComponent(std::unique_ptr<CharacterMovementComponent> component);
+    CharacterMovementComponent* GetMovementComponent() const;
+
+    // Convenience methods for switching movement types
+    void SwitchToPhysicsMovement();
+    void SwitchToDeterministicMovement();
+    void SwitchToHybridMovement();
+
+    // Get current movement type information
+    const char* GetMovementTypeName() const;
+    Math::Vec4 GetMovementTypeColor() const;
+
 private:
-    Math::Vec3 m_position;
-    Math::Vec3 m_velocity;
-    float m_moveSpeed;
-    float m_jumpSpeed;
-    bool m_isGrounded;
+    std::unique_ptr<CharacterMovementComponent> m_movementComponent;
+    PhysicsEngine* m_physicsEngine;
+    float m_height = 1.8f;
+    float m_radius = 0.3f;
+};
+```
+
+**Movement Component Architecture:**
+
+```cpp
+class CharacterMovementComponent {
+public:
+    virtual bool Initialize(PhysicsEngine* physicsEngine) = 0;
+    virtual void Update(float deltaTime, InputManager* input, ThirdPersonCameraSystem* camera) = 0;
+    virtual void Shutdown() = 0;
+
+    // Transform interface
+    virtual void SetPosition(const Math::Vec3& position) = 0;
+    virtual const Math::Vec3& GetPosition() const = 0;
+    virtual const Math::Vec3& GetVelocity() const = 0;
+
+    // Movement state
+    virtual bool IsGrounded() const = 0;
+    virtual bool IsJumping() const = 0;
+    virtual bool IsFalling() const = 0;
+
+    // Component identification
+    virtual const char* GetComponentTypeName() const = 0;
 };
 ```
 

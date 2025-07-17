@@ -1,17 +1,133 @@
 # Physics Strategy
 
-Game Engine Kiro implements a unique dual-backend physics architecture that provides flexibility, performance, and compatibility for different types of games and hardware configurations.
+Game Engine Kiro implements a revolutionary hybrid physics architecture that combines deterministic character movement with physics-based collision detection, providing unprecedented control and realism for game development.
 
 ## 🎯 Strategic Overview
 
-### The Dual Backend Approach
+### The Hybrid Physics Approach
 
-Instead of being locked into a single physics solution, Game Engine Kiro supports **two complementary physics backends**:
+Game Engine Kiro introduces a **component-based movement system** with three distinct movement types:
+
+1. **Deterministic Movement** - Precise, predictable character control without physics simulation
+2. **Hybrid Movement** - Physics collision detection with direct position control
+3. **Physics Movement** - Full physics simulation for dynamic objects
+
+This approach is built on top of a **dual-backend physics architecture**:
 
 1. **Bullet Physics** - Open source, highly compatible, deterministic
-2. **NVIDIA PhysX** - High performance, GPU acceleration, advanced features
+2. **NVIDIA PhysX** - High performance, GPU acceleration, advanced features (planned)
 
-This approach allows developers to choose the best physics solution for their specific needs, hardware, and target audience.
+This combination allows developers to choose the perfect movement solution for each character type while maintaining physics compatibility.
+
+## 🎮 Movement Component System
+
+### Component-Based Architecture
+
+Game Engine Kiro uses a modular movement system where each character can use different movement components:
+
+```cpp
+class CharacterMovementComponent {
+public:
+    virtual void Update(float deltaTime, InputManager* input, ThirdPersonCameraSystem* camera) = 0;
+    virtual bool IsGrounded() const = 0;
+    virtual const Math::Vec3& GetPosition() const = 0;
+    virtual const char* GetComponentTypeName() const = 0;
+};
+```
+
+### Movement Component Types
+
+#### 1. DeterministicMovementComponent ✅
+
+**Best for:** Player characters, NPCs, precise platforming
+
+- **Direct Position Control**: No physics simulation, immediate response
+- **Predictable Behavior**: Identical results across platforms and runs
+- **Manual Collision**: Simple ground collision with configurable parameters
+- **High Performance**: Minimal CPU overhead, no physics calculations
+- **Networking Friendly**: Deterministic for multiplayer synchronization
+
+```cpp
+// Usage Example
+auto character = std::make_unique<Character>();
+character->SwitchToDeterministicMovement();
+```
+
+**Configuration:**
+
+```cpp
+MovementConfig config;
+config.maxWalkSpeed = 6.0f;
+config.jumpZVelocity = 10.0f;
+config.gravityScale = 1.0f;
+config.maxAcceleration = 25.0f;
+```
+
+#### 2. HybridMovementComponent ✅
+
+**Best for:** Advanced character controllers, complex environments
+
+- **Physics Collision Detection**: Uses Bullet Physics for accurate collision queries
+- **Direct Position Control**: Maintains precise movement control
+- **Ghost Objects**: Kinematic collision detection without physics simulation
+- **Sweep Testing**: Advanced collision detection with surface sliding
+- **Step-Up Detection**: Automatic stair climbing and obstacle navigation
+
+```cpp
+// Usage Example
+auto character = std::make_unique<Character>();
+character->SwitchToHybridMovement();
+```
+
+**Advanced Features:**
+
+- Slope limit detection and handling
+- Surface sliding and collision response
+- Kinematic collision queries
+- Step-up detection for stairs
+
+#### 3. PhysicsMovementComponent ✅
+
+**Best for:** Vehicles, ragdolls, dynamic objects
+
+- **Full Physics Simulation**: Complete integration with physics engine
+- **Realistic Behavior**: Natural physics responses to forces
+- **Force-Based Movement**: Uses physics forces for movement
+- **Collision Response**: Automatic physics-based collision handling
+- **Mass and Inertia**: Realistic momentum and acceleration
+
+```cpp
+// Usage Example
+auto character = std::make_unique<Character>();
+character->SwitchToPhysicsMovement();
+```
+
+### Runtime Component Switching
+
+Characters can switch between movement types at runtime:
+
+```cpp
+// Switch movement types dynamically
+if (player->IsInVehicle()) {
+    player->SwitchToPhysicsMovement();  // Use physics for vehicle
+} else if (player->IsInPrecisionMode()) {
+    player->SwitchToDeterministicMovement();  // Precise platforming
+} else {
+    player->SwitchToHybridMovement();  // Best of both worlds
+}
+```
+
+### Movement Component Comparison
+
+| Feature                | Deterministic | Hybrid     | Physics    |
+| ---------------------- | ------------- | ---------- | ---------- |
+| **Precision**          | ⭐⭐⭐⭐⭐    | ⭐⭐⭐⭐   | ⭐⭐⭐     |
+| **Performance**        | ⭐⭐⭐⭐⭐    | ⭐⭐⭐⭐   | ⭐⭐⭐     |
+| **Collision Accuracy** | ⭐⭐          | ⭐⭐⭐⭐⭐ | ⭐⭐⭐⭐⭐ |
+| **Realism**            | ⭐⭐          | ⭐⭐⭐⭐   | ⭐⭐⭐⭐⭐ |
+| **Determinism**        | ⭐⭐⭐⭐⭐    | ⭐⭐⭐⭐   | ⭐⭐       |
+| **Networking**         | ⭐⭐⭐⭐⭐    | ⭐⭐⭐⭐   | ⭐⭐⭐     |
+| **Complexity**         | ⭐            | ⭐⭐⭐     | ⭐⭐⭐⭐   |
 
 ## 📊 Backend Comparison
 
@@ -31,24 +147,36 @@ This approach allows developers to choose the best physics solution for their sp
 
 ### Phase 1: Foundation (✅ Complete)
 
-- **Bullet Physics Integration** - Solid, tested foundation
-- **Abstract Physics Interface** - Backend-agnostic API
-- **Character Controller** - Third-person character physics
-- **Basic Collision Detection** - Efficient spatial queries
+- **Bullet Physics Integration** - Solid, tested foundation with comprehensive API
+- **Abstract Physics Interface** - Backend-agnostic API with configuration management
+- **Component-Based Movement System** - Modular movement architecture
+- **Deterministic Movement Component** - Precise character control without physics simulation
+- **Hybrid Movement Component** - Physics collision detection with direct position control
+- **Physics Movement Component** - Full physics simulation for dynamic objects
+- **Advanced Collision Detection** - Sweep tests, ghost objects, and kinematic queries
 
-### Phase 2: Expansion (🔄 In Progress)
+### Phase 2: Character System Enhancement (✅ Complete)
 
-- **NVIDIA PhysX Integration** - High-performance alternative
+- **Runtime Component Switching** - Dynamic movement type changes during gameplay
+- **Movement Component Factory** - Easy creation and management of movement components
+- **State Preservation** - Seamless transitions between movement types
+- **Visual Distinction System** - Color-coded movement types for debugging
+- **Performance Optimization** - Efficient collision detection and movement processing
+- **Comprehensive Testing** - Multiple character combinations and movement scenarios
+
+### Phase 3: Backend Expansion (🔄 In Progress)
+
+- **NVIDIA PhysX Integration** - High-performance alternative backend
 - **Runtime Backend Selection** - Choose backend at startup
 - **Performance Benchmarking** - Automated performance comparison
 - **Feature Parity** - Ensure both backends support core features
 
-### Phase 3: Optimization (🎯 Planned)
+### Phase 4: Advanced Features (🎯 Planned)
 
 - **Automatic Backend Selection** - Hardware-based selection
-- **Hybrid Mode** - Use both backends simultaneously
+- **Multi-Backend Mode** - Use different backends for different object types
 - **GPU Acceleration** - Full PhysX GPU pipeline
-- **Advanced Features** - Cloth, fluids, destruction
+- **Advanced Features** - Cloth, fluids, destruction physics
 
 ## 🎮 Use Case Recommendations
 

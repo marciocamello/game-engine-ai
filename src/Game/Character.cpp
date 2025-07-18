@@ -170,13 +170,13 @@ namespace GameEngine {
         }
     }
 
-    void Character::SwitchToPhysicsMovement() {
-        auto component = MovementComponentFactory::CreateComponent(MovementComponentFactory::ComponentType::Physics);
+    void Character::SwitchToCharacterMovement() {
+        auto component = MovementComponentFactory::CreateComponent(MovementComponentFactory::ComponentType::CharacterMovement);
         SetMovementComponent(std::move(component));
     }
 
-    void Character::SwitchToDeterministicMovement() {
-        auto component = MovementComponentFactory::CreateComponent(MovementComponentFactory::ComponentType::Deterministic);
+    void Character::SwitchToPhysicsMovement() {
+        auto component = MovementComponentFactory::CreateComponent(MovementComponentFactory::ComponentType::Physics);
         SetMovementComponent(std::move(component));
     }
 
@@ -199,12 +199,12 @@ namespace GameEngine {
         
         const char* typeName = m_movementComponent->GetComponentTypeName();
         
-        // Character colors (blue tones)
-        if (strcmp(typeName, "DeterministicMovementComponent") == 0) {
-            return Math::Vec4(0.2f, 0.4f, 1.0f, 1.0f); // Bright blue for deterministic
+        // Character colors (blue tones) - simplified to 3 components
+        if (strcmp(typeName, "CharacterMovementComponent") == 0) {
+            return Math::Vec4(0.2f, 0.4f, 1.0f, 1.0f); // Bright blue for basic movement
         }
         else if (strcmp(typeName, "HybridMovementComponent") == 0) {
-            return Math::Vec4(0.0f, 0.8f, 1.0f, 1.0f); // Cyan for hybrid
+            return Math::Vec4(0.0f, 0.8f, 1.0f, 1.0f); // Cyan for hybrid (recommended)
         }
         else if (strcmp(typeName, "PhysicsMovementComponent") == 0) {
             return Math::Vec4(0.0f, 0.2f, 0.8f, 1.0f); // Dark blue for physics
@@ -238,8 +238,8 @@ namespace GameEngine {
     }
 
     void Character::InitializeDefaultMovementComponent(PhysicsEngine* physicsEngine) {
-        // Use DeterministicMovementComponent by default for precise character control
-        m_movementComponent = MovementComponentFactory::CreateComponent(MovementComponentFactory::ComponentType::Deterministic);
+        // Use HybridMovementComponent by default for third-person games (best balance)
+        m_movementComponent = MovementComponentFactory::CreateComponent(MovementComponentFactory::ComponentType::Hybrid);
         
         if (m_movementComponent && physicsEngine) {
             m_movementComponent->Initialize(physicsEngine);

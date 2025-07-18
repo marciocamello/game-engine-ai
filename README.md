@@ -32,11 +32,14 @@ The combination of human expertise and AI assistance allows for rapid prototypin
 
 ### Physics & Simulation
 
-- **Hybrid Physics Architecture**: Deterministic character movement with physics-based collision detection
-- **Component-Based Movement**: Modular movement system with Physics, Deterministic, and Hybrid components
-- **Dual Backend Strategy**: Support for both Bullet Physics and NVIDIA PhysX
-- **Intelligent Character Control**: Precise, predictable movement for players and NPCs
-- **Advanced Collision Detection**: Sweep tests, ghost objects, and kinematic collision queries
+- **🎯 Industry-Standard Raycast Movement**: Following the same approach as Unity, Unreal Engine, Godot, and Source Engine
+- **Component-Based Movement System**: 3 specialized movement components for different use cases
+  - **CharacterMovement**: Raycast-based deterministic movement (perfect for players, NPCs)
+  - **HybridMovement**: Physics collision + direct control (recommended for third-person games)
+  - **PhysicsMovement**: Full physics simulation (ideal for vehicles, ragdolls)
+- **Bullet Physics Integration**: Solid, tested physics backend with comprehensive API
+- **Fall Detection System**: Automatic character reset when falling off the world
+- **Runtime Component Switching**: Change movement types dynamically during gameplay
 
 ### Input & Controls
 
@@ -83,13 +86,25 @@ chmod +x setup_dependencies.sh build.sh
 
 ## 🎮 Controls
 
+### Basic Controls
+
 - **Mouse**: 360° camera rotation (captured by default)
 - **WASD**: Character movement relative to camera
-- **Mouse Wheel**: Zoom in/out
 - **Space**: Jump
 - **ESC**: Toggle mouse capture
-- **F11**: Toggle fullscreen
 - **F1**: Exit game
+- **F2**: Test fall detection (teleport character high up)
+
+### Movement Component Switching
+
+- **1**: CharacterMovement (raycast-based, deterministic)
+- **2**: PhysicsMovement (full physics simulation)
+- **3**: HybridMovement (physics collision + direct control) - **RECOMMENDED**
+
+### Advanced Controls
+
+- **F11**: Toggle fullscreen
+- **Mouse Wheel**: Zoom in/out (camera distance)
 
 ## 🏗️ Architecture
 

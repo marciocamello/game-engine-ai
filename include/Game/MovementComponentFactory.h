@@ -10,9 +10,9 @@ namespace GameEngine {
     class MovementComponentFactory {
     public:
         enum class ComponentType {
-            Physics,        ///< Full physics simulation
-            Deterministic,  ///< Precise character control
-            Hybrid         ///< Physics collision with direct control
+            CharacterMovement,  ///< Basic movement with manual physics
+            Physics,           ///< Full physics simulation
+            Hybrid            ///< Physics collision with direct control
         };
 
         static std::unique_ptr<CharacterMovementComponent> CreateComponent(ComponentType type);

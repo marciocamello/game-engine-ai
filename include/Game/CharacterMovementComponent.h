@@ -9,10 +9,19 @@ namespace GameEngine {
     class ThirdPersonCameraSystem;
 
     /**
+     * @brief Movement component types for third-person games
+     */
+    enum class MovementComponentType {
+        CharacterMovement,  ///< Basic character movement with manual physics
+        Physics,           ///< Full physics simulation for realistic movement
+        Hybrid            ///< Physics collision detection with direct control
+    };
+
+    /**
      * @brief Base class for character movement components
      * 
      * Provides a common interface for different movement implementations.
-     * Follows the Unreal Engine component-based architecture pattern.
+     * Optimized for third-person action games like GTA.
      */
     class CharacterMovementComponent {
     public:

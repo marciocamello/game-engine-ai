@@ -69,10 +69,10 @@ namespace GameEngine {
         void SetMovementComponent(std::unique_ptr<CharacterMovementComponent> component);
         CharacterMovementComponent* GetMovementComponent() const { return m_movementComponent.get(); }
         
-        // Convenience methods for switching movement types
-        void SwitchToPhysicsMovement();
-        void SwitchToDeterministicMovement();
-        void SwitchToHybridMovement();
+        // Convenience methods for switching movement types (3 components only)
+        void SwitchToCharacterMovement();  // Basic movement with manual physics
+        void SwitchToPhysicsMovement();    // Full physics simulation
+        void SwitchToHybridMovement();     // Physics collision + direct control (recommended)
         
         // Get current movement type name
         const char* GetMovementTypeName() const;

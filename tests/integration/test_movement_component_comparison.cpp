@@ -18,7 +18,7 @@ using namespace GameEngine;
  * 
  * Tests performance, behavior, and compatibility of:
  * - PhysicsMovementComponent (full physics simulation)
- * - DeterministicMovementComponent (precise character control)
+ * - CharacterMovementComponent (basic character control)
  * - HybridMovementComponent (physics collision with direct control)
  */
 class MovementComponentComparisonTest {
@@ -54,24 +54,24 @@ public:
         
         // Test each movement component type
         TestResult physicsResult = TestMovementComponent(MovementComponentFactory::ComponentType::Physics);
-        TestResult deterministicResult = TestMovementComponent(MovementComponentFactory::ComponentType::Deterministic);
+        TestResult characterMovementResult = TestMovementComponent(MovementComponentFactory::ComponentType::CharacterMovement);
         TestResult hybridResult = TestMovementComponent(MovementComponentFactory::ComponentType::Hybrid);
         
         // Test Character class with different components
         TestResult characterPhysicsResult = TestCharacterWithComponent(MovementComponentFactory::ComponentType::Physics);
-        TestResult characterDeterministicResult = TestCharacterWithComponent(MovementComponentFactory::ComponentType::Deterministic);
+        TestResult characterMovementResult2 = TestCharacterWithComponent(MovementComponentFactory::ComponentType::CharacterMovement);
         TestResult characterHybridResult = TestCharacterWithComponent(MovementComponentFactory::ComponentType::Hybrid);
         
         // Test CharacterController class with different components
         TestResult controllerPhysicsResult = TestCharacterControllerWithComponent(MovementComponentFactory::ComponentType::Physics);
-        TestResult controllerDeterministicResult = TestCharacterControllerWithComponent(MovementComponentFactory::ComponentType::Deterministic);
+        TestResult controllerCharacterMovementResult = TestCharacterControllerWithComponent(MovementComponentFactory::ComponentType::CharacterMovement);
         TestResult controllerHybridResult = TestCharacterControllerWithComponent(MovementComponentFactory::ComponentType::Hybrid);
         
         // Print comprehensive results
         PrintComparisonResults({
-            physicsResult, deterministicResult, hybridResult,
-            characterPhysicsResult, characterDeterministicResult, characterHybridResult,
-            controllerPhysicsResult, controllerDeterministicResult, controllerHybridResult
+            physicsResult, characterMovementResult, hybridResult,
+            characterPhysicsResult, characterMovementResult2, characterHybridResult,
+            controllerPhysicsResult, controllerCharacterMovementResult, controllerHybridResult
         });
         
         // Test component switching
@@ -180,8 +180,8 @@ private:
             case MovementComponentFactory::ComponentType::Physics:
                 character->SwitchToPhysicsMovement();
                 break;
-            case MovementComponentFactory::ComponentType::Deterministic:
-                character->SwitchToDeterministicMovement();
+            case MovementComponentFactory::ComponentType::CharacterMovement:
+                character->SwitchToCharacterMovement();
                 break;
             case MovementComponentFactory::ComponentType::Hybrid:
                 character->SwitchToHybridMovement();
@@ -237,8 +237,8 @@ private:
             case MovementComponentFactory::ComponentType::Physics:
                 controller->SwitchToPhysicsMovement();
                 break;
-            case MovementComponentFactory::ComponentType::Deterministic:
-                controller->SwitchToDeterministicMovement();
+            case MovementComponentFactory::ComponentType::CharacterMovement:
+                controller->SwitchToCharacterMovement();
                 break;
             case MovementComponentFactory::ComponentType::Hybrid:
                 controller->SwitchToHybridMovement();
@@ -288,8 +288,8 @@ private:
             character->SwitchToHybridMovement();
             LOG_INFO("After switch to hybrid: " + std::string(character->GetMovementTypeName()));
             
-            character->SwitchToDeterministicMovement();
-            LOG_INFO("After switch to deterministic: " + std::string(character->GetMovementTypeName()));
+            character->SwitchToCharacterMovement();
+            LOG_INFO("After switch to character movement: " + std::string(character->GetMovementTypeName()));
         }
         
         // Test CharacterController component switching
@@ -300,8 +300,8 @@ private:
             controller->SwitchToPhysicsMovement();
             LOG_INFO("After switch to physics: " + std::string(controller->GetMovementTypeName()));
             
-            controller->SwitchToDeterministicMovement();
-            LOG_INFO("After switch to deterministic: " + std::string(controller->GetMovementTypeName()));
+            controller->SwitchToCharacterMovement();
+            LOG_INFO("After switch to character movement: " + std::string(controller->GetMovementTypeName()));
             
             controller->SwitchToHybridMovement();
             LOG_INFO("After switch to hybrid: " + std::string(controller->GetMovementTypeName()));
@@ -386,7 +386,7 @@ private:
         // Summary
         LOG_INFO("Performance Summary:");
         LOG_INFO("- PhysicsMovementComponent: Full physics simulation, highest accuracy, moderate performance");
-        LOG_INFO("- DeterministicMovementComponent: Precise control, predictable behavior, best performance");
+        LOG_INFO("- CharacterMovementComponent: Basic control, predictable behavior, best performance");
         LOG_INFO("- HybridMovementComponent: Physics collision + direct control, balanced approach");
         LOG_INFO("- All components maintain backward compatibility with Character and CharacterController");
     }

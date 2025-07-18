@@ -75,6 +75,26 @@
         "timestep": 0.016667,
         "max_substeps": 10
     },
+    "character": {
+        "default_movement_component": "Hybrid",
+        "fall_detection": {
+            "enabled": true,
+            "fall_limit": -5.0,
+            "spawn_position": [
+                0.0,
+                1.0,
+                0.0
+            ]
+        },
+        "movement_switching": {
+            "enabled": false,
+            "available_components": [
+                "CharacterMovement",
+                "Physics",
+                "Hybrid"
+            ]
+        }
+    },
     "world": {
         "streaming_distance": 1000.0,
         "lod_distances": [

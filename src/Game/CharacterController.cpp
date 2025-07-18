@@ -224,8 +224,8 @@ namespace GameEngine {
         SetMovementComponent(std::move(component));
     }
 
-    void CharacterController::SwitchToDeterministicMovement() {
-        auto component = MovementComponentFactory::CreateComponent(MovementComponentFactory::ComponentType::Deterministic);
+    void CharacterController::SwitchToCharacterMovement() {
+        auto component = MovementComponentFactory::CreateComponent(MovementComponentFactory::ComponentType::CharacterMovement);
         SetMovementComponent(std::move(component));
     }
 
@@ -248,9 +248,9 @@ namespace GameEngine {
         
         const char* typeName = m_movementComponent->GetComponentTypeName();
         
-        // CharacterController colors (red tones)
-        if (strcmp(typeName, "DeterministicMovementComponent") == 0) {
-            return Math::Vec4(1.0f, 0.2f, 0.4f, 1.0f); // Bright red for deterministic
+        // CharacterController colors (red tones) - simplified to 3 components
+        if (strcmp(typeName, "CharacterMovementComponent") == 0) {
+            return Math::Vec4(1.0f, 0.2f, 0.4f, 1.0f); // Bright red for basic movement
         }
         else if (strcmp(typeName, "HybridMovementComponent") == 0) {
             return Math::Vec4(1.0f, 0.0f, 0.8f, 1.0f); // Magenta for hybrid

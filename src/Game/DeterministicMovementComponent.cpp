@@ -43,13 +43,15 @@ namespace GameEngine {
     }
 
     void DeterministicMovementComponent::Jump() {
+        LOG_INFO("DeterministicMovementComponent::Jump() - canJump: " + std::to_string(m_config.canJump) + ", isGrounded: " + std::to_string(m_isGrounded) + ", Y: " + std::to_string(m_position.y));
+        
         if (!m_config.canJump) {
-            LOG_DEBUG("DeterministicMovementComponent: Jump disabled in config");
+            LOG_INFO("DeterministicMovementComponent: Jump disabled in config");
             return;
         }
         
         if (!m_isGrounded) {
-            LOG_DEBUG("DeterministicMovementComponent: Cannot jump - not grounded");
+            LOG_INFO("DeterministicMovementComponent: Cannot jump - not grounded (Y=" + std::to_string(m_position.y) + ")");
             return;
         }
 
@@ -58,7 +60,7 @@ namespace GameEngine {
         m_isJumping = true;
         m_movementMode = MovementMode::Falling;
         
-        LOG_DEBUG("DeterministicMovementComponent jumping with velocity: " + std::to_string(m_config.jumpZVelocity));
+        LOG_INFO("DeterministicMovementComponent jumping with velocity: " + std::to_string(m_config.jumpZVelocity));
     }
 
     void DeterministicMovementComponent::StopJumping() {
@@ -175,86 +177,44 @@ namespace GameEngine {
     }
 
     void DeterministicMovementComponent::CheckGroundCollision() {
-        // Use physics raycast to check for ground
-        if (m_physicsEngine) {
-            // Cast a ray downward from character center
-            Math::Vec3 rayOrigin = m_position;
-            Math::Vec3 rayDirection = Math::Vec3(0.0f, -1.0f, 0.0f); // Downward direction
-            float maxDistance = m_characterHeight + 0.5f; // Character height + small margin
+        // Simple ground collision check for basic movement (no physics)
+        // Ground plane is 100x100 units centered at origin (X: -50 to 50, Z: -50 to 50)
+        float groundLevel = 0.0f;
+        float characterCenterHeight = groundLevel + (m_characterHeight * 0.5f); // 0.9f for 1.8f height
+        
+        // Check if character is within ground plane bounds
+        bool withinGroundBounds = (m_position.x >= -50.0f && m_position.x <= 50.0f && 
+                                  m_position.z >= -50.0f && m_position.z <= 50.0f);
+        
+        if (withinGroundBounds && m_position.y <= characterCenterHeight && m_velocity.y <= 0.0f) {
+            // Character hit or is on ground and falling/stationary, and within ground bounds
+            m_position.y = characterCenterHeight; // Position character on ground
+            m_velocity.y = 0.0f; // Stop vertical movement
             
-            RaycastHit hit = m_physicsEngine->Raycast(rayOrigin, rayDirection, maxDistance);
-            if (hit.hasHit) {
-                // Hit something below us
-                float groundLevel = hit.point.y + (m_characterHeight * 0.5f); // Ground level + half character height
-                float characterBottom = m_position.y - (m_characterHeight * 0.5f);
-                
-                if (characterBottom <= groundLevel + 0.1f) { // Small tolerance
-                    // Character is on or very close to ground
-                    m_position.y = groundLevel; // Position character on ground
-                    
-                    if (m_velocity.y <= 0.0f) {
-                        m_velocity.y = 0.0f;
-                        
-                        if (!m_isGrounded) {
-                            // Just landed
-                            m_isGrounded = true;
-                            m_isJumping = false;
-                            m_movementMode = MovementMode::Walking;
-                            LOG_DEBUG("DeterministicMovementComponent: Landed on ground at Y=" + std::to_string(groundLevel));
-                        }
-                    }
-                } else {
-                    // Character is airborne
-                    if (m_isGrounded) {
-                        // Just left ground
-                        m_isGrounded = false;
-                        m_movementMode = MovementMode::Falling;
-                        LOG_DEBUG("DeterministicMovementComponent: Became airborne");
-                    }
-                }
-            } else {
-                // No ground detected below - character is falling
-                if (m_isGrounded) {
-                    // Just left ground area
-                    m_isGrounded = false;
-                    m_movementMode = MovementMode::Falling;
-                    LOG_DEBUG("DeterministicMovementComponent: No ground detected - falling");
-                }
+            if (!m_isGrounded) {
+                // Just landed
+                m_isGrounded = true;
+                m_isJumping = false;
+                m_movementMode = MovementMode::Walking;
+                LOG_INFO("DeterministicMovementComponent: Landed on ground at Y=" + std::to_string(m_position.y));
             }
-        } else {
-            // Fallback to simple ground collision check if no physics engine
-            float characterBottom = m_position.y - (m_characterHeight * 0.5f);
-            
-            if (characterBottom <= 0.0f) { // Ground level at y=0
-                // Character hit ground
-                m_position.y = m_characterHeight * 0.5f; // Position character on ground
-                
-                if (m_velocity.y <= 0.0f) {
-                    m_velocity.y = 0.0f;
-                    
-                    if (!m_isGrounded) {
-                        // Just landed
-                        m_isGrounded = true;
-                        m_isJumping = false;
-                        m_movementMode = MovementMode::Walking;
-                        LOG_DEBUG("DeterministicMovementComponent: Landed on ground (fallback)");
-                    }
-                }
-            } else {
-                // Character is airborne
-                if (m_isGrounded) {
-                    // Just left ground
-                    m_isGrounded = false;
-                    m_movementMode = MovementMode::Falling;
-                    LOG_DEBUG("DeterministicMovementComponent: Became airborne (fallback)");
-                }
+        } else if (!withinGroundBounds || m_position.y > characterCenterHeight + 0.1f) {
+            // Character is outside ground bounds OR clearly airborne
+            if (m_isGrounded) {
+                // Just left ground or ground area
+                m_isGrounded = false;
+                m_movementMode = MovementMode::Falling;
+                LOG_INFO("DeterministicMovementComponent: Became airborne at Y=" + std::to_string(m_position.y) + 
+                        " (withinBounds: " + std::to_string(withinGroundBounds) + ")");
             }
         }
+        // If between characterCenterHeight and characterCenterHeight + 0.1f AND within bounds, maintain current state (hysteresis)
     }
 
     void DeterministicMovementComponent::ProcessMovementInput() {
         // Handle jumping first (independent of movement input)
         if (m_jumpRequested) {
+            LOG_INFO("DeterministicMovementComponent: Jump requested, calling Jump()");
             Jump();
         }
         

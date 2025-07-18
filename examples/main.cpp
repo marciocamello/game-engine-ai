@@ -1,7 +1,7 @@
 #include "Core/Engine.h"
 #include "Core/Logger.h"
 #include "Game/Character.h"
-#include "Game/CharacterController.h"
+// CharacterController removed - using only Character with different movement components
 #include "Game/ThirdPersonCameraSystem.h"
 #include "Graphics/Camera.h"
 #include "Graphics/GraphicsRenderer.h"
@@ -16,12 +16,9 @@ using namespace GameEngine;
 class GameApplication {
 public:
   enum class CharacterType {
-    CharacterDeterministic,   // Character with DeterministicMovementComponent
-    CharacterHybrid,          // Character with HybridMovementComponent  
-    CharacterPhysics,         // Character with PhysicsMovementComponent
-    ControllerHybrid,         // CharacterController with HybridMovementComponent
-    ControllerDeterministic,  // CharacterController with DeterministicMovementComponent
-    ControllerPhysics         // CharacterController with PhysicsMovementComponent
+    CharacterMovement,        // Character with CharacterMovementComponent (basic)
+    Physics,                  // Character with PhysicsMovementComponent (realistic)
+    Hybrid                    // Character with HybridMovementComponent (balanced) - DEFAULT
   };
 
   GameApplication() = default;
@@ -55,21 +52,11 @@ public:
     Math::Vec3 spawnPosition(0.0f, 1.0f, 0.0f);
     m_character->SetSpawnPosition(spawnPosition);
     m_character->SetPosition(spawnPosition);
-    m_character->SetFallLimit(-2.0f);  // More sensitive fall detection
+    m_character->SetFallLimit(-5.0f);  // Fall detection at reasonable depth
 
-    // Initialize hybrid character controller
-    LOG_INFO("Initializing CharacterController...");
-    m_characterController = std::make_unique<CharacterController>();
-    if (!m_characterController->Initialize(m_engine.GetPhysics())) {
-      LOG_ERROR("Failed to initialize character controller");
-      return false;
-    }
-    
-    // Set spawn position and fall limit for character controller
-    m_characterController->SetSpawnPosition(spawnPosition);
-    m_characterController->SetPosition(spawnPosition);
-    m_characterController->SetFallLimit(-2.0f);  // More sensitive fall detection
-    LOG_INFO("CharacterController initialized successfully");
+    // Initialize character with Hybrid movement component as default (best for third-person games)
+    m_character->SwitchToHybridMovement();
+    LOG_INFO("Character initialized with HybridMovement (default for third-person games)");
 
     // Setup third-person camera system
     m_camera = std::make_unique<ThirdPersonCameraSystem>();
@@ -100,17 +87,14 @@ public:
     LOG_INFO("Controls:");
     LOG_INFO("  WASD - Move character");
     LOG_INFO("  Space - Jump");
-    LOG_INFO("  1 - Character + DeterministicMovement (blue, precise control)");
-    LOG_INFO("  2 - Character + HybridMovement (blue, physics collision + direct control)");
-    LOG_INFO("  3 - Character + PhysicsMovement (blue, full physics simulation)");
-    LOG_INFO("  4 - CharacterController + HybridMovement (red, physics collision + direct control)");
-    LOG_INFO("  5 - CharacterController + DeterministicMovement (red, precise control)");
-    LOG_INFO("  6 - CharacterController + PhysicsMovement (red, full physics simulation)");
+    LOG_INFO("  1 - DeterministicMovement (basic movement with manual physics)");
+    LOG_INFO("  2 - PhysicsMovement (full physics simulation)");
+    LOG_INFO("  3 - HybridMovement (physics collision + direct control) - DEFAULT");
     LOG_INFO("  ESC - Toggle mouse capture");
     LOG_INFO("  F1 - Exit");
     LOG_INFO("  F2 - Test fall detection (teleport character high up)");
     LOG_INFO("Fall Detection System:");
-    LOG_INFO("  - Characters automatically reset when falling below Y = -2.0");
+    LOG_INFO("  - Characters automatically reset when falling below Y = -5.0");
     LOG_INFO("  - Test by walking off the ground plane edges or pressing F2");
     return true;
   }
@@ -126,42 +110,25 @@ public:
     auto *input = m_engine.GetInput();
     auto *window = m_engine.GetRenderer()->GetWindow();
 
-    // Character switching - always switch regardless of movement state
+    // Character switching - simplified to 3 components only
+    // Default is Hybrid (balanced approach for third-person games)
     if (input->IsKeyPressed(KeyCode::Num1)) {
-      m_activeCharacter = CharacterType::CharacterDeterministic;
-      m_character->SwitchToDeterministicMovement();
+      m_activeCharacter = CharacterType::CharacterMovement;
+      m_character->SwitchToCharacterMovement();
       m_camera->SetTarget(m_character.get());
-      LOG_INFO("Switched to Character + DeterministicMovement (blue, precise control)");
+      LOG_INFO("Switched to CharacterMovement (basic movement with manual physics)");
     }
     if (input->IsKeyPressed(KeyCode::Num2)) {
-      m_activeCharacter = CharacterType::CharacterHybrid;
-      m_character->SwitchToHybridMovement();
-      m_camera->SetTarget(m_character.get());
-      LOG_INFO("Switched to Character + HybridMovement (blue, physics collision + direct control)");
-    }
-    if (input->IsKeyPressed(KeyCode::Num3)) {
-      m_activeCharacter = CharacterType::CharacterPhysics;
+      m_activeCharacter = CharacterType::Physics;
       m_character->SwitchToPhysicsMovement();
       m_camera->SetTarget(m_character.get());
-      LOG_INFO("Switched to Character + PhysicsMovement (blue, full physics simulation)");
+      LOG_INFO("Switched to PhysicsMovement (full physics simulation)");
     }
-    if (input->IsKeyPressed(KeyCode::Num4)) {
-      m_activeCharacter = CharacterType::ControllerHybrid;
-      m_characterController->SwitchToHybridMovement();
-      m_camera->SetTarget(m_character.get()); // Camera still follows Character for consistency
-      LOG_INFO("Switched to CharacterController + HybridMovement (red, physics collision + direct control)");
-    }
-    if (input->IsKeyPressed(KeyCode::Num5)) {
-      m_activeCharacter = CharacterType::ControllerDeterministic;
-      m_characterController->SwitchToDeterministicMovement();
-      m_camera->SetTarget(m_character.get()); // Camera still follows Character for consistency
-      LOG_INFO("Switched to CharacterController + DeterministicMovement (red, precise control)");
-    }
-    if (input->IsKeyPressed(KeyCode::Num6)) {
-      m_activeCharacter = CharacterType::ControllerPhysics;
-      m_characterController->SwitchToPhysicsMovement();
-      m_camera->SetTarget(m_character.get()); // Camera still follows Character for consistency
-      LOG_INFO("Switched to CharacterController + PhysicsMovement (red, full physics simulation)");
+    if (input->IsKeyPressed(KeyCode::Num3)) {
+      m_activeCharacter = CharacterType::Hybrid;
+      m_character->SwitchToHybridMovement();
+      m_camera->SetTarget(m_character.get());
+      LOG_INFO("Switched to HybridMovement (physics collision + direct control) - RECOMMENDED");
     }
 
     // ESC to release mouse cursor (for debugging/exiting)
@@ -204,60 +171,20 @@ public:
     // F2 to test fall detection - teleport character high up to test falling
     if (input->IsKeyPressed(KeyCode::F2)) {
       Math::Vec3 testFallPosition(0.0f, 20.0f, 0.0f); // High up in the air
-      switch (m_activeCharacter) {
-        case CharacterType::CharacterDeterministic:
-        case CharacterType::CharacterHybrid:
-        case CharacterType::CharacterPhysics:
-          m_character->SetPosition(testFallPosition);
-          LOG_INFO("Testing fall detection - Character teleported to high position");
-          break;
-        case CharacterType::ControllerHybrid:
-        case CharacterType::ControllerDeterministic:
-        case CharacterType::ControllerPhysics:
-          m_characterController->SetPosition(testFallPosition);
-          LOG_INFO("Testing fall detection - CharacterController teleported to high position");
-          break;
-      }
+      m_character->SetPosition(testFallPosition);
+      LOG_INFO("Testing fall detection - Character teleported to high position");
     }
 
-    // Update active character
-    switch (m_activeCharacter) {
-      case CharacterType::CharacterDeterministic:
-      case CharacterType::CharacterHybrid:
-      case CharacterType::CharacterPhysics:
-        // Update Character with its movement component
-        m_character->Update(deltaTime, m_engine.GetInput(), m_camera.get());
-        
-        // Check for fall and reset if needed
-        if (m_character->HasFallen()) {
-          LOG_INFO("Character has fallen! Resetting to spawn position...");
-          m_character->ResetToSpawnPosition();
-        }
-        
-        m_camera->Update(deltaTime, m_engine.GetInput());
-        break;
-        
-      case CharacterType::ControllerHybrid:
-      case CharacterType::ControllerDeterministic:
-      case CharacterType::ControllerPhysics:
-        // Update CharacterController WITH camera system so it can rotate correctly
-        m_characterController->Update(deltaTime, m_engine.GetInput(), m_camera.get());
-        
-        // Check for fall and reset if needed
-        if (m_characterController->HasFallen()) {
-          LOG_INFO("CharacterController has fallen! Resetting to spawn position...");
-          m_characterController->ResetToSpawnPosition();
-        }
-        
-        // TRICK: Sync Character position with CharacterController so camera follows correctly
-        // This way the ThirdPersonCameraSystem works normally
-        m_character->SetPosition(m_characterController->GetPosition());
-        m_character->SetRotation(m_characterController->GetRotation());
-        
-        // Update camera normally (it follows the Character which now has CharacterController's position)
-        m_camera->Update(deltaTime, m_engine.GetInput());
-        break;
+    // Update active character - simplified to use only Character with different movement components
+    m_character->Update(deltaTime, m_engine.GetInput(), m_camera.get());
+    
+    // Check for fall and reset if needed
+    if (m_character->HasFallen()) {
+      LOG_INFO("Character has fallen! Resetting to spawn position...");
+      m_character->ResetToSpawnPosition();
     }
+    
+    m_camera->Update(deltaTime, m_engine.GetInput());
   }
 
 private:
@@ -306,20 +233,8 @@ private:
     // Draw grid lines to see movement
     DrawGrid();
 
-    // Draw active character
-    switch (m_activeCharacter) {
-      case CharacterType::CharacterDeterministic:
-      case CharacterType::CharacterHybrid:
-      case CharacterType::CharacterPhysics:
-        m_character->Render(m_primitiveRenderer.get());
-        break;
-        
-      case CharacterType::ControllerHybrid:
-      case CharacterType::ControllerDeterministic:
-      case CharacterType::ControllerPhysics:
-        m_characterController->Render(m_primitiveRenderer.get());
-        break;
-    }
+    // Draw character - simplified to always use Character
+    m_character->Render(m_primitiveRenderer.get());
   }
 
   void DrawGrid() {
@@ -347,32 +262,15 @@ private:
     }
   }
 
-  void UpdateCameraForCharacterController() {
-    // Manual camera update for CharacterController since ThirdPersonCameraSystem only works with Character
-    Math::Vec3 characterPos = m_characterController->GetPosition();
-    Math::Vec3 cameraOffset(0.0f, 5.0f, 10.0f); // Behind and above character
-    
-    // Calculate camera position
-    Math::Vec3 cameraPos = characterPos + cameraOffset;
-    
-    // Update camera position manually using the underlying Camera
-    // We need to access the Camera inside ThirdPersonCameraSystem
-    // For now, let's create a simple follow camera
-    m_camera->SetPosition(cameraPos);
-    
-    LOG_DEBUG("Camera following CharacterController at position: (" + 
-             std::to_string(characterPos.x) + ", " + 
-             std::to_string(characterPos.y) + ", " + 
-             std::to_string(characterPos.z) + ")");
-  }
+  // UpdateCameraForCharacterController removed - using only Character now
 
   Engine m_engine;
   std::unique_ptr<ThirdPersonCameraSystem> m_camera;
   std::unique_ptr<Character> m_character;
-  std::unique_ptr<CharacterController> m_characterController;
+  // CharacterController removed - using only Character with different movement components
   std::unique_ptr<PrimitiveRenderer> m_primitiveRenderer;
   
-  CharacterType m_activeCharacter = CharacterType::CharacterDeterministic; // Start with Character + DeterministicMovement
+  CharacterType m_activeCharacter = CharacterType::Hybrid; // Start with Character + HybridMovement (default)
 };
 
 int main() {

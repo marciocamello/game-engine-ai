@@ -19,6 +19,60 @@ This approach is built on top of a **dual-backend physics architecture**:
 
 This combination allows developers to choose the perfect movement solution for each character type while maintaining physics compatibility.
 
+## 🎯 Raycast-Based Character Movement (Industry Standard)
+
+### Why Raycast for Character Movement?
+
+Game Engine Kiro follows the **industry-proven raycast approach** used by all major game engines:
+
+**🧠 Benefits of Raycast Movement:**
+
+- ✅ **Deterministic**: Same input always produces same result
+- ✅ **Lightweight**: No full physics simulation overhead
+- ✅ **Bug-Free**: Avoids physics glitches (pushing, sliding, jittering)
+- ✅ **Precise Control**: Perfect for platformers, FPS, third-person games
+- ✅ **Networking Friendly**: Predictable behavior for multiplayer
+
+**🎮 How Raycast Character Movement Works:**
+
+1. **Downward Raycast**: Cast ray vertically to detect ground
+
+   - If hit: Get ground normal and distance
+   - If no hit: Character is falling/airborne
+
+2. **Horizontal Movement**: Move character via direct position control
+
+   - Walk "on top of" detected ground surface
+   - Respect slopes, ramps, and inclined surfaces
+
+3. **Manual Gravity**: Apply controlled falling when no ground detected
+
+   - Fake gravity via manual deltaY adjustment
+   - No physics instability or unpredictable behavior
+
+4. **Lateral Collision**: Use side raycasts or capsule sweeps
+   - Detect walls and obstacles
+   - Prevent movement through solid objects
+
+**🏭 Engines Using Raycast for Characters:**
+
+- **Unity**: CharacterController uses internal raycasts + collision detection
+- **Godot**: KinematicBody (CharacterBody3D) with move_and_slide
+- **Unreal Engine**: CharacterMovementComponent uses sweeps and raycasts
+- **Source Engine**: Heavy raycast usage for all character movement
+- **Custom AAA Engines**: Raycast/sweep for deterministic, predictable movement
+
+**⚙️ Common Raycast Techniques:**
+
+| Technique               | Purpose                                 |
+| ----------------------- | --------------------------------------- |
+| **Downward Raycast**    | Detect ground, calculate floor height   |
+| **Forward + Downward**  | Detect edges, holes, and drop-offs      |
+| **Capsule Sweep**       | Collision detection without rigidbody   |
+| **Ground Normal Check** | Surface inclination validation          |
+| **Manual Gravity**      | Controlled falling with precise control |
+| **Slope Limiting**      | Block movement on steep surfaces        |
+
 ## 🎮 Movement Component System
 
 ### Component-Based Architecture
@@ -37,15 +91,37 @@ public:
 
 ### Movement Component Types
 
-#### 1. DeterministicMovementComponent ✅
+#### 1. CharacterMovementComponent (Raycast-Based) ✅
 
-**Best for:** Player characters, NPCs, precise platforming
+**Best for:** Player characters, NPCs, precise platforming, FPS games
 
-- **Direct Position Control**: No physics simulation, immediate response
-- **Predictable Behavior**: Identical results across platforms and runs
-- **Manual Collision**: Simple ground collision with configurable parameters
-- **High Performance**: Minimal CPU overhead, no physics calculations
-- **Networking Friendly**: Deterministic for multiplayer synchronization
+**🧠 Industry Standard Approach**: Uses raycast-based movement, the same technique used by Unity CharacterController, Unreal Engine CharacterMovementComponent, Godot KinematicBody, and Source Engine characters.
+
+**Core Features:**
+
+- **Raycast Ground Detection**: Vertical raycast to detect floor, slopes, and edges
+- **Deterministic Movement**: Same input always produces same result
+- **Manual Gravity**: Controlled falling without physics instability
+- **Ground Normal Respect**: Handles slopes, ramps, and inclined surfaces
+- **Edge Detection**: Forward + downward raycasts detect ledges and holes
+- **High Performance**: Minimal CPU overhead, no rigidbody physics
+- **Networking Friendly**: Fully deterministic for multiplayer synchronization
+
+**🎮 How It Works:**
+
+1. **Downward Raycast**: Detects ground height and surface normal
+2. **Horizontal Movement**: Direct position control with collision checks
+3. **Ground Following**: Character "walks on" detected surfaces
+4. **Manual Gravity**: If no ground detected, applies controlled falling
+5. **Lateral Collision**: Side raycasts or capsule sweeps detect walls
+
+**⚙️ Raycast Techniques Used:**
+
+- **Downward Raycast**: Ground detection and height calculation
+- **Forward + Downward**: Edge and hole detection
+- **Lateral Raycasts**: Wall collision detection
+- **Ground Normal Check**: Surface inclination validation
+- **Slope Limiting**: Block movement on steep surfaces
 
 ```cpp
 // Usage Example

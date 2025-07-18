@@ -55,6 +55,16 @@ $testExecutables = @(
         Type        = "Unit"
     },
     @{
+        Name        = "PhysicsEngineTest.exe"
+        Description = "Physics engine core functionality"
+        Type        = "Unit"
+    },
+    @{
+        Name        = "BulletPhysicsWorldTest.exe"
+        Description = "Bullet physics world wrapper"
+        Type        = "Unit"
+    },
+    @{
         Name        = "BulletIntegrationTest.exe"
         Description = "Bullet Physics integration"
         Type        = "Integration"

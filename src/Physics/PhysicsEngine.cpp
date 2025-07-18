@@ -1,4 +1,5 @@
 #include "Physics/PhysicsEngine.h"
+#include "Physics/PhysicsDebugDrawer.h"
 #include "Core/Logger.h"
 
 #ifdef GAMEENGINE_HAS_BULLET
@@ -8,7 +9,8 @@
 #endif
 
 namespace GameEngine {
-    PhysicsEngine::PhysicsEngine() {
+    PhysicsEngine::PhysicsEngine() 
+        : m_debugMode(Physics::PhysicsDebugMode::None), m_debugDrawingEnabled(false) {
     }
 
     PhysicsEngine::~PhysicsEngine() {
@@ -807,5 +809,150 @@ namespace GameEngine {
     void PhysicsWorld::Step(float deltaTime) {
         // Physics simulation step would be implemented here
         // This would integrate forces, detect collisions, resolve constraints, etc.
+    }
+
+    // Debug visualization implementation
+    void PhysicsEngine::SetDebugDrawer(std::shared_ptr<Physics::IPhysicsDebugDrawer> drawer) {
+        m_debugDrawer = drawer;
+        
+#ifdef GAMEENGINE_HAS_BULLET
+        if (drawer) {
+            m_bulletDebugDrawer = std::make_unique<Physics::BulletDebugDrawer>(drawer);
+            
+            // Set the debug drawer in the Bullet world
+            auto bulletWorldPtr = std::dynamic_pointer_cast<BulletPhysicsWorld>(m_activeWorld);
+            if (bulletWorldPtr) {
+                btDiscreteDynamicsWorld* bulletWorld = bulletWorldPtr->GetBulletWorld();
+                if (bulletWorld) {
+                    bulletWorld->setDebugDrawer(m_bulletDebugDrawer.get());
+                }
+            }
+        } else {
+            // Remove debug drawer
+            auto bulletWorldPtr = std::dynamic_pointer_cast<BulletPhysicsWorld>(m_activeWorld);
+            if (bulletWorldPtr) {
+                btDiscreteDynamicsWorld* bulletWorld = bulletWorldPtr->GetBulletWorld();
+                if (bulletWorld) {
+                    bulletWorld->setDebugDrawer(nullptr);
+                }
+            }
+            m_bulletDebugDrawer.reset();
+        }
+#endif
+        
+        LOG_DEBUG("Physics debug drawer " + std::string(drawer ? "set" : "removed"));
+    }
+    
+    void PhysicsEngine::SetDebugMode(Physics::PhysicsDebugMode mode) {
+        m_debugMode = mode;
+        
+#ifdef GAMEENGINE_HAS_BULLET
+        if (m_bulletDebugDrawer) {
+            int bulletDebugMode = 0;
+            
+            if (static_cast<int>(mode) & static_cast<int>(Physics::PhysicsDebugMode::Wireframe)) {
+                bulletDebugMode |= btIDebugDraw::DBG_DrawWireframe;
+            }
+            if (static_cast<int>(mode) & static_cast<int>(Physics::PhysicsDebugMode::AABB)) {
+                bulletDebugMode |= btIDebugDraw::DBG_DrawAabb;
+            }
+            if (static_cast<int>(mode) & static_cast<int>(Physics::PhysicsDebugMode::ContactPoints)) {
+                bulletDebugMode |= btIDebugDraw::DBG_DrawContactPoints;
+            }
+            if (static_cast<int>(mode) & static_cast<int>(Physics::PhysicsDebugMode::Constraints)) {
+                bulletDebugMode |= btIDebugDraw::DBG_DrawConstraints;
+            }
+            
+            m_bulletDebugDrawer->setDebugMode(bulletDebugMode);
+        }
+#endif
+        
+        LOG_DEBUG("Physics debug mode set to: " + std::to_string(static_cast<int>(mode)));
+    }
+    
+    Physics::PhysicsDebugMode PhysicsEngine::GetDebugMode() const {
+        return m_debugMode;
+    }
+    
+    void PhysicsEngine::EnableDebugDrawing(bool enabled) {
+        m_debugDrawingEnabled = enabled;
+        
+#ifdef GAMEENGINE_HAS_BULLET
+        if (m_bulletDebugDrawer) {
+            m_bulletDebugDrawer->SetEnabled(enabled);
+        }
+#endif
+        
+        LOG_DEBUG("Physics debug drawing " + std::string(enabled ? "enabled" : "disabled"));
+    }
+    
+    bool PhysicsEngine::IsDebugDrawingEnabled() const {
+        return m_debugDrawingEnabled;
+    }
+    
+    void PhysicsEngine::DrawDebugWorld() {
+        if (!m_debugDrawingEnabled || !m_debugDrawer) {
+            return;
+        }
+        
+        // Clear previous debug drawings
+        m_debugDrawer->Clear();
+        
+#ifdef GAMEENGINE_HAS_BULLET
+        auto bulletWorldPtr = std::dynamic_pointer_cast<BulletPhysicsWorld>(m_activeWorld);
+        if (bulletWorldPtr) {
+            btDiscreteDynamicsWorld* bulletWorld = bulletWorldPtr->GetBulletWorld();
+            if (bulletWorld && m_bulletDebugDrawer) {
+                bulletWorld->debugDrawWorld();
+            }
+        }
+#endif
+    }
+    
+    PhysicsEngine::PhysicsDebugInfo PhysicsEngine::GetDebugInfo() const {
+        PhysicsDebugInfo info;
+        
+        info.numRigidBodies = static_cast<int>(m_bulletBodies.size());
+        info.numGhostObjects = static_cast<int>(m_bulletGhostObjects.size());
+        info.worldGravity = m_configuration.gravity;
+        
+#ifdef GAMEENGINE_HAS_BULLET
+        auto bulletWorldPtr = std::dynamic_pointer_cast<BulletPhysicsWorld>(m_activeWorld);
+        if (bulletWorldPtr) {
+            btDiscreteDynamicsWorld* bulletWorld = bulletWorldPtr->GetBulletWorld();
+            if (bulletWorld) {
+                int numCollisionObjects = bulletWorld->getNumCollisionObjects();
+                info.numActiveObjects = 0;
+                info.numSleepingObjects = 0;
+                
+                for (int i = 0; i < numCollisionObjects; i++) {
+                    btCollisionObject* obj = bulletWorld->getCollisionObjectArray()[i];
+                    if (obj->isActive()) {
+                        info.numActiveObjects++;
+                    } else {
+                        info.numSleepingObjects++;
+                    }
+                }
+            }
+        }
+#endif
+        
+        return info;
+    }
+    
+    void PhysicsEngine::PrintDebugInfo() const {
+        PhysicsDebugInfo info = GetDebugInfo();
+        
+        LOG_INFO("=== Physics Debug Info ===");
+        LOG_INFO("Rigid Bodies: " + std::to_string(info.numRigidBodies));
+        LOG_INFO("Ghost Objects: " + std::to_string(info.numGhostObjects));
+        LOG_INFO("Active Objects: " + std::to_string(info.numActiveObjects));
+        LOG_INFO("Sleeping Objects: " + std::to_string(info.numSleepingObjects));
+        LOG_INFO("World Gravity: (" + 
+                std::to_string(info.worldGravity.x) + ", " + 
+                std::to_string(info.worldGravity.y) + ", " + 
+                std::to_string(info.worldGravity.z) + ")");
+        LOG_INFO("Simulation Time: " + std::to_string(info.simulationTime) + "ms");
+        LOG_INFO("========================");
     }
 }

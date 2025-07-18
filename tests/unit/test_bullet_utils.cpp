@@ -1,10 +1,16 @@
 #include <gtest/gtest.h>
+#include <gmock/gmock.h>
 
 #ifdef GAMEENGINE_HAS_BULLET
 
 #include "Physics/BulletUtils.h"
+#include "Core/Logger.h"
 #include <glm/gtc/constants.hpp>
 #include <glm/gtx/quaternion.hpp>
+#include <vector>
+#include <random>
+#include <chrono>
+#include <limits>
 
 using namespace GameEngine;
 using namespace GameEngine::Physics;
@@ -169,6 +175,161 @@ TEST_F(BulletUtilsTest, IdentityQuaternionConversion) {
     EXPECT_NEAR(roundTripIdentity.x, 0.0f, epsilon);
     EXPECT_NEAR(roundTripIdentity.y, 0.0f, epsilon);
     EXPECT_NEAR(roundTripIdentity.z, 0.0f, epsilon);
+}
+
+// Parameterized tests for comprehensive coverage
+class BulletUtilsParameterizedTest : public ::testing::TestWithParam<Math::Vec3> {
+protected:
+    void SetUp() override {
+        epsilon = 1e-6f;
+    }
+    
+    float epsilon;
+};
+
+TEST_P(BulletUtilsParameterizedTest, Vec3ConversionConsistency) {
+    Math::Vec3 testVec = GetParam();
+    
+    // Test round-trip conversion
+    btVector3 bulletVec = BulletUtils::ToBullet(testVec);
+    Math::Vec3 roundTripVec = BulletUtils::FromBullet(bulletVec);
+    
+    EXPECT_NEAR(roundTripVec.x, testVec.x, epsilon);
+    EXPECT_NEAR(roundTripVec.y, testVec.y, epsilon);
+    EXPECT_NEAR(roundTripVec.z, testVec.z, epsilon);
+}
+
+INSTANTIATE_TEST_SUITE_P(
+    VectorTestCases,
+    BulletUtilsParameterizedTest,
+    ::testing::Values(
+        Math::Vec3(0.0f, 0.0f, 0.0f),      // Zero vector
+        Math::Vec3(1.0f, 1.0f, 1.0f),      // Unit vector
+        Math::Vec3(-1.0f, -1.0f, -1.0f),   // Negative unit vector
+        Math::Vec3(100.0f, -50.0f, 25.0f), // Large values
+        Math::Vec3(0.001f, 0.002f, 0.003f), // Small values
+        Math::Vec3(std::numeric_limits<float>::max() * 0.1f, 0.0f, 0.0f), // Large positive
+        Math::Vec3(std::numeric_limits<float>::lowest() * 0.1f, 0.0f, 0.0f) // Large negative
+    )
+);
+
+// Performance and stress tests
+TEST_F(BulletUtilsTest, ConversionPerformanceTest) {
+    const int numIterations = 10000;
+    std::vector<Math::Vec3> testVectors;
+    std::vector<Math::Quat> testQuaternions;
+    
+    // Generate random test data
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    std::uniform_real_distribution<float> dis(-100.0f, 100.0f);
+    
+    for (int i = 0; i < numIterations; ++i) {
+        testVectors.emplace_back(dis(gen), dis(gen), dis(gen));
+        
+        // Generate normalized quaternions
+        Math::Quat q(dis(gen), dis(gen), dis(gen), dis(gen));
+        testQuaternions.push_back(glm::normalize(q));
+    }
+    
+    // Time vector conversions
+    auto start = std::chrono::high_resolution_clock::now();
+    
+    for (const auto& vec : testVectors) {
+        btVector3 bulletVec = BulletUtils::ToBullet(vec);
+        Math::Vec3 roundTrip = BulletUtils::FromBullet(bulletVec);
+        // Prevent optimization from removing the computation
+        volatile float dummy = roundTrip.x + roundTrip.y + roundTrip.z;
+        (void)dummy;
+    }
+    
+    auto end = std::chrono::high_resolution_clock::now();
+    auto vectorDuration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+    
+    // Time quaternion conversions
+    start = std::chrono::high_resolution_clock::now();
+    
+    for (const auto& quat : testQuaternions) {
+        btQuaternion bulletQuat = BulletUtils::ToBullet(quat);
+        Math::Quat roundTrip = BulletUtils::FromBullet(bulletQuat);
+        // Prevent optimization from removing the computation
+        volatile float dummy = roundTrip.x + roundTrip.y + roundTrip.z + roundTrip.w;
+        (void)dummy;
+    }
+    
+    end = std::chrono::high_resolution_clock::now();
+    auto quatDuration = std::chrono::duration_cast<std::chrono::microseconds>(end - start);
+    
+    // Performance should be reasonable (less than 1ms per 1000 conversions)
+    EXPECT_LT(vectorDuration.count(), 1000) << "Vector conversions took too long: " << vectorDuration.count() << "μs";
+    EXPECT_LT(quatDuration.count(), 1000) << "Quaternion conversions took too long: " << quatDuration.count() << "μs";
+    
+    std::cout << "Vector conversion performance: " << vectorDuration.count() << "μs for " << numIterations << " conversions\n";
+    std::cout << "Quaternion conversion performance: " << quatDuration.count() << "μs for " << numIterations << " conversions\n";
+}
+
+// Test with extreme values
+TEST_F(BulletUtilsTest, ExtremeValueHandling) {
+    // Test with very large values
+    Math::Vec3 largeVec(1e6f, -1e6f, 1e6f);
+    btVector3 bulletLarge = BulletUtils::ToBullet(largeVec);
+    Math::Vec3 roundTripLarge = BulletUtils::FromBullet(bulletLarge);
+    
+    EXPECT_NEAR(roundTripLarge.x, largeVec.x, largeVec.x * 1e-6f);
+    EXPECT_NEAR(roundTripLarge.y, largeVec.y, std::abs(largeVec.y) * 1e-6f);
+    EXPECT_NEAR(roundTripLarge.z, largeVec.z, largeVec.z * 1e-6f);
+    
+    // Test with very small values
+    Math::Vec3 smallVec(1e-6f, -1e-6f, 1e-6f);
+    btVector3 bulletSmall = BulletUtils::ToBullet(smallVec);
+    Math::Vec3 roundTripSmall = BulletUtils::FromBullet(bulletSmall);
+    
+    EXPECT_NEAR(roundTripSmall.x, smallVec.x, 1e-9f);
+    EXPECT_NEAR(roundTripSmall.y, smallVec.y, 1e-9f);
+    EXPECT_NEAR(roundTripSmall.z, smallVec.z, 1e-9f);
+}
+
+// Test quaternion normalization consistency
+TEST_F(BulletUtilsTest, QuaternionNormalizationConsistency) {
+    // Create an unnormalized quaternion
+    Math::Quat unnormalizedQuat(2.0f, 1.0f, 1.0f, 1.0f);
+    Math::Quat normalizedQuat = glm::normalize(unnormalizedQuat);
+    
+    // Convert both to Bullet and back
+    btQuaternion bulletUnnormalized = BulletUtils::ToBullet(unnormalizedQuat);
+    btQuaternion bulletNormalized = BulletUtils::ToBullet(normalizedQuat);
+    
+    // Bullet should normalize automatically
+    EXPECT_NEAR(bulletUnnormalized.length(), 1.0f, epsilon);
+    EXPECT_NEAR(bulletNormalized.length(), 1.0f, epsilon);
+    
+    Math::Quat roundTripUnnormalized = BulletUtils::FromBullet(bulletUnnormalized);
+    Math::Quat roundTripNormalized = BulletUtils::FromBullet(bulletNormalized);
+    
+    // Both should be normalized after round trip
+    float lengthUnnormalized = glm::length(roundTripUnnormalized);
+    float lengthNormalized = glm::length(roundTripNormalized);
+    
+    EXPECT_NEAR(lengthUnnormalized, 1.0f, epsilon);
+    EXPECT_NEAR(lengthNormalized, 1.0f, epsilon);
+}
+
+// Test using GoogleMock matchers for more expressive assertions
+TEST_F(BulletUtilsTest, ConversionWithMatchers) {
+    Math::Vec3 testVec(1.5f, -2.3f, 4.7f);
+    btVector3 bulletVec = BulletUtils::ToBullet(testVec);
+    
+    // Use GoogleMock matchers for more expressive tests
+    EXPECT_THAT(bulletVec.getX(), ::testing::FloatNear(testVec.x, epsilon));
+    EXPECT_THAT(bulletVec.getY(), ::testing::FloatNear(testVec.y, epsilon));
+    EXPECT_THAT(bulletVec.getZ(), ::testing::FloatNear(testVec.z, epsilon));
+    
+    // Test that all components are within expected range
+    std::vector<float> components = {bulletVec.getX(), bulletVec.getY(), bulletVec.getZ()};
+    EXPECT_THAT(components, ::testing::Each(::testing::AllOf(
+        ::testing::Ge(-10.0f),
+        ::testing::Le(10.0f)
+    )));
 }
 
 #endif // GAMEENGINE_HAS_BULLET

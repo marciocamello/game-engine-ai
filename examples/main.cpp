@@ -6,6 +6,7 @@
 #include "Graphics/Camera.h"
 #include "Graphics/GraphicsRenderer.h"
 #include "Graphics/PrimitiveRenderer.h"
+#include "Physics/PhysicsDebugManager.h"
 #include "Input/InputManager.h"
 #include "Physics/PhysicsEngine.h"
 #include <GLFW/glfw3.h>
@@ -38,6 +39,9 @@ public:
       return false;
     }
 
+    // The physics debug manager is now handled by the engine automatically
+    // No need to manually initialize it here
+
     // Create ground plane for physics
     CreateGroundPlane();
 
@@ -66,8 +70,9 @@ public:
     m_camera->SetSensitivity(0.8f, 0.6f);
     m_camera->SetMouseSensitivity(0.15f);
 
-    // Set camera in renderer
+    // Set camera in renderer and debug manager
     m_engine.GetRenderer()->SetCamera(m_camera.get());
+    m_engine.SetMainCamera(m_camera.get());
 
     // Setup input bindings
     auto *input = m_engine.GetInput();
@@ -90,6 +95,7 @@ public:
     LOG_INFO("  1 - DeterministicMovement (basic movement with manual physics)");
     LOG_INFO("  2 - PhysicsMovement (full physics simulation)");
     LOG_INFO("  3 - HybridMovement (physics collision + direct control) - DEFAULT");
+    LOG_INFO("  J - Toggle physics debug visualization");
     LOG_INFO("  ESC - Toggle mouse capture");
     LOG_INFO("  F1 - Exit");
     LOG_INFO("  F2 - Test fall detection (teleport character high up)");
@@ -130,6 +136,9 @@ public:
       m_camera->SetTarget(m_character.get());
       LOG_INFO("Switched to HybridMovement (physics collision + direct control) - RECOMMENDED");
     }
+
+    // Physics debug visualization is now handled automatically by the debug manager
+    // The 'D' key toggle is handled in the engine's physics debug manager
 
     // ESC to release mouse cursor (for debugging/exiting)
     if (input->IsKeyPressed(KeyCode::Escape)) {
@@ -271,6 +280,7 @@ private:
   std::unique_ptr<PrimitiveRenderer> m_primitiveRenderer;
   
   CharacterType m_activeCharacter = CharacterType::Hybrid; // Start with Character + HybridMovement (default)
+  bool m_debugPhysicsEnabled = false;
 };
 
 int main() {

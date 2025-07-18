@@ -3,9 +3,11 @@
 #include "Graphics/GraphicsRenderer.h"
 #include "Resource/ResourceManager.h"
 #include "Physics/PhysicsEngine.h"
+#include "Physics/PhysicsDebugManager.h"
 #include "Audio/AudioEngine.h"
 #include "Input/InputManager.h"
 #include "Scripting/ScriptingEngine.h"
+#include "Graphics/Camera.h"
 
 #include <GLFW/glfw3.h>
 
@@ -72,6 +74,13 @@ namespace GameEngine {
             return false;
         }
 
+        // Initialize physics debug manager
+        m_physicsDebugManager = std::make_unique<Physics::PhysicsDebugManager>();
+        if (!m_physicsDebugManager->Initialize(m_physics.get(), m_input.get())) {
+            LOG_ERROR("Failed to initialize physics debug manager");
+            return false;
+        }
+
         m_lastFrameTime = std::chrono::high_resolution_clock::now();
         m_isRunning = true;
 
@@ -98,6 +107,11 @@ namespace GameEngine {
         m_audio->Update(deltaTime);
         m_scripting->Update(deltaTime);
         
+        // Handle physics debug input
+        if (m_physicsDebugManager) {
+            m_physicsDebugManager->HandleInput();
+        }
+        
         // Call custom update callback if set
         if (m_updateCallback) {
             m_updateCallback(deltaTime);
@@ -108,9 +122,20 @@ namespace GameEngine {
         m_renderer->BeginFrame();
         m_renderer->Clear(Math::Vec4(0.2f, 0.3f, 0.8f, 1.0f)); // Sky blue background
         
+        // Begin physics debug frame
+        if (m_physicsDebugManager) {
+            m_physicsDebugManager->BeginFrame();
+        }
+        
         // Call custom render callback if set
         if (m_renderCallback) {
             m_renderCallback();
+        }
+        
+        // Render physics debug visualization
+        if (m_physicsDebugManager) {
+            m_physicsDebugManager->Render();
+            m_physicsDebugManager->EndFrame();
         }
         
         m_renderer->EndFrame();
@@ -121,6 +146,7 @@ namespace GameEngine {
         if (m_isRunning) {
             LOG_INFO("Game Engine Kiro - Shutting down...");
             
+            m_physicsDebugManager.reset();
             m_scripting.reset();
             m_input.reset();
             m_audio.reset();
@@ -132,6 +158,12 @@ namespace GameEngine {
             m_isRunning = false;
             
             LOG_INFO("Game Engine Kiro - Shutdown complete");
+        }
+    }
+    
+    void Engine::SetMainCamera(const Camera* camera) {
+        if (m_physicsDebugManager) {
+            m_physicsDebugManager->SetCamera(camera);
         }
     }
 }

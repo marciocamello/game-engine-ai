@@ -11,6 +11,14 @@
 #endif
 
 namespace GameEngine {
+    namespace Physics {
+        class IPhysicsDebugDrawer;
+        class BulletDebugDrawer;
+        enum class PhysicsDebugMode;
+    }
+}
+
+namespace GameEngine {
     /**
      * @brief Configuration parameters for physics simulation
      */
@@ -163,16 +171,44 @@ namespace GameEngine {
         void SetGhostObjectTransform(uint32_t ghostId, const Math::Vec3& position, const Math::Quat& rotation);
         std::vector<OverlapResult> GetGhostObjectOverlaps(uint32_t ghostId);
 
+        // Debug visualization
+        void SetDebugDrawer(std::shared_ptr<Physics::IPhysicsDebugDrawer> drawer);
+        void SetDebugMode(Physics::PhysicsDebugMode mode);
+        Physics::PhysicsDebugMode GetDebugMode() const;
+        void EnableDebugDrawing(bool enabled);
+        bool IsDebugDrawingEnabled() const;
+        void DrawDebugWorld();
+        
+        // Debug console commands
+        struct PhysicsDebugInfo {
+            int numRigidBodies = 0;
+            int numGhostObjects = 0;
+            int numActiveObjects = 0;
+            int numSleepingObjects = 0;
+            float simulationTime = 0.0f;
+            Math::Vec3 worldGravity{0.0f};
+        };
+        
+        PhysicsDebugInfo GetDebugInfo() const;
+        void PrintDebugInfo() const;
+
     private:
         std::shared_ptr<PhysicsWorld> m_activeWorld;
         uint32_t m_nextBodyId = 1;
         PhysicsConfiguration m_configuration;
+        
+        // Debug visualization
+        std::shared_ptr<Physics::IPhysicsDebugDrawer> m_debugDrawer;
+        Physics::PhysicsDebugMode m_debugMode;
+        bool m_debugDrawingEnabled = false;
         
 #ifdef GAMEENGINE_HAS_BULLET
         // Mapping from body ID to Bullet rigid body for direct access
         std::unordered_map<uint32_t, btRigidBody*> m_bulletBodies;
         // Mapping from ghost ID to Bullet ghost object for collision detection
         std::unordered_map<uint32_t, btGhostObject*> m_bulletGhostObjects;
+        // Bullet debug drawer
+        std::unique_ptr<Physics::BulletDebugDrawer> m_bulletDebugDrawer;
 #endif
     };
 

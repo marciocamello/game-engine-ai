@@ -11,6 +11,11 @@ namespace GameEngine {
     class AudioEngine;
     class InputManager;
     class ScriptingEngine;
+    class Camera;
+    
+    namespace Physics {
+        class PhysicsDebugManager;
+    }
 
     class Engine {
     public:
@@ -28,6 +33,7 @@ namespace GameEngine {
         AudioEngine* GetAudio() const { return m_audio.get(); }
         InputManager* GetInput() const { return m_input.get(); }
         ScriptingEngine* GetScripting() const { return m_scripting.get(); }
+        Physics::PhysicsDebugManager* GetPhysicsDebugManager() const { return m_physicsDebugManager.get(); }
 
         float GetDeltaTime() const { return m_deltaTime; }
         bool IsRunning() const { return m_isRunning; }
@@ -35,6 +41,9 @@ namespace GameEngine {
         // Callback system for custom game logic
         void SetUpdateCallback(std::function<void(float)> callback) { m_updateCallback = callback; }
         void SetRenderCallback(std::function<void()> callback) { m_renderCallback = callback; }
+        
+        // Camera management for debug rendering
+        void SetMainCamera(const Camera* camera);
 
     private:
         void Update(float deltaTime);
@@ -46,6 +55,7 @@ namespace GameEngine {
         std::unique_ptr<AudioEngine> m_audio;
         std::unique_ptr<InputManager> m_input;
         std::unique_ptr<ScriptingEngine> m_scripting;
+        std::unique_ptr<Physics::PhysicsDebugManager> m_physicsDebugManager;
 
         bool m_isRunning;
         float m_deltaTime;

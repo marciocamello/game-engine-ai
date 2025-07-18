@@ -16,6 +16,7 @@ option(ENABLE_OPENGL "Enable OpenGL renderer" ON)
 option(ENABLE_DLSS "Enable NVIDIA DLSS support" OFF)
 option(ENABLE_FSR "Enable AMD FSR support" OFF)
 option(USE_VCPKG "Use vcpkg for dependencies" ON)
+option(ENABLE_COVERAGE "Enable test coverage analysis" OFF)
 
 # Setup vcpkg toolchain if available
 if(USE_VCPKG AND EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/vcpkg/scripts/buildsystems/vcpkg.cmake")
@@ -37,6 +38,7 @@ find_package(Lua QUIET)
 find_package(nlohmann_json QUIET)
 find_package(fmt QUIET)
 find_package(GTest QUIET)
+find_package(GMock QUIET)
 
 # Engine source files
 file(GLOB_RECURSE ENGINE_SOURCES
@@ -134,12 +136,37 @@ endif()
 if(MSVC)
     target_compile_options(GameEngineKiro PRIVATE /W4)
     target_compile_definitions(GameEngineKiro PRIVATE _CRT_SECURE_NO_WARNINGS)
+    
+    # Coverage support for MSVC (debug symbols and optimization control)
+    if(ENABLE_COVERAGE OR CMAKE_BUILD_TYPE STREQUAL "Debug")
+        target_compile_options(GameEngineKiro PRIVATE /Zi /Od)
+        target_link_options(GameEngineKiro PRIVATE /DEBUG:FULL)
+    endif()
 else()
     target_compile_options(GameEngineKiro PRIVATE -Wall -Wextra -Wpedantic)
+    
+    # Coverage support for GCC/Clang
+    if(ENABLE_COVERAGE)
+        target_compile_options(GameEngineKiro PRIVATE --coverage -g -O0)
+        target_link_options(GameEngineKiro PRIVATE --coverage)
+    endif()
 endif()
 
 # GLM experimental features
 target_compile_definitions(GameEngineKiro PUBLIC GLM_ENABLE_EXPERIMENTAL)
+
+# Function to apply coverage settings to test executables
+function(apply_coverage_settings target_name)
+    if(ENABLE_COVERAGE)
+        if(MSVC)
+            target_compile_options(${target_name} PRIVATE /Zi /Od)
+            target_link_options(${target_name} PRIVATE /DEBUG:FULL)
+        else()
+            target_compile_options(${target_name} PRIVATE --coverage -g -O0)
+            target_link_options(${target_name} PRIVATE --coverage)
+        endif()
+    endif()
+endfunction()
 
 # Example game executable
 add_executable(GameExample
@@ -162,40 +189,84 @@ add_executable(CharacterControllerTest
 
 target_link_libraries(CharacterControllerTest PRIVATE GameEngineKiro)
 
+# Physics debug renderer example
+add_executable(PhysicsDebugExample
+    examples/physics_debug_example.cpp
+)
+
+target_link_libraries(PhysicsDebugExample PRIVATE GameEngineKiro)
+
 # Integration test for Bullet Physics
 add_executable(BulletIntegrationTest
     tests/integration/test_bullet_integration.cpp
 )
+apply_coverage_settings(BulletIntegrationTest)
 
 # Integration test for Bullet conversion utilities
 add_executable(BulletConversionTest
     tests/integration/test_bullet_conversion.cpp
 )
+apply_coverage_settings(BulletConversionTest)
 
 # Simple integration test for Bullet conversion utilities
 add_executable(BulletUtilsSimpleTest
     tests/integration/test_bullet_utils_simple.cpp
 )
+apply_coverage_settings(BulletUtilsSimpleTest)
 
 # Simple integration test for CollisionShapeFactory
 add_executable(CollisionShapeFactorySimpleTest
     tests/integration/test_collision_shape_factory_simple.cpp
 )
+apply_coverage_settings(CollisionShapeFactorySimpleTest)
 
 # Physics queries integration test
 add_executable(PhysicsQueriesTest
     tests/integration/test_physics_queries.cpp
 )
+apply_coverage_settings(PhysicsQueriesTest)
 
 # Physics configuration integration test
 add_executable(PhysicsConfigurationTest
     tests/integration/test_physics_configuration.cpp
 )
+apply_coverage_settings(PhysicsConfigurationTest)
 
 # Movement component comparison test
 add_executable(MovementComponentComparisonTest
     tests/integration/test_movement_component_comparison.cpp
 )
+apply_coverage_settings(MovementComponentComparisonTest)
+
+# Simple physics performance test
+add_executable(PhysicsPerformanceSimpleTest
+    tests/integration/test_physics_performance_simple.cpp
+)
+apply_coverage_settings(PhysicsPerformanceSimpleTest)
+
+# Simple memory usage test
+add_executable(MemoryUsageSimpleTest
+    tests/integration/test_memory_usage_simple.cpp
+)
+apply_coverage_settings(MemoryUsageSimpleTest)
+
+# Simple character behavior test
+add_executable(CharacterBehaviorSimpleTest
+    tests/integration/test_character_behavior_simple.cpp
+)
+apply_coverage_settings(CharacterBehaviorSimpleTest)
+
+# Physics debug drawer integration test
+add_executable(PhysicsDebugDrawerTest
+    tests/integration/test_physics_debug_drawer.cpp
+)
+apply_coverage_settings(PhysicsDebugDrawerTest)
+
+# Physics debug renderer integration test
+add_executable(PhysicsDebugRendererTest
+    tests/integration/test_physics_debug_renderer.cpp
+)
+apply_coverage_settings(PhysicsDebugRendererTest)
 
 target_link_libraries(BulletIntegrationTest PRIVATE GameEngineKiro)
 target_link_libraries(BulletConversionTest PRIVATE GameEngineKiro)
@@ -204,6 +275,23 @@ target_link_libraries(CollisionShapeFactorySimpleTest PRIVATE GameEngineKiro)
 target_link_libraries(PhysicsQueriesTest PRIVATE GameEngineKiro)
 target_link_libraries(PhysicsConfigurationTest PRIVATE GameEngineKiro)
 target_link_libraries(MovementComponentComparisonTest PRIVATE GameEngineKiro)
+target_link_libraries(PhysicsPerformanceSimpleTest PRIVATE GameEngineKiro)
+target_link_libraries(MemoryUsageSimpleTest PRIVATE GameEngineKiro)
+target_link_libraries(CharacterBehaviorSimpleTest PRIVATE GameEngineKiro)
+target_link_libraries(PhysicsDebugDrawerTest PRIVATE GameEngineKiro)
+target_link_libraries(PhysicsDebugRendererTest PRIVATE GameEngineKiro)
+
+# Add GoogleTest and GoogleMock to debug tests if available
+if(GTest_FOUND)
+    target_link_libraries(PhysicsDebugDrawerTest PRIVATE 
+        GTest::gtest_main
+        GTest::gmock_main
+    )
+    target_link_libraries(PhysicsDebugRendererTest PRIVATE 
+        GTest::gtest_main
+        GTest::gmock_main
+    )
+endif()
 
 if(Bullet_FOUND)
     target_link_libraries(BulletIntegrationTest PRIVATE 
@@ -235,6 +323,42 @@ if(Bullet_FOUND)
         BulletCollision
         LinearMath
     )
+    
+    target_link_libraries(PhysicsConfigurationTest PRIVATE 
+        BulletDynamics
+        BulletCollision
+        LinearMath
+    )
+    
+    target_link_libraries(MovementComponentComparisonTest PRIVATE 
+        BulletDynamics
+        BulletCollision
+        LinearMath
+    )
+    
+    target_link_libraries(PhysicsPerformanceSimpleTest PRIVATE 
+        BulletDynamics
+        BulletCollision
+        LinearMath
+    )
+    
+    target_link_libraries(MemoryUsageSimpleTest PRIVATE 
+        BulletDynamics
+        BulletCollision
+        LinearMath
+    )
+    
+    target_link_libraries(CharacterBehaviorSimpleTest PRIVATE 
+        BulletDynamics
+        BulletCollision
+        LinearMath
+    )
+    
+    target_link_libraries(PhysicsDebugDrawerTest PRIVATE 
+        BulletDynamics
+        BulletCollision
+        LinearMath
+    )
 endif()
 
 # Unit tests
@@ -244,10 +368,12 @@ if(GTest_FOUND)
     add_executable(BulletUtilsTest
         tests/unit/test_bullet_utils.cpp
     )
+    apply_coverage_settings(BulletUtilsTest)
     
     target_link_libraries(BulletUtilsTest PRIVATE 
         GameEngineKiro
         GTest::gtest_main
+        GTest::gmock_main
     )
     
     if(Bullet_FOUND)
@@ -261,10 +387,12 @@ if(GTest_FOUND)
     add_executable(CollisionShapeFactoryTest
         tests/unit/test_collision_shape_factory.cpp
     )
+    apply_coverage_settings(CollisionShapeFactoryTest)
     
     target_link_libraries(CollisionShapeFactoryTest PRIVATE 
         GameEngineKiro
         GTest::gtest_main
+        GTest::gmock_main
     )
     
     if(Bullet_FOUND)

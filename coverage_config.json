@@ -1,0 +1,150 @@
+{
+    "coverage_analysis": {
+        "description": "Configuration for automated test coverage analysis",
+        "version": "1.0.0",
+        "platform": "windows",
+        "tool": "OpenCppCoverage"
+    },
+    "source_paths": [
+        "src",
+        "include"
+    ],
+    "excluded_paths": [
+        "vcpkg",
+        "build",
+        "tests",
+        "examples",
+        "third_party",
+        ".git",
+        ".vscode",
+        "logs"
+    ],
+    "test_executables": [
+        {
+            "name": "BulletUtilsTest.exe",
+            "description": "Bullet Physics utility functions",
+            "type": "unit",
+            "priority": "high"
+        },
+        {
+            "name": "CollisionShapeFactoryTest.exe",
+            "description": "Collision shape factory",
+            "type": "unit",
+            "priority": "high"
+        },
+        {
+            "name": "BulletIntegrationTest.exe",
+            "description": "Bullet Physics integration",
+            "type": "integration",
+            "priority": "high"
+        },
+        {
+            "name": "BulletConversionTest.exe",
+            "description": "Math type conversions",
+            "type": "integration",
+            "priority": "high"
+        },
+        {
+            "name": "BulletUtilsSimpleTest.exe",
+            "description": "Simple Bullet utilities",
+            "type": "integration",
+            "priority": "medium"
+        },
+        {
+            "name": "CollisionShapeFactorySimpleTest.exe",
+            "description": "Simple collision shape factory",
+            "type": "integration",
+            "priority": "medium"
+        },
+        {
+            "name": "PhysicsQueriesTest.exe",
+            "description": "Physics queries (raycast, overlap, sweep)",
+            "type": "integration",
+            "priority": "high"
+        },
+        {
+            "name": "PhysicsConfigurationTest.exe",
+            "description": "Physics configuration",
+            "type": "integration",
+            "priority": "medium"
+        },
+        {
+            "name": "MovementComponentComparisonTest.exe",
+            "description": "Movement component comparison",
+            "type": "integration",
+            "priority": "high"
+        },
+        {
+            "name": "CharacterBehaviorSimpleTest.exe",
+            "description": "Character behavior validation",
+            "type": "integration",
+            "priority": "high"
+        },
+        {
+            "name": "PhysicsDebugDrawerTest.exe",
+            "description": "Physics debug drawer",
+            "type": "debug",
+            "priority": "low"
+        }
+    ],
+    "coverage_thresholds": {
+        "line_coverage": 100.0,
+        "branch_coverage": 95.0,
+        "function_coverage": 100.0,
+        "warning_threshold": 80.0
+    },
+    "report_formats": {
+        "html": {
+            "enabled": true,
+            "output_dir": "coverage_reports",
+            "include_source": true,
+            "highlight_uncovered": true
+        },
+        "xml": {
+            "enabled": true,
+            "format": "cobertura",
+            "filename": "coverage.xml"
+        },
+        "json": {
+            "enabled": true,
+            "filename": "coverage.json",
+            "include_file_details": true
+        },
+        "console": {
+            "enabled": true,
+            "verbose": false,
+            "show_file_details": true
+        }
+    },
+    "baseline": {
+        "enabled": true,
+        "filename": "coverage_baseline.json",
+        "auto_update": false,
+        "regression_threshold": -5.0
+    },
+    "build_settings": {
+        "build_type": "Debug",
+        "enable_debug_symbols": true,
+        "optimization_level": "O0",
+        "build_before_analysis": true,
+        "clean_build": false
+    },
+    "execution_settings": {
+        "timeout_seconds": 300,
+        "parallel_execution": false,
+        "continue_on_test_failure": true,
+        "capture_output": true
+    },
+    "quality_gates": {
+        "fail_on_threshold_miss": true,
+        "fail_on_regression": true,
+        "fail_on_missing_tests": false,
+        "warning_on_low_coverage": true
+    },
+    "notifications": {
+        "console_colors": true,
+        "detailed_summary": true,
+        "performance_metrics": true,
+        "recommendations": true
+    }
+}

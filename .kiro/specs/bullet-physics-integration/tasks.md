@@ -233,9 +233,8 @@
 
 **Windows Development Workflow:**
 
-- Use `.\build.bat` to build project with Bullet Physics integration
-- Use `.\dev.bat` for development builds with debug symbols
-- Tests will use GoogleTest + GoogleMock workflow
+- Use `.\scripts\build.bat` to build project with Bullet Physics integration
+- Use `.\scripts\dev.bat` for development builds with debug symbols
 - Visual Studio 2022 for debugging and development
 
 **Key Files to Modify:**

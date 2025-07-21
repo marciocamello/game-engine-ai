@@ -166,6 +166,125 @@ function(apply_coverage_settings target_name)
     endif()
 endfunction()
 
+# Function to create a unit test executable with standard configuration
+function(add_unit_test test_name source_file)
+    # Create the executable
+    add_executable(${test_name} ${source_file})
+    
+    # Apply coverage settings
+    apply_coverage_settings(${test_name})
+    
+    # Link with engine library
+    target_link_libraries(${test_name} PRIVATE GameEngineKiro)
+    
+    # Add test utilities include
+    target_include_directories(${test_name} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/tests)
+    
+    # Add to test list for potential automation
+    set_property(GLOBAL APPEND PROPERTY UNIT_TEST_TARGETS ${test_name})
+endfunction()
+
+# Function to create an integration test executable with standard configuration
+function(add_integration_test test_name source_file)
+    # Create the executable
+    add_executable(${test_name} ${source_file})
+    
+    # Apply coverage settings
+    apply_coverage_settings(${test_name})
+    
+    # Link with engine library
+    target_link_libraries(${test_name} PRIVATE GameEngineKiro)
+    
+    # Add test utilities include
+    target_include_directories(${test_name} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/tests)
+    
+    # Link with Bullet Physics if available (common for integration tests)
+    if(Bullet_FOUND)
+        target_link_libraries(${test_name} PRIVATE 
+            BulletDynamics
+            BulletCollision
+            LinearMath
+        )
+    endif()
+    
+    # Add to test list for potential automation
+    set_property(GLOBAL APPEND PROPERTY INTEGRATION_TEST_TARGETS ${test_name})
+endfunction()
+
+# Function to create a performance test executable with standard configuration
+function(add_performance_test test_name source_file)
+    # Create the executable
+    add_executable(${test_name} ${source_file})
+    
+    # Apply coverage settings (usually disabled for performance tests)
+    # apply_coverage_settings(${test_name})
+    
+    # Link with engine library
+    target_link_libraries(${test_name} PRIVATE GameEngineKiro)
+    
+    # Add test utilities include
+    target_include_directories(${test_name} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/tests)
+    
+    # Optimization flags for performance tests
+    if(MSVC)
+        target_compile_options(${test_name} PRIVATE /O2)
+    else()
+        target_compile_options(${test_name} PRIVATE -O2)
+    endif()
+    
+    # Add to test list for potential automation
+    set_property(GLOBAL APPEND PROPERTY PERFORMANCE_TEST_TARGETS ${test_name})
+endfunction()
+
+# Function to automatically discover and add test files
+function(discover_and_add_tests test_directory test_type)
+    file(GLOB test_files "${test_directory}/test_*.cpp")
+    
+    foreach(test_file ${test_files})
+        # Extract test name from filename
+        get_filename_component(test_name_with_ext ${test_file} NAME)
+        string(REPLACE ".cpp" "" test_name_base ${test_name_with_ext})
+        
+        # Convert to PascalCase for executable name
+        string(REGEX REPLACE "test_([a-z])([a-z_]*)" "\\1\\2" test_name_clean ${test_name_base})
+        string(SUBSTRING ${test_name_clean} 0 1 first_char)
+        string(TOUPPER ${first_char} first_char_upper)
+        string(SUBSTRING ${test_name_clean} 1 -1 rest_chars)
+        string(REPLACE "_" "" rest_chars_clean ${rest_chars})
+        set(test_executable_name "${first_char_upper}${rest_chars_clean}Test")
+        
+        # Add the appropriate test type
+        if(test_type STREQUAL "unit")
+            add_unit_test(${test_executable_name} ${test_file})
+        elseif(test_type STREQUAL "integration")
+            add_integration_test(${test_executable_name} ${test_file})
+        elseif(test_type STREQUAL "performance")
+            add_performance_test(${test_executable_name} ${test_file})
+        endif()
+        
+        message(STATUS "Added ${test_type} test: ${test_executable_name} from ${test_file}")
+    endforeach()
+endfunction()
+
+# Function to print all discovered tests
+function(print_test_summary)
+    get_property(unit_tests GLOBAL PROPERTY UNIT_TEST_TARGETS)
+    get_property(integration_tests GLOBAL PROPERTY INTEGRATION_TEST_TARGETS)
+    get_property(performance_tests GLOBAL PROPERTY PERFORMANCE_TEST_TARGETS)
+    
+    if(unit_tests)
+        message(STATUS "Unit Tests: ${unit_tests}")
+    endif()
+    
+    if(integration_tests)
+        message(STATUS "Integration Tests: ${integration_tests}")
+    endif()
+    
+    if(performance_tests)
+        message(STATUS "Performance Tests: ${performance_tests}")
+    endif()
+endfunction()
+
 # Example game executable
 add_executable(GameExample
     examples/main.cpp
@@ -207,22 +326,13 @@ add_executable(BulletConversionTest
 apply_coverage_settings(BulletConversionTest)
 
 # Simple integration test for Bullet conversion utilities
-add_executable(BulletUtilsSimpleTest
-    tests/integration/test_bullet_utils_simple.cpp
-)
-apply_coverage_settings(BulletUtilsSimpleTest)
+add_integration_test(BulletUtilsSimpleTest tests/integration/test_bullet_utils_simple.cpp)
 
 # Simple integration test for CollisionShapeFactory
-add_executable(CollisionShapeFactorySimpleTest
-    tests/integration/test_collision_shape_factory_simple.cpp
-)
-apply_coverage_settings(CollisionShapeFactorySimpleTest)
+add_integration_test(CollisionShapeFactorySimpleTest tests/integration/test_collision_shape_factory_simple.cpp)
 
 # Physics queries integration test
-add_executable(PhysicsQueriesTest
-    tests/integration/test_physics_queries.cpp
-)
-apply_coverage_settings(PhysicsQueriesTest)
+add_integration_test(PhysicsQueriesTest tests/integration/test_physics_queries.cpp)
 
 # Physics configuration integration test
 add_executable(PhysicsConfigurationTest
@@ -254,17 +364,14 @@ add_executable(CharacterBehaviorSimpleTest
 )
 apply_coverage_settings(CharacterBehaviorSimpleTest)
 
-# Unit test for Math utilities
-add_executable(MathUnitTest
-    tests/unit/test_math.cpp
-)
-apply_coverage_settings(MathUnitTest)
+# Discover and add unit tests automatically
+discover_and_add_tests("tests/unit" "unit")
 
 
 
 target_link_libraries(BulletIntegrationTest PRIVATE GameEngineKiro)
 target_link_libraries(BulletConversionTest PRIVATE GameEngineKiro)
-target_link_libraries(BulletUtilsSimpleTest PRIVATE GameEngineKiro)
+
 target_link_libraries(CollisionShapeFactorySimpleTest PRIVATE GameEngineKiro)
 target_link_libraries(PhysicsQueriesTest PRIVATE GameEngineKiro)
 target_link_libraries(PhysicsConfigurationTest PRIVATE GameEngineKiro)
@@ -272,7 +379,8 @@ target_link_libraries(MovementComponentComparisonTest PRIVATE GameEngineKiro)
 target_link_libraries(PhysicsPerformanceSimpleTest PRIVATE GameEngineKiro)
 target_link_libraries(MemoryUsageSimpleTest PRIVATE GameEngineKiro)
 target_link_libraries(CharacterBehaviorSimpleTest PRIVATE GameEngineKiro)
-target_link_libraries(MathUnitTest PRIVATE GameEngineKiro)
+# Print test summary
+print_test_summary()
 
 
 
@@ -289,11 +397,7 @@ if(Bullet_FOUND)
         LinearMath
     )
     
-    target_link_libraries(BulletUtilsSimpleTest PRIVATE 
-        BulletDynamics
-        BulletCollision
-        LinearMath
-    )
+
     
     target_link_libraries(CollisionShapeFactorySimpleTest PRIVATE 
         BulletDynamics

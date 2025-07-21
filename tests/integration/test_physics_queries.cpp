@@ -1,12 +1,18 @@
 #include "Physics/PhysicsEngine.h"
+#include "TestUtils.h"
 #include "Core/Logger.h"
 #include <iostream>
 #include <cassert>
 
 using namespace GameEngine;
+using namespace GameEngine::Testing;
 
-void TestRaycast() {
-    std::cout << "Testing Raycast functionality..." << std::endl;
+/**
+ * Test raycast functionality
+ * Requirements: Physics system integration, collision detection
+ */
+bool TestRaycast() {
+    TestOutput::PrintTestStart("raycast functionality");
     
     PhysicsEngine engine;
     if (!engine.Initialize()) {

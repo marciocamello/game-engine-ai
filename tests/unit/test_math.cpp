@@ -1,101 +1,114 @@
 #include <iostream>
 #include <cassert>
 #include <cmath>
+#include "TestUtils.h"
 #include "Core/Math.h"
 
 using namespace GameEngine;
+using namespace GameEngine::Testing;
 
-// Helper function for floating point comparison
-bool IsNearlyEqual(float a, float b, float epsilon = 0.001f) {
-    return std::abs(a - b) < epsilon;
-}
-
-// Test basic vector operations
+/**
+ * Test basic vector operations
+ * Requirements: 6.1, 6.2 (Math operations validation)
+ */
 bool TestVectorOperations() {
-    std::cout << "Testing vector operations..." << std::endl;
+    TestOutput::PrintTestStart("vector operations");
     
     // Test vector addition
     Math::Vec3 a(1.0f, 2.0f, 3.0f);
     Math::Vec3 b(4.0f, 5.0f, 6.0f);
     Math::Vec3 result = a + b;
+    Math::Vec3 expected(5.0f, 7.0f, 9.0f);
     
-    assert(IsNearlyEqual(result.x, 5.0f));
-    assert(IsNearlyEqual(result.y, 7.0f));
-    assert(IsNearlyEqual(result.z, 9.0f));
+    EXPECT_VEC3_NEARLY_EQUAL(result, expected);
     
     // Test vector subtraction
     Math::Vec3 diff = b - a;
-    assert(IsNearlyEqual(diff.x, 3.0f));
-    assert(IsNearlyEqual(diff.y, 3.0f));
-    assert(IsNearlyEqual(diff.z, 3.0f));
+    Math::Vec3 expectedDiff(3.0f, 3.0f, 3.0f);
+    EXPECT_VEC3_NEARLY_EQUAL(diff, expectedDiff);
     
     // Test vector length
     Math::Vec3 unit(1.0f, 0.0f, 0.0f);
     float length = glm::length(unit);
-    assert(IsNearlyEqual(length, 1.0f));
+    EXPECT_NEARLY_EQUAL(length, 1.0f);
     
-    std::cout << "  [PASS] Vector operations passed" << std::endl;
+    TestOutput::PrintTestPass("vector operations");
     return true;
 }
 
-// Test angle conversion functions
+/**
+ * Test angle conversion functions
+ * Requirements: 6.1, 6.2 (Math operations validation)
+ */
 bool TestAngleConversion() {
-    std::cout << "Testing angle conversions..." << std::endl;
+    TestOutput::PrintTestStart("angle conversions");
     
     // Test degrees to radians
     float degrees = 90.0f;
     float radians = Math::ToRadians(degrees);
-    assert(IsNearlyEqual(radians, Math::HALF_PI));
+    EXPECT_NEARLY_EQUAL(radians, Math::HALF_PI);
     
     // Test radians to degrees
     float backToDegrees = Math::ToDegrees(radians);
-    assert(IsNearlyEqual(backToDegrees, 90.0f));
+    EXPECT_NEARLY_EQUAL(backToDegrees, 90.0f);
     
     // Test constants
-    assert(IsNearlyEqual(Math::PI, 3.14159265359f));
-    assert(IsNearlyEqual(Math::TWO_PI, 2.0f * Math::PI));
+    EXPECT_NEARLY_EQUAL(Math::PI, 3.14159265359f);
+    EXPECT_NEARLY_EQUAL(Math::TWO_PI, 2.0f * Math::PI);
     
-    std::cout << "  [PASS] Angle conversion passed" << std::endl;
+    TestOutput::PrintTestPass("angle conversions");
     return true;
 }
 
-// Test linear interpolation
+/**
+ * Test linear interpolation
+ * Requirements: 6.1, 6.2 (Math operations validation)
+ */
 bool TestLerp() {
-    std::cout << "Testing linear interpolation..." << std::endl;
+    TestOutput::PrintTestStart("linear interpolation");
     
     // Test float lerp
     float result = Math::Lerp(0.0f, 10.0f, 0.5f);
-    assert(IsNearlyEqual(result, 5.0f));
+    EXPECT_NEARLY_EQUAL(result, 5.0f);
     
     // Test vector lerp
     Math::Vec3 start(0.0f, 0.0f, 0.0f);
     Math::Vec3 end(10.0f, 20.0f, 30.0f);
     Math::Vec3 mid = Math::Lerp(start, end, 0.5f);
+    Math::Vec3 expectedMid(5.0f, 10.0f, 15.0f);
     
-    assert(IsNearlyEqual(mid.x, 5.0f));
-    assert(IsNearlyEqual(mid.y, 10.0f));
-    assert(IsNearlyEqual(mid.z, 15.0f));
+    EXPECT_VEC3_NEARLY_EQUAL(mid, expectedMid);
     
-    std::cout << "  [PASS] Linear interpolation passed" << std::endl;
+    TestOutput::PrintTestPass("linear interpolation");
     return true;
 }
 
-// Test clamping
+/**
+ * Test clamping functions
+ * Requirements: 6.1, 6.2 (Math operations validation)
+ */
 bool TestClamp() {
-    std::cout << "Testing clamping..." << std::endl;
+    TestOutput::PrintTestStart("clamping");
     
-    // Test float clamp
-    assert(IsNearlyEqual(Math::Clamp(5.0f, 0.0f, 10.0f), 5.0f));
-    assert(IsNearlyEqual(Math::Clamp(-5.0f, 0.0f, 10.0f), 0.0f));
-    assert(IsNearlyEqual(Math::Clamp(15.0f, 0.0f, 10.0f), 10.0f));
+    // Test float clamp - value within range
+    EXPECT_NEARLY_EQUAL(Math::Clamp(5.0f, 0.0f, 10.0f), 5.0f);
     
-    std::cout << "  [PASS] Clamping passed" << std::endl;
+    // Test float clamp - value below range
+    EXPECT_NEARLY_EQUAL(Math::Clamp(-5.0f, 0.0f, 10.0f), 0.0f);
+    
+    // Test float clamp - value above range
+    EXPECT_NEARLY_EQUAL(Math::Clamp(15.0f, 0.0f, 10.0f), 10.0f);
+    
+    TestOutput::PrintTestPass("clamping");
     return true;
 }
 
-// Test matrix creation
+/**
+ * Test matrix creation functions
+ * Requirements: 6.1, 6.2 (Math operations validation)
+ */
 bool TestMatrixCreation() {
-    std::cout << "Testing matrix creation..." << std::endl;
+    TestOutput::PrintTestStart("matrix creation");
     
     // Test transform matrix creation
     Math::Vec3 position(1.0f, 2.0f, 3.0f);
@@ -104,46 +117,46 @@ bool TestMatrixCreation() {
     
     Math::Mat4 transform = Math::CreateTransform(position, rotation, scale);
     
-    // Test that the matrix is not zero (basic sanity check)
-    assert(transform[3][0] != 0.0f || transform[3][1] != 0.0f || transform[3][2] != 0.0f);
+    // Test that position is correctly encoded in the matrix
+    EXPECT_NEARLY_EQUAL(transform[3][0], position.x);
+    EXPECT_NEARLY_EQUAL(transform[3][1], position.y);
+    EXPECT_NEARLY_EQUAL(transform[3][2], position.z);
     
     // Test perspective matrix creation
     Math::Mat4 perspective = Math::CreatePerspectiveMatrix(45.0f, 16.0f/9.0f, 0.1f, 100.0f);
-    assert(perspective[0][0] != 0.0f); // Basic sanity check
+    EXPECT_TRUE(perspective[0][0] != 0.0f); // Should have valid projection values
     
-    std::cout << "  [PASS] Matrix creation passed" << std::endl;
+    TestOutput::PrintTestPass("matrix creation");
     return true;
 }
 
 int main() {
-    std::cout << "========================================" << std::endl;
-    std::cout << " Game Engine Kiro - Math Tests" << std::endl;
-    std::cout << "========================================" << std::endl;
-    
+    TestOutput::PrintHeader("Math");
+
     bool allPassed = true;
-    
+
     try {
-        allPassed &= TestVectorOperations();
-        allPassed &= TestAngleConversion();
-        allPassed &= TestLerp();
-        allPassed &= TestClamp();
-        allPassed &= TestMatrixCreation();
-        
-        std::cout << "========================================" << std::endl;
-        if (allPassed) {
-            std::cout << "[SUCCESS] ALL MATH TESTS PASSED!" << std::endl;
-            std::cout << "========================================" << std::endl;
-            return 0;
-        } else {
-            std::cout << "[FAILED] SOME TESTS FAILED!" << std::endl;
-            std::cout << "========================================" << std::endl;
-            return 1;
-        }
+        // Create test suite for result tracking
+        TestSuite suite("Math Tests");
+
+        // Run all tests
+        allPassed &= suite.RunTest("Vector Operations", TestVectorOperations);
+        allPassed &= suite.RunTest("Angle Conversion", TestAngleConversion);
+        allPassed &= suite.RunTest("Linear Interpolation", TestLerp);
+        allPassed &= suite.RunTest("Clamping", TestClamp);
+        allPassed &= suite.RunTest("Matrix Creation", TestMatrixCreation);
+
+        // Print detailed summary
+        suite.PrintSummary();
+
+        TestOutput::PrintFooter(allPassed);
+        return allPassed ? 0 : 1;
+
     } catch (const std::exception& e) {
-        std::cout << "[ERROR] TEST EXCEPTION: " << e.what() << std::endl;
+        TestOutput::PrintError("TEST EXCEPTION: " + std::string(e.what()));
         return 1;
     } catch (...) {
-        std::cout << "[ERROR] UNKNOWN TEST ERROR!" << std::endl;
+        TestOutput::PrintError("UNKNOWN TEST ERROR!");
         return 1;
     }
 }

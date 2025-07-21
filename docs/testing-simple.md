@@ -42,7 +42,7 @@ bool TestVectorOperations() {
     assert(result.y == 7.0f);
     assert(result.z == 9.0f);
 
-    std::cout << "✅ Vector operations test passed" << std::endl;
+    std::cout << "[PASS] Vector operations test passed" << std::endl;
     return true;
 }
 

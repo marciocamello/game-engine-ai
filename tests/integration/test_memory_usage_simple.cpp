@@ -98,11 +98,11 @@ private:
         const long long LEAK_THRESHOLD_MB = 5; // 5 MB threshold
         
         if (workingSetDiff > LEAK_THRESHOLD_MB * 1024 * 1024) {
-            std::cout << "⚠️  POTENTIAL MEMORY LEAK DETECTED!" << std::endl;
+            std::cout << "[WARNING] POTENTIAL MEMORY LEAK DETECTED!" << std::endl;
         } else if (workingSetDiff < -1024 * 1024) { // More than 1MB freed
-            std::cout << "✅ Good memory cleanup detected" << std::endl;
+            std::cout << "[INFO] Good memory cleanup detected" << std::endl;
         } else {
-            std::cout << "✅ Memory usage within acceptable range" << std::endl;
+            std::cout << "[INFO] Memory usage within acceptable range" << std::endl;
         }
     }
     

@@ -1,12 +1,12 @@
-# 🧪 Game Engine Kiro - Testing Strategy
+# Game Engine Kiro - Testing Strategy
 
-## 📋 Overview
+## Overview
 
 This document outlines our comprehensive testing strategy following industry best practices for game engine development.
 
-## 🏗️ Testing Architecture
+## Testing Architecture
 
-### 🔄 Two-Tier Testing System
+### Two-Tier Testing System
 
 #### 1. **Integration Tests** (`tests/`)
 
@@ -23,18 +23,18 @@ This document outlines our comprehensive testing strategy following industry bes
 - **Usage**: `--run-tests` flag or debug console
 - **Coverage**: Rendering, gameplay, AI, multiplayer, editor tools
 
-## 🎯 What to Test Where
+## What to Test Where
 
-| System                  | Test Type       | Location              | Rationale                       |
-| ----------------------- | --------------- | --------------------- | ------------------------------- |
-| **Physics Integration** | 🔄 Integration  | `tests/integration/`  | System interaction testing      |
-| **Bullet Physics**      | 🔄 Integration  | `tests/integration/`  | Physics engine validation       |
-| **Character Movement**  | 🔄 Integration  | `tests/integration/`  | Gameplay system testing         |
-| **Rendering**           | 🧰 Visual Debug | Internal `TestRunner` | Visual inspection required      |
-| **Gameplay/AI**         | 🧰 Visual Debug | Internal `TestRunner` | Behavior observation needed     |
-| **Physics (Visual)**    | 🧰 Visual Debug | Internal `TestRunner` | Non-deterministic visualization |
-| **Editor Tools**        | 🔁 Manual Tests | Internal `TestRunner` | UI/UX validation                |
-| **Multiplayer**         | 🔁 Interactive  | Internal `TestRunner` | Network behavior                |
+| System                  | Test Type    | Location              | Rationale                       |
+| ----------------------- | ------------ | --------------------- | ------------------------------- |
+| **Physics Integration** | Integration  | `tests/integration/`  | System interaction testing      |
+| **Bullet Physics**      | Integration  | `tests/integration/`  | Physics engine validation       |
+| **Character Movement**  | Integration  | `tests/integration/`  | Gameplay system testing         |
+| **Rendering**           | Visual Debug | Internal `TestRunner` | Visual inspection required      |
+| **Gameplay/AI**         | Visual Debug | Internal `TestRunner` | Behavior observation needed     |
+| **Physics (Visual)**    | Visual Debug | Internal `TestRunner` | Non-deterministic visualization |
+| **Editor Tools**        | Manual Tests | Internal `TestRunner` | UI/UX validation                |
+| **Multiplayer**         | Interactive  | Internal `TestRunner` | Network behavior                |
 
 ## 🚀 Quick Start
 

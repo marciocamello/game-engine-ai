@@ -58,9 +58,9 @@ public:
         std::cout << "Success Rate: " << (100.0 * passedTests / totalTests) << "%" << std::endl;
         
         if (passedTests == totalTests) {
-            std::cout << "✅ All character behavior tests passed!" << std::endl;
+            std::cout << "[SUCCESS] All character behavior tests passed!" << std::endl;
         } else {
-            std::cout << "❌ Some tests failed. Review the output above for details." << std::endl;
+            std::cout << "[FAILED] Some tests failed. Review the output above for details." << std::endl;
         }
     }
 

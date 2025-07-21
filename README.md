@@ -1,8 +1,8 @@
-# 🎮 Game Engine Kiro
+# Game Engine Kiro
 
 A modern 3D game engine built with AI assistance, designed for third-person action games and open-world experiences.
 
-## 🚀 Quick Start
+## Quick Start
 
 ```bash
 # Build the engine
@@ -50,7 +50,7 @@ The combination of human expertise and AI assistance allows for rapid prototypin
 
 ### Physics & Simulation
 
-- **🎯 Industry-Standard Raycast Movement**: Following the same approach as Unity, Unreal Engine, Godot, and Source Engine
+- **Industry-Standard Raycast Movement**: Following the same approach as Unity, Unreal Engine, Godot, and Source Engine
 - **Component-Based Movement System**: 3 specialized movement components for different use cases
   - **CharacterMovement**: Raycast-based deterministic movement (perfect for players, NPCs)
   - **HybridMovement**: Physics collision + direct control (recommended for third-person games)
@@ -72,7 +72,7 @@ The combination of human expertise and AI assistance allows for rapid prototypin
 - **OpenAL Integration**: Cross-platform audio backend
 - **Resource Management**: Automatic loading and caching of audio assets
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Windows (Recommended)
 
@@ -93,7 +93,7 @@ chmod +x setup_dependencies.sh build.sh
 ./build.sh
 ```
 
-## 📖 Documentation
+## Documentation
 
 - **[Setup Guide](docs/setup.md)** - Detailed installation instructions
 - **[Quick Start](docs/quickstart.md)** - Get up and running in minutes
@@ -102,7 +102,7 @@ chmod +x setup_dependencies.sh build.sh
 - **[API Reference](docs/api-reference.md)** - Complete API documentation
 - **[Architecture](docs/architecture.md)** - Engine design and patterns
 
-## 🎮 Controls
+## Controls
 
 ### Basic Controls
 
@@ -124,7 +124,7 @@ chmod +x setup_dependencies.sh build.sh
 - **F11**: Toggle fullscreen
 - **Mouse Wheel**: Zoom in/out (camera distance)
 
-## 🏗️ Architecture
+## Architecture
 
 ```
 GameEngineKiro/
@@ -142,7 +142,7 @@ GameEngineKiro/
 └── vcpkg/           # Dependencies (auto-generated)
 ```
 
-## 🔧 Dependencies
+## Dependencies
 
 ### Core Dependencies
 
@@ -162,7 +162,7 @@ GameEngineKiro/
 
 All dependencies are automatically managed through vcpkg.
 
-## 🎯 Roadmap
+## Roadmap
 
 ### Current (v1.0)
 

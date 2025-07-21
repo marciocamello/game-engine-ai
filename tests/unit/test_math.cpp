@@ -34,7 +34,7 @@ bool TestVectorOperations() {
     float length = glm::length(unit);
     assert(IsNearlyEqual(length, 1.0f));
     
-    std::cout << "  ✅ Vector operations passed" << std::endl;
+    std::cout << "  [PASS] Vector operations passed" << std::endl;
     return true;
 }
 
@@ -55,7 +55,7 @@ bool TestAngleConversion() {
     assert(IsNearlyEqual(Math::PI, 3.14159265359f));
     assert(IsNearlyEqual(Math::TWO_PI, 2.0f * Math::PI));
     
-    std::cout << "  ✅ Angle conversion passed" << std::endl;
+    std::cout << "  [PASS] Angle conversion passed" << std::endl;
     return true;
 }
 
@@ -76,7 +76,7 @@ bool TestLerp() {
     assert(IsNearlyEqual(mid.y, 10.0f));
     assert(IsNearlyEqual(mid.z, 15.0f));
     
-    std::cout << "  ✅ Linear interpolation passed" << std::endl;
+    std::cout << "  [PASS] Linear interpolation passed" << std::endl;
     return true;
 }
 
@@ -89,7 +89,7 @@ bool TestClamp() {
     assert(IsNearlyEqual(Math::Clamp(-5.0f, 0.0f, 10.0f), 0.0f));
     assert(IsNearlyEqual(Math::Clamp(15.0f, 0.0f, 10.0f), 10.0f));
     
-    std::cout << "  ✅ Clamping passed" << std::endl;
+    std::cout << "  [PASS] Clamping passed" << std::endl;
     return true;
 }
 
@@ -111,7 +111,7 @@ bool TestMatrixCreation() {
     Math::Mat4 perspective = Math::CreatePerspectiveMatrix(45.0f, 16.0f/9.0f, 0.1f, 100.0f);
     assert(perspective[0][0] != 0.0f); // Basic sanity check
     
-    std::cout << "  ✅ Matrix creation passed" << std::endl;
+    std::cout << "  [PASS] Matrix creation passed" << std::endl;
     return true;
 }
 
@@ -131,19 +131,19 @@ int main() {
         
         std::cout << "========================================" << std::endl;
         if (allPassed) {
-            std::cout << "🎉 ALL MATH TESTS PASSED!" << std::endl;
+            std::cout << "[SUCCESS] ALL MATH TESTS PASSED!" << std::endl;
             std::cout << "========================================" << std::endl;
             return 0;
         } else {
-            std::cout << "❌ SOME TESTS FAILED!" << std::endl;
+            std::cout << "[FAILED] SOME TESTS FAILED!" << std::endl;
             std::cout << "========================================" << std::endl;
             return 1;
         }
     } catch (const std::exception& e) {
-        std::cout << "❌ TEST EXCEPTION: " << e.what() << std::endl;
+        std::cout << "[ERROR] TEST EXCEPTION: " << e.what() << std::endl;
         return 1;
     } catch (...) {
-        std::cout << "❌ UNKNOWN TEST ERROR!" << std::endl;
+        std::cout << "[ERROR] UNKNOWN TEST ERROR!" << std::endl;
         return 1;
     }
 }

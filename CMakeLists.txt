@@ -335,10 +335,7 @@ add_integration_test(CollisionShapeFactorySimpleTest tests/integration/test_coll
 add_integration_test(PhysicsQueriesTest tests/integration/test_physics_queries.cpp)
 
 # Physics configuration integration test
-add_executable(PhysicsConfigurationTest
-    tests/integration/test_physics_configuration.cpp
-)
-apply_coverage_settings(PhysicsConfigurationTest)
+add_integration_test(PhysicsConfigurationTest tests/integration/test_physics_configuration.cpp)
 
 # Movement component comparison test
 add_executable(MovementComponentComparisonTest
@@ -411,11 +408,7 @@ if(Bullet_FOUND)
         LinearMath
     )
     
-    target_link_libraries(PhysicsConfigurationTest PRIVATE 
-        BulletDynamics
-        BulletCollision
-        LinearMath
-    )
+
     
     target_link_libraries(MovementComponentComparisonTest PRIVATE 
         BulletDynamics

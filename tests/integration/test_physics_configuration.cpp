@@ -1,9 +1,11 @@
 #include "Physics/PhysicsEngine.h"
+#include "TestUtils.h"
 #include "Core/Logger.h"
 #include <iostream>
 #include <cassert>
 
 using namespace GameEngine;
+using namespace GameEngine::Testing;
 
 void TestDefaultConfiguration() {
     std::cout << "Testing default physics configuration..." << std::endl;

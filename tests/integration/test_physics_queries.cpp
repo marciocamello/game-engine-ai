@@ -16,8 +16,8 @@ bool TestRaycast() {
     
     PhysicsEngine engine;
     if (!engine.Initialize()) {
-        std::cerr << "Failed to initialize physics engine" << std::endl;
-        return;
+        TestOutput::PrintError("Failed to initialize physics engine");
+        return false;
     }
     
     // Create a physics world
@@ -44,13 +44,14 @@ bool TestRaycast() {
     RaycastHit hitResult = engine.Raycast(rayOrigin, rayDirection, maxDistance);
     
     if (hitResult.hasHit) {
-        std::cout << "✓ Raycast hit detected! Hit body ID: " << hitResult.bodyId << std::endl;
-        std::cout << "  Hit point: (" << hitResult.point.x << ", " << hitResult.point.y << ", " << hitResult.point.z << ")" << std::endl;
-        std::cout << "  Hit normal: (" << hitResult.normal.x << ", " << hitResult.normal.y << ", " << hitResult.normal.z << ")" << std::endl;
-        std::cout << "  Hit distance: " << hitResult.distance << std::endl;
-        assert(hitResult.bodyId == boxId);
+        TestOutput::PrintInfo("Raycast hit detected! Hit body ID: " + std::to_string(hitResult.bodyId));
+        TestOutput::PrintInfo("Hit point: " + StringUtils::FormatVec3(hitResult.point));
+        TestOutput::PrintInfo("Hit normal: " + StringUtils::FormatVec3(hitResult.normal));
+        TestOutput::PrintInfo("Hit distance: " + StringUtils::FormatFloat(hitResult.distance));
+        EXPECT_TRUE(hitResult.bodyId == boxId);
     } else {
-        std::cout << "✗ Raycast should have hit the box but didn't" << std::endl;
+        TestOutput::PrintTestFail("raycast functionality", "hit detected", "no hit");
+        return false;
     }
     
     // Test raycast that should miss
@@ -59,25 +60,31 @@ bool TestRaycast() {
     RaycastHit missResult = engine.Raycast(rayOriginMiss, rayDirection, maxDistance);
     
     if (!missResult.hasHit) {
-        std::cout << "✓ Raycast correctly missed the box" << std::endl;
+        TestOutput::PrintInfo("Raycast correctly missed the box");
     } else {
-        std::cout << "✗ Raycast should have missed but hit body ID: " << missResult.bodyId << std::endl;
+        TestOutput::PrintTestFail("raycast functionality", "no hit", "hit body ID: " + std::to_string(missResult.bodyId));
+        return false;
     }
     
     // Cleanup
     engine.DestroyRigidBody(boxId);
     engine.Shutdown();
     
-    std::cout << "Raycast test completed!" << std::endl;
+    TestOutput::PrintTestPass("raycast functionality");
+    return true;
 }
 
-void TestOverlapSphere() {
-    std::cout << "Testing OverlapSphere functionality..." << std::endl;
+/**
+ * Test overlap sphere functionality
+ * Requirements: Physics system integration, collision detection
+ */
+bool TestOverlapSphere() {
+    TestOutput::PrintTestStart("overlap sphere functionality");
     
     PhysicsEngine engine;
     if (!engine.Initialize()) {
-        std::cerr << "Failed to initialize physics engine" << std::endl;
-        return;
+        TestOutput::PrintError("Failed to initialize physics engine");
+        return false;
     }
     
     // Create a physics world
@@ -121,38 +128,35 @@ void TestOverlapSphere() {
     
     std::vector<OverlapResult> overlappingBodies = engine.OverlapSphere(sphereCenter, sphereRadius);
     
-    std::cout << "Found " << overlappingBodies.size() << " overlapping bodies" << std::endl;
+    TestOutput::PrintInfo("Found " + std::to_string(overlappingBodies.size()) + " overlapping bodies");
     
     // Should find box1 and box2, but not box3
     bool foundBox1 = false, foundBox2 = false, foundBox3 = false;
     
     for (const OverlapResult& result : overlappingBodies) {
-        std::cout << "Overlapping body ID: " << result.bodyId << std::endl;
-        std::cout << "  Contact point: (" << result.contactPoint.x << ", " << result.contactPoint.y << ", " << result.contactPoint.z << ")" << std::endl;
-        std::cout << "  Contact normal: (" << result.contactNormal.x << ", " << result.contactNormal.y << ", " << result.contactNormal.z << ")" << std::endl;
-        std::cout << "  Penetration depth: " << result.penetrationDepth << std::endl;
+        TestOutput::PrintInfo("Overlapping body ID: " + std::to_string(result.bodyId));
+        TestOutput::PrintInfo("  Contact point: " + StringUtils::FormatVec3(result.contactPoint));
+        TestOutput::PrintInfo("  Contact normal: " + StringUtils::FormatVec3(result.contactNormal));
+        TestOutput::PrintInfo("  Penetration depth: " + StringUtils::FormatFloat(result.penetrationDepth));
         
         if (result.bodyId == box1Id) foundBox1 = true;
         if (result.bodyId == box2Id) foundBox2 = true;
         if (result.bodyId == box3Id) foundBox3 = true;
     }
     
+    EXPECT_TRUE(foundBox1);
     if (foundBox1) {
-        std::cout << "✓ Found box1 in overlap (expected)" << std::endl;
-    } else {
-        std::cout << "✗ Did not find box1 in overlap (should have found it)" << std::endl;
+        TestOutput::PrintInfo("Found box1 in overlap (expected)");
     }
     
+    EXPECT_TRUE(foundBox2);
     if (foundBox2) {
-        std::cout << "✓ Found box2 in overlap (expected)" << std::endl;
-    } else {
-        std::cout << "✗ Did not find box2 in overlap (should have found it)" << std::endl;
+        TestOutput::PrintInfo("Found box2 in overlap (expected)");
     }
     
+    EXPECT_FALSE(foundBox3);
     if (!foundBox3) {
-        std::cout << "✓ Did not find box3 in overlap (expected)" << std::endl;
-    } else {
-        std::cout << "✗ Found box3 in overlap (should not have found it)" << std::endl;
+        TestOutput::PrintInfo("Did not find box3 in overlap (expected)");
     }
     
     // Cleanup
@@ -161,16 +165,34 @@ void TestOverlapSphere() {
     }
     engine.Shutdown();
     
-    std::cout << "OverlapSphere test completed!" << std::endl;
+    TestOutput::PrintTestPass("overlap sphere functionality");
+    return true;
 }
 
 int main() {
-    std::cout << "=== Physics Queries Integration Test ===" << std::endl;
-    
-    TestRaycast();
-    std::cout << std::endl;
-    TestOverlapSphere();
-    
-    std::cout << "\n=== All Physics Query Tests Completed ===" << std::endl;
-    return 0;
+    TestOutput::PrintHeader("Physics Queries Integration");
+
+    bool allPassed = true;
+
+    try {
+        // Create test suite for result tracking
+        TestSuite suite("Physics Queries Integration Tests");
+
+        // Run all tests
+        allPassed &= suite.RunTest("Raycast Functionality", TestRaycast);
+        allPassed &= suite.RunTest("Overlap Sphere Functionality", TestOverlapSphere);
+
+        // Print detailed summary
+        suite.PrintSummary();
+
+        TestOutput::PrintFooter(allPassed);
+        return allPassed ? 0 : 1;
+
+    } catch (const std::exception& e) {
+        TestOutput::PrintError("TEST EXCEPTION: " + std::string(e.what()));
+        return 1;
+    } catch (...) {
+        TestOutput::PrintError("UNKNOWN TEST ERROR!");
+        return 1;
+    }
 }

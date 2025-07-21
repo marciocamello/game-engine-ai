@@ -133,9 +133,9 @@ Add to `.vscode/tasks.json`:
 
 ### Test Categories
 
-1. **Unit Tests** (High Priority)
+1. **Integration Tests** (High Priority)
 
-   - `BulletUtilsTest.exe`
+   - `BulletIntegrationTest.exe`
    - `CollisionShapeFactoryTest.exe`
 
 2. **Integration Tests** (High Priority)
@@ -214,7 +214,7 @@ Filter specific tests:
 # Run only Bullet-related tests
 powershell -ExecutionPolicy Bypass -File run_coverage_analysis.ps1 -Filter "Bullet*"
 
-# Run only unit tests
+# Run only integration tests
 powershell -ExecutionPolicy Bypass -File run_coverage_analysis.ps1 -Filter "*Test.exe"
 ```
 

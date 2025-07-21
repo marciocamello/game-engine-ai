@@ -1,6 +1,24 @@
-# Game Engine Kiro
+# 🎮 Game Engine Kiro
 
 A modern 3D game engine built with AI assistance, designed for third-person action games and open-world experiences.
+
+## 🚀 Quick Start
+
+```bash
+# Build the engine
+./build.bat
+
+# Run example game
+cd build/Release
+./GameExample.exe
+
+# Run integration tests
+./build.bat
+# Tests run automatically as part of build
+
+# Run visual debug tests
+./GameExample.exe --run-tests
+```
 
 ## 🤖 Built with AI
 

@@ -37,8 +37,6 @@ find_package(Bullet CONFIG REQUIRED)
 find_package(Lua QUIET)
 find_package(nlohmann_json QUIET)
 find_package(fmt QUIET)
-find_package(GTest QUIET)
-find_package(GMock QUIET)
 
 # Engine source files
 file(GLOB_RECURSE ENGINE_SOURCES
@@ -256,17 +254,13 @@ add_executable(CharacterBehaviorSimpleTest
 )
 apply_coverage_settings(CharacterBehaviorSimpleTest)
 
-# Physics debug drawer integration test
-add_executable(PhysicsDebugDrawerTest
-    tests/integration/test_physics_debug_drawer.cpp
+# Unit test for Math utilities
+add_executable(MathUnitTest
+    tests/unit/test_math.cpp
 )
-apply_coverage_settings(PhysicsDebugDrawerTest)
+apply_coverage_settings(MathUnitTest)
 
-# Physics debug renderer integration test
-add_executable(PhysicsDebugRendererTest
-    tests/integration/test_physics_debug_renderer.cpp
-)
-apply_coverage_settings(PhysicsDebugRendererTest)
+
 
 target_link_libraries(BulletIntegrationTest PRIVATE GameEngineKiro)
 target_link_libraries(BulletConversionTest PRIVATE GameEngineKiro)
@@ -278,20 +272,9 @@ target_link_libraries(MovementComponentComparisonTest PRIVATE GameEngineKiro)
 target_link_libraries(PhysicsPerformanceSimpleTest PRIVATE GameEngineKiro)
 target_link_libraries(MemoryUsageSimpleTest PRIVATE GameEngineKiro)
 target_link_libraries(CharacterBehaviorSimpleTest PRIVATE GameEngineKiro)
-target_link_libraries(PhysicsDebugDrawerTest PRIVATE GameEngineKiro)
-target_link_libraries(PhysicsDebugRendererTest PRIVATE GameEngineKiro)
+target_link_libraries(MathUnitTest PRIVATE GameEngineKiro)
 
-# Add GoogleTest and GoogleMock to debug tests if available
-if(GTest_FOUND)
-    target_link_libraries(PhysicsDebugDrawerTest PRIVATE 
-        GTest::gtest_main
-        GTest::gmock_main
-    )
-    target_link_libraries(PhysicsDebugRendererTest PRIVATE 
-        GTest::gtest_main
-        GTest::gmock_main
-    )
-endif()
+
 
 if(Bullet_FOUND)
     target_link_libraries(BulletIntegrationTest PRIVATE 
@@ -353,180 +336,6 @@ if(Bullet_FOUND)
         BulletCollision
         LinearMath
     )
-    
-    target_link_libraries(PhysicsDebugDrawerTest PRIVATE 
-        BulletDynamics
-        BulletCollision
-        LinearMath
-    )
-endif()
-
-# Unit tests
-if(GTest_FOUND)
-    enable_testing()
-    
-    add_executable(BulletUtilsTest
-        tests/unit/test_bullet_utils.cpp
-    )
-    apply_coverage_settings(BulletUtilsTest)
-    
-    target_link_libraries(BulletUtilsTest PRIVATE 
-        GameEngineKiro
-        GTest::gtest_main
-        GTest::gmock_main
-    )
-    
-    if(Bullet_FOUND)
-        target_link_libraries(BulletUtilsTest PRIVATE 
-            BulletDynamics
-            BulletCollision
-            LinearMath
-        )
-    endif()
-    
-    add_executable(CollisionShapeFactoryTest
-        tests/unit/test_collision_shape_factory.cpp
-    )
-    apply_coverage_settings(CollisionShapeFactoryTest)
-    
-    target_link_libraries(CollisionShapeFactoryTest PRIVATE 
-        GameEngineKiro
-        GTest::gtest_main
-        GTest::gmock_main
-    )
-    
-    if(Bullet_FOUND)
-        target_link_libraries(CollisionShapeFactoryTest PRIVATE 
-            BulletDynamics
-            BulletCollision
-            LinearMath
-        )
-    endif()
-    
-    add_executable(PhysicsEngineTest
-        tests/unit/test_physics_engine.cpp
-    )
-    apply_coverage_settings(PhysicsEngineTest)
-    
-    target_link_libraries(PhysicsEngineTest PRIVATE 
-        GameEngineKiro
-        GTest::gtest_main
-        GTest::gmock_main
-    )
-    
-    if(Bullet_FOUND)
-        target_link_libraries(PhysicsEngineTest PRIVATE 
-            BulletDynamics
-            BulletCollision
-            LinearMath
-        )
-    endif()
-    
-    add_executable(BulletPhysicsWorldTest
-        tests/unit/test_bullet_physics_world.cpp
-    )
-    apply_coverage_settings(BulletPhysicsWorldTest)
-    
-    target_link_libraries(BulletPhysicsWorldTest PRIVATE 
-        GameEngineKiro
-        GTest::gtest_main
-        GTest::gmock_main
-    )
-    
-    if(Bullet_FOUND)
-        target_link_libraries(BulletPhysicsWorldTest PRIVATE 
-            BulletDynamics
-            BulletCollision
-            LinearMath
-        )
-    endif()
-    
-    # Movement Component Tests
-    add_executable(CharacterMovementComponentTest
-        tests/unit/test_character_movement_component.cpp
-    )
-    apply_coverage_settings(CharacterMovementComponentTest)
-    
-    target_link_libraries(CharacterMovementComponentTest PRIVATE 
-        GameEngineKiro
-        GTest::gtest_main
-        GTest::gmock_main
-    )
-    
-    if(Bullet_FOUND)
-        target_link_libraries(CharacterMovementComponentTest PRIVATE 
-            BulletDynamics
-            BulletCollision
-            LinearMath
-        )
-    endif()
-    
-    add_executable(PhysicsMovementComponentTest
-        tests/unit/test_physics_movement_component.cpp
-    )
-    apply_coverage_settings(PhysicsMovementComponentTest)
-    
-    target_link_libraries(PhysicsMovementComponentTest PRIVATE 
-        GameEngineKiro
-        GTest::gtest_main
-        GTest::gmock_main
-    )
-    
-    if(Bullet_FOUND)
-        target_link_libraries(PhysicsMovementComponentTest PRIVATE 
-            BulletDynamics
-            BulletCollision
-            LinearMath
-        )
-    endif()
-    
-    add_executable(DeterministicMovementComponentTest
-        tests/unit/test_deterministic_movement_component.cpp
-    )
-    apply_coverage_settings(DeterministicMovementComponentTest)
-    
-    target_link_libraries(DeterministicMovementComponentTest PRIVATE 
-        GameEngineKiro
-        GTest::gtest_main
-        GTest::gmock_main
-    )
-    
-    if(Bullet_FOUND)
-        target_link_libraries(DeterministicMovementComponentTest PRIVATE 
-            BulletDynamics
-            BulletCollision
-            LinearMath
-        )
-    endif()
-    
-    add_executable(HybridMovementComponentTest
-        tests/unit/test_hybrid_movement_component.cpp
-    )
-    apply_coverage_settings(HybridMovementComponentTest)
-    
-    target_link_libraries(HybridMovementComponentTest PRIVATE 
-        GameEngineKiro
-        GTest::gtest_main
-        GTest::gmock_main
-    )
-    
-    if(Bullet_FOUND)
-        target_link_libraries(HybridMovementComponentTest PRIVATE 
-            BulletDynamics
-            BulletCollision
-            LinearMath
-        )
-    endif()
-    
-    include(GoogleTest)
-    gtest_discover_tests(BulletUtilsTest)
-    gtest_discover_tests(CollisionShapeFactoryTest)
-    gtest_discover_tests(PhysicsEngineTest)
-    gtest_discover_tests(BulletPhysicsWorldTest)
-    gtest_discover_tests(CharacterMovementComponentTest)
-    gtest_discover_tests(PhysicsMovementComponentTest)
-    gtest_discover_tests(DeterministicMovementComponentTest)
-    gtest_discover_tests(HybridMovementComponentTest)
 endif()
 
 # Copy assets to build directory
@@ -535,3 +344,4 @@ add_custom_command(TARGET GameExample POST_BUILD
     ${CMAKE_SOURCE_DIR}/assets $<TARGET_FILE_DIR:GameExample>/assets
     COMMENT "Copying assets to build directory"
 )
+

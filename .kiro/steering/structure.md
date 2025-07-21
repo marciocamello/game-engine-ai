@@ -9,7 +9,7 @@ GameEngineKiro/
 ├── examples/        # Sample applications and demos
 ├── assets/          # Game assets (shaders, textures, models)
 ├── docs/            # Documentation and guides
-├── tests/           # Unit and integration tests
+├── tests/           # Integration tests
 ├── build/           # Generated build files (CMake output)
 ├── logs/            # Runtime log files
 ├── vcpkg/           # Dependency management (auto-generated)
@@ -75,9 +75,9 @@ src/
 
 ```
 tests/
-├── unit/            # Unit tests (isolated component testing)
-│   ├── test_bullet_utils.cpp
-│   └── test_collision_shape_factory.cpp
+├── integration/     # Integration tests (system interaction testing)
+│   ├── test_bullet_integration.cpp
+│   └── test_physics_queries.cpp
 └── integration/     # Integration tests (system interaction)
     ├── test_bullet_integration.cpp
     ├── test_bullet_conversion.cpp

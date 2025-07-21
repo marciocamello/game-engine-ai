@@ -21,7 +21,7 @@
 
 - **Assimp**: 3D model loading (FBX, GLTF support)
 - **Lua**: Scripting engine integration
-- **GTest**: Unit testing framework
+
 - **STB**: Image loading utilities
 
 ## Development Tools
@@ -79,9 +79,9 @@ debug.bat
 build\Release\BulletIntegrationTest.exe
 build\Release\BulletConversionTest.exe
 
-# Run unit tests (if GTest available)
-build\Release\BulletUtilsTest.exe
-build\Release\CollisionShapeFactoryTest.exe
+# Run integration tests
+build\Release\BulletIntegrationTest.exe
+build\Release\BulletConversionTest.exe
 ```
 
 ## Compiler Configuration

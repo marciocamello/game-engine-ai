@@ -24,69 +24,69 @@ if ($BuildFirst) {
 # Define test executables with descriptions
 $testSuite = @(
     @{
-        Name = "BulletUtilsTest.exe"
-        Description = "Bullet Physics utility functions and conversions"
-        Category = "Unit Tests"
+        Name        = "BulletIntegrationTest.exe"
+        Description = "Bullet Physics integration testing"
+        Category    = "Integration Tests"
     },
     @{
-        Name = "CollisionShapeFactoryTest.exe"
-        Description = "Collision shape creation and management"
-        Category = "Unit Tests"
+        Name        = "BulletConversionTest.exe"
+        Description = "Bullet Physics conversion testing"
+        Category    = "Integration Tests"
     },
     @{
-        Name = "BulletIntegrationTest.exe"
+        Name        = "BulletIntegrationTest.exe"
         Description = "Basic Bullet Physics integration"
-        Category = "Integration Tests"
+        Category    = "Integration Tests"
     },
     @{
-        Name = "BulletConversionTest.exe"
+        Name        = "BulletConversionTest.exe"
         Description = "Math type conversion between engine and Bullet"
-        Category = "Integration Tests"
+        Category    = "Integration Tests"
     },
     @{
-        Name = "BulletUtilsSimpleTest.exe"
+        Name        = "BulletUtilsSimpleTest.exe"
         Description = "Simple Bullet utilities integration test"
-        Category = "Integration Tests"
+        Category    = "Integration Tests"
     },
     @{
-        Name = "CollisionShapeFactorySimpleTest.exe"
+        Name        = "CollisionShapeFactorySimpleTest.exe"
         Description = "Simple collision shape factory integration test"
-        Category = "Integration Tests"
+        Category    = "Integration Tests"
     },
     @{
-        Name = "PhysicsQueriesTest.exe"
+        Name        = "PhysicsQueriesTest.exe"
         Description = "Physics queries (raycast, overlap, sweep)"
-        Category = "Integration Tests"
+        Category    = "Integration Tests"
     },
     @{
-        Name = "PhysicsConfigurationTest.exe"
+        Name        = "PhysicsConfigurationTest.exe"
         Description = "Physics configuration and parameter management"
-        Category = "Integration Tests"
+        Category    = "Integration Tests"
     },
     @{
-        Name = "MovementComponentComparisonTest.exe"
+        Name        = "MovementComponentComparisonTest.exe"
         Description = "Character movement component comparison"
-        Category = "Integration Tests"
+        Category    = "Integration Tests"
     },
     @{
-        Name = "PhysicsPerformanceSimpleTest.exe"
+        Name        = "PhysicsPerformanceSimpleTest.exe"
         Description = "Physics performance benchmarking"
-        Category = "Performance Tests"
+        Category    = "Performance Tests"
     },
     @{
-        Name = "MemoryUsageSimpleTest.exe"
+        Name        = "MemoryUsageSimpleTest.exe"
         Description = "Memory usage and leak detection"
-        Category = "Performance Tests"
+        Category    = "Performance Tests"
     },
     @{
-        Name = "CharacterBehaviorSimpleTest.exe"
+        Name        = "CharacterBehaviorSimpleTest.exe"
         Description = "Character physics behavior validation"
-        Category = "Integration Tests"
+        Category    = "Integration Tests"
     },
     @{
-        Name = "PhysicsDebugDrawerTest.exe"
+        Name        = "PhysicsDebugDrawerTest.exe"
         Description = "Physics debugging and visualization"
-        Category = "Debug Tests"
+        Category    = "Debug Tests"
     }
 )
 
@@ -120,9 +120,9 @@ foreach ($category in $categories) {
             Write-Host " SKIPPED (not found)" -ForegroundColor Yellow
             $skippedTests++
             $testResults += @{
-                Name = $testName
-                Status = "SKIPPED"
-                Reason = "Executable not found"
+                Name     = $testName
+                Status   = "SKIPPED"
+                Reason   = "Executable not found"
                 Duration = 0
             }
             continue
@@ -134,8 +134,9 @@ foreach ($category in $categories) {
         # Run the test
         if ($Verbose) {
             Write-Host ""
-            & $testPath --gtest_verbose
-        } else {
+            & $testPath
+        }
+        else {
             & $testPath 2>$null
         }
         
@@ -147,25 +148,26 @@ foreach ($category in $categories) {
             Write-Host " ($($duration)ms)" -ForegroundColor Gray
             $passedTests++
             $testResults += @{
-                Name = $testName
-                Status = "PASSED"
-                Reason = ""
+                Name     = $testName
+                Status   = "PASSED"
+                Reason   = ""
                 Duration = $duration
             }
-        } else {
+        }
+        else {
             Write-Host " FAILED" -ForegroundColor Red -NoNewline
             Write-Host " ($($duration)ms)" -ForegroundColor Gray
             $failedTests++
             $testResults += @{
-                Name = $testName
-                Status = "FAILED"
-                Reason = "Test execution failed"
+                Name     = $testName
+                Status   = "FAILED"
+                Reason   = "Test execution failed"
                 Duration = $duration
             }
             
             if ($Verbose) {
                 Write-Host "    Re-running with verbose output..." -ForegroundColor Yellow
-                & $testPath --gtest_verbose
+                & $testPath
             }
         }
     }
@@ -230,10 +232,12 @@ if ($passedTests -eq ($totalTests - $skippedTests) -and $totalTests -gt 0) {
 if ($failedTests -gt 0) {
     Write-Host "`nTest suite completed with failures." -ForegroundColor Red
     exit 1
-} elseif ($skippedTests -eq $totalTests) {
+}
+elseif ($skippedTests -eq $totalTests) {
     Write-Host "`nNo tests were executed. Build the project first." -ForegroundColor Yellow
     exit 2
-} else {
+}
+else {
     Write-Host "`nAll tests completed successfully!" -ForegroundColor Green
     exit 0
 }

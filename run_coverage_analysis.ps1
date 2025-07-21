@@ -145,12 +145,21 @@ foreach ($test in $testExecutables) {
     $testPath = "build\Release\$($test.Name)"
     if (Test-Path $testPath) {
         $availableTests += $test
+        # Add the test executable as a module to be instrumented
         $coverageArgs += "--modules"
         $coverageArgs += $testPath
     }
     else {
         Write-Host "  Skipping $($test.Name) (not found)" -ForegroundColor Yellow
     }
+}
+
+# Also include the main game example which contains engine code
+$gameExamplePath = "build\Release\GameExample.exe"
+if (Test-Path $gameExamplePath) {
+    $coverageArgs += "--modules"
+    $coverageArgs += $gameExamplePath
+    Write-Host "Including GameExample.exe for additional coverage" -ForegroundColor Green
 }
 
 if ($availableTests.Count -eq 0) {

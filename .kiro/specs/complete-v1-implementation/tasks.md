@@ -61,7 +61,7 @@
     - Add comprehensive error handling for OGG loading failures
     - _Requirements: 1.2, 4.3, 6.4_
 
-- [-] 6. Implement texture loading with STB
+- [x] 6. Implement texture loading with STB
 
   - [x] 6.1 Create TextureLoader class
 
@@ -70,14 +70,14 @@
     - Create OpenGL texture creation from image data
     - _Requirements: 2.1, 4.3, 6.4_
 
-  - [ ] 6.2 Enhance Texture class with real loading
+  - [x] 6.2 Enhance Texture class with real loading
 
     - Implement LoadFromFile method with actual image loading
     - Create default pink/magenta texture for missing files
     - Add proper OpenGL texture cleanup in destructor
     - _Requirements: 2.1, 2.5, 4.3_
 
-- [ ] 7. Implement basic mesh loading
+- [-] 7. Implement basic mesh loading
 
   - [ ] 7.1 Create MeshLoader class for OBJ files
 

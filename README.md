@@ -95,12 +95,26 @@ chmod +x setup_dependencies.sh build.sh
 
 ## Documentation
 
+### Core Documentation
+
 - **[Setup Guide](docs/setup.md)** - Detailed installation instructions
 - **[Quick Start](docs/quickstart.md)** - Get up and running in minutes
-- **[Deterministic Physics](docs/deterministic-physics.md)** - Revolutionary component-based movement system
-- **[Physics Strategy](docs/physics-strategy.md)** - Hybrid physics architecture and dual backend strategy
-- **[API Reference](docs/api-reference.md)** - Complete API documentation
 - **[Architecture](docs/architecture.md)** - Engine design and patterns
+- **[API Reference](docs/api-reference.md)** - Complete API documentation
+- **[Roadmap](docs/roadmap.md)** - Development progress and future plans
+
+### Physics System
+
+- **[Physics Strategy](docs/physics-strategy.md)** - Hybrid physics architecture and dual backend strategy
+- **[Deterministic Physics](docs/deterministic-physics.md)** - Revolutionary component-based movement system
+
+### v1.1 Features Documentation
+
+- **[NVIDIA PhysX Integration](docs/nvidia-physx-integration.md)** - GPU-accelerated physics with PhysX
+- **[Advanced Shader System](docs/advanced-shader-system.md)** - Hot-reloadable shaders and PBR materials
+- **[3D Model Loading](docs/3d-model-loading.md)** - FBX, GLTF, and OBJ model support
+- **[Animation System](docs/animation-system.md)** - Skeletal animation and state machines
+- **[Particle Effects](docs/particle-effects.md)** - GPU-accelerated particle systems
 
 ## Controls
 

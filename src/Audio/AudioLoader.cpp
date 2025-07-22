@@ -61,7 +61,7 @@ namespace GameEngine {
                 return LoadOGG(filepath);
             }
             
-            LOG_ERROR("Unsupported audio format for file: " + filepath + " (supported: WAV, OGG)");
+            LOG_ERROR("Unsupported audio format for file: " + filepath + " (supported formats: WAV, OGG)");
             AudioData data;
             data.isValid = false;
             return data;

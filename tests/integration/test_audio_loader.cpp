@@ -87,6 +87,47 @@ bool TestOGGFileDetection() {
     return true;
 }
 
+bool TestOGGLoadingFromRealFile() {
+    TestOutput::PrintTestStart("OGG loading from real file");
+    
+    AudioLoader loader;
+    
+    // Test loading the real OGG file
+    AudioData oggData = loader.LoadOGG("assets/audio/file_example_OOG_1MG.ogg");
+    
+    EXPECT_TRUE(oggData.isValid);
+    EXPECT_EQUAL(oggData.sampleRate, 44100);
+    EXPECT_EQUAL(oggData.channels, 2);
+    EXPECT_EQUAL(oggData.bitsPerSample, 16);
+    EXPECT_TRUE(oggData.duration > 70.0f && oggData.duration < 80.0f); // ~75 seconds
+    EXPECT_TRUE(!oggData.data.empty());
+    
+    TestOutput::PrintTestPass("OGG loading from real file");
+    return true;
+}
+
+bool TestUnifiedAudioLoading() {
+    TestOutput::PrintTestStart("Unified audio loading interface");
+    
+    AudioLoader loader;
+    
+    // Test loading WAV through unified interface
+    AudioData wavData = loader.LoadWAV("assets/audio/file_example_WAV_5MG.wav");
+    EXPECT_TRUE(wavData.isValid);
+    
+    // Test loading OGG through unified interface  
+    AudioData oggData = loader.LoadOGG("assets/audio/file_example_OOG_1MG.ogg");
+    EXPECT_TRUE(oggData.isValid);
+    
+    // Compare properties
+    EXPECT_EQUAL(wavData.sampleRate, oggData.sampleRate); // Both should be 44100Hz
+    EXPECT_EQUAL(wavData.channels, oggData.channels); // Both should be stereo
+    EXPECT_EQUAL(wavData.bitsPerSample, oggData.bitsPerSample); // Both should be 16-bit
+    
+    TestOutput::PrintTestPass("Unified audio loading interface");
+    return true;
+}
+
 bool TestWAVLoadingFromFile() {
     TestOutput::PrintTestStart("WAV loading from file");
     

@@ -154,18 +154,46 @@ public:
 
 ### Audio System
 
-3D spatial audio with OpenAL backend:
+3D spatial audio system with multi-format support and OpenAL backend:
 
 ```cpp
 class AudioEngine {
 public:
     bool Initialize();
-    uint32_t LoadAudioClip(const std::string& filepath);
+
+    // Multi-format audio loading (WAV, OGG)
+    std::shared_ptr<AudioClip> LoadAudioClip(const std::string& filepath);
+    void UnloadAudioClip(const std::string& filepath);
+
+    // 3D audio source management
     uint32_t CreateAudioSource();
-    void PlayAudioSource(uint32_t sourceId, uint32_t clipId);
+    void DestroyAudioSource(uint32_t sourceId);
+    void PlayAudioSource(uint32_t sourceId, std::shared_ptr<AudioClip> clip);
     void SetAudioSourcePosition(uint32_t sourceId, const Math::Vec3& position);
+    void SetAudioSourceVolume(uint32_t sourceId, float volume);
+
+    // 3D listener (camera/player) positioning
+    void SetListenerPosition(const Math::Vec3& position);
+    void SetListenerOrientation(const Math::Vec3& forward, const Math::Vec3& up);
+};
+
+class AudioLoader {
+public:
+    // Format-specific loading
+    AudioData LoadWAV(const std::string& filepath);
+    AudioData LoadOGG(const std::string& filepath);  // STB Vorbis integration
+
+    // Format detection
+    static bool IsWAVFile(const std::string& filepath);
+    static bool IsOGGFile(const std::string& filepath);
 };
 ```
+
+**Supported Formats:**
+
+- ✅ **WAV**: Native PCM parser (8/16-bit, mono/stereo)
+- ✅ **OGG Vorbis**: STB Vorbis integration (compressed audio)
+- ❌ **MP3**: Not implemented (patent concerns)
 
 ### Resource Management
 

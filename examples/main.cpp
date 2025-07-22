@@ -228,7 +228,9 @@ public:
 
 private:
   void TestAudioLoading() {
-    LOG_INFO("Testing audio loading functionality...");
+    LOG_INFO("========================================");
+    LOG_INFO("Testing Audio Loading Functionality");
+    LOG_INFO("========================================");
     
     auto* audioEngine = m_engine.GetAudio();
     if (!audioEngine) {
@@ -236,40 +238,88 @@ private:
       return;
     }
     
-    // Test loading WAV file
-    LOG_INFO("Testing WAV file loading...");
+    // Test 1: WAV file loading
+    LOG_INFO("Test 1: WAV file loading...");
     auto wavClip = audioEngine->LoadAudioClip("assets/audio/file_example_WAV_5MG.wav");
     if (wavClip) {
-      LOG_INFO("SUCCESS: WAV file loaded - Duration: " + std::to_string(wavClip->duration) + "s, " +
-               std::to_string(wavClip->channels) + " channels, " + std::to_string(wavClip->sampleRate) + "Hz");
+      LOG_INFO("  [PASS] WAV file loaded successfully");
+      LOG_INFO("    Path: " + wavClip->path);
+      LOG_INFO("    Duration: " + std::to_string(wavClip->duration) + "s");
+      LOG_INFO("    Channels: " + std::to_string(wavClip->channels));
+      LOG_INFO("    Sample Rate: " + std::to_string(wavClip->sampleRate) + "Hz");
+      LOG_INFO("    Format: WAV");
     } else {
-      LOG_ERROR("FAILED: Could not load WAV file");
+      LOG_ERROR("  [FAIL] Could not load WAV file");
     }
     
-    // Test loading OGG file
-    LOG_INFO("Testing OGG file loading...");
+    // Test 2: OGG file loading
+    LOG_INFO("Test 2: OGG file loading...");
     auto oggClip = audioEngine->LoadAudioClip("assets/audio/file_example_OOG_1MG.ogg");
     if (oggClip) {
-      LOG_INFO("SUCCESS: OGG file loaded - Duration: " + std::to_string(oggClip->duration) + "s, " +
-               std::to_string(oggClip->channels) + " channels, " + std::to_string(oggClip->sampleRate) + "Hz");
+      LOG_INFO("  [PASS] OGG file loaded successfully");
+      LOG_INFO("    Path: " + oggClip->path);
+      LOG_INFO("    Duration: " + std::to_string(oggClip->duration) + "s");
+      LOG_INFO("    Channels: " + std::to_string(oggClip->channels));
+      LOG_INFO("    Sample Rate: " + std::to_string(oggClip->sampleRate) + "Hz");
+      LOG_INFO("    Format: OGG");
     } else {
-      LOG_ERROR("FAILED: Could not load OGG file");
+      LOG_ERROR("  [FAIL] Could not load OGG file");
     }
     
-    // Test unified loading interface
-    LOG_INFO("Testing unified audio loading interface...");
-    auto unifiedClip = audioEngine->LoadAudioClip("assets/audio/file_example_OOG_1MG.ogg");
-    if (unifiedClip) {
-      LOG_INFO("SUCCESS: Unified interface loaded OGG file successfully");
+    // Test 3: MP3 file loading (should fail gracefully)
+    LOG_INFO("Test 3: MP3 file loading (expected to fail - not implemented)...");
+    auto mp3Clip = audioEngine->LoadAudioClip("assets/audio/file_example_MP3_5MG.mp3");
+    if (mp3Clip) {
+      LOG_WARNING("  [UNEXPECTED] MP3 file loaded (MP3 support not implemented)");
     } else {
-      LOG_ERROR("FAILED: Unified interface could not load OGG file");
+      LOG_INFO("  [EXPECTED] MP3 file loading failed (MP3 support not implemented)");
+    }
+    
+    // Test 4: Format detection
+    LOG_INFO("Test 4: Format detection...");
+    if (wavClip && wavClip->format == AudioFormat::WAV) {
+      LOG_INFO("  [PASS] WAV format detected correctly");
+    } else {
+      LOG_ERROR("  [FAIL] WAV format detection failed");
+    }
+    
+    if (oggClip && oggClip->format == AudioFormat::OGG) {
+      LOG_INFO("  [PASS] OGG format detected correctly");
+    } else {
+      LOG_ERROR("  [FAIL] OGG format detection failed");
+    }
+    
+    // Test 5: Unified loading interface
+    LOG_INFO("Test 5: Unified loading interface...");
+    auto unifiedWav = audioEngine->LoadAudioClip("assets/audio/file_example_WAV_5MG.wav");
+    auto unifiedOgg = audioEngine->LoadAudioClip("assets/audio/file_example_OOG_1MG.ogg");
+    
+    if (unifiedWav && unifiedOgg) {
+      LOG_INFO("  [PASS] Unified interface works for both WAV and OGG");
+    } else {
+      LOG_ERROR("  [FAIL] Unified interface failed");
+    }
+    
+    // Test 6: Error handling
+    LOG_INFO("Test 6: Error handling...");
+    auto invalidClip = audioEngine->LoadAudioClip("assets/audio/nonexistent.wav");
+    if (!invalidClip) {
+      LOG_INFO("  [PASS] Error handling for non-existent file works correctly");
+    } else {
+      LOG_ERROR("  [FAIL] Error handling failed");
     }
     
     // Store clips for playback testing
     m_wavClip = wavClip;
     m_oggClip = oggClip;
     
-    LOG_INFO("Audio loading tests completed");
+    LOG_INFO("========================================");
+    LOG_INFO("Audio Loading Tests Summary:");
+    LOG_INFO("  WAV Support: " + std::string(wavClip ? "WORKING" : "FAILED"));
+    LOG_INFO("  OGG Support: " + std::string(oggClip ? "WORKING" : "FAILED"));
+    LOG_INFO("  MP3 Support: NOT IMPLEMENTED (as expected)");
+    LOG_INFO("  Unified Interface: " + std::string((unifiedWav && unifiedOgg) ? "WORKING" : "FAILED"));
+    LOG_INFO("========================================");
   }
 
   void CreateGroundPlane() {

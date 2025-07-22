@@ -332,6 +332,18 @@ public:
     }
 
     /**
+     * Format a Vec4 for test output
+     */
+    static std::string FormatVec4(const Math::Vec4& vec, int precision = 3) {
+        std::ostringstream oss;
+        oss << "(" << FormatFloat(vec.x, precision) << ", " 
+            << FormatFloat(vec.y, precision) << ", " 
+            << FormatFloat(vec.z, precision) << ", " 
+            << FormatFloat(vec.w, precision) << ")";
+        return oss.str();
+    }
+
+    /**
      * Format a quaternion for test output
      */
     static std::string FormatQuat(const Math::Quat& quat, int precision = 3) {
@@ -426,52 +438,328 @@ private:
     std::vector<TestResult> m_results;
 };
 
+/**
+ * Advanced assertion failure reporting with file and line information
+ */
+class AssertionReporter {
+public:
+    /**
+     * Report detailed assertion failure with context
+     */
+    static void ReportFailure(const std::string& testName, const std::string& condition,
+                             const std::string& expected, const std::string& actual,
+                             const char* file, int line) {
+        std::cout << "  [FAILED] " << testName << " failed" << std::endl;
+        std::cout << "    Condition: " << condition << std::endl;
+        std::cout << "    Expected: " << expected << std::endl;
+        std::cout << "    Actual: " << actual << std::endl;
+        std::cout << "    Location: " << file << ":" << line << std::endl;
+    }
+
+    /**
+     * Report simple assertion failure with context
+     */
+    static void ReportFailure(const std::string& testName, const std::string& condition,
+                             const char* file, int line) {
+        std::cout << "  [FAILED] " << testName << " failed" << std::endl;
+        std::cout << "    Condition: " << condition << std::endl;
+        std::cout << "    Location: " << file << ":" << line << std::endl;
+    }
+
+    /**
+     * Report matrix comparison failure with detailed output
+     */
+    static void ReportMatrixFailure(const std::string& testName, const GameEngine::Math::Mat4& expected, 
+                                   const GameEngine::Math::Mat4& actual, const char* file, int line) {
+        std::cout << "  [FAILED] " << testName << " failed" << std::endl;
+        std::cout << "    Matrix comparison failed" << std::endl;
+        std::cout << "    Expected matrix:" << std::endl;
+        PrintMatrix(expected, "      ");
+        std::cout << "    Actual matrix:" << std::endl;
+        PrintMatrix(actual, "      ");
+        std::cout << "    Location: " << file << ":" << line << std::endl;
+    }
+
+    /**
+     * Report vector comparison failure with component breakdown
+     */
+    static void ReportVectorFailure(const std::string& testName, const std::string& vectorType,
+                                   const std::string& expected, const std::string& actual,
+                                   const char* file, int line) {
+        std::cout << "  [FAILED] " << testName << " failed" << std::endl;
+        std::cout << "    " << vectorType << " comparison failed" << std::endl;
+        std::cout << "    Expected: " << expected << std::endl;
+        std::cout << "    Actual: " << actual << std::endl;
+        std::cout << "    Location: " << file << ":" << line << std::endl;
+    }
+
+private:
+    /**
+     * Helper function to print matrix in readable format
+     */
+    static void PrintMatrix(const GameEngine::Math::Mat4& matrix, const std::string& indent) {
+        for (int row = 0; row < 4; ++row) {
+            std::cout << indent << "[";
+            for (int col = 0; col < 4; ++col) {
+                std::cout << std::fixed << std::setprecision(3) << matrix[col][row];
+                if (col < 3) std::cout << ", ";
+            }
+            std::cout << "]" << std::endl;
+        }
+    }
+};
+
 } // namespace Testing
 } // namespace GameEngine
 
-// Convenience macros for common operations
+// Enhanced convenience macros for common operations with detailed error reporting
+
+/**
+ * Basic floating-point comparison with epsilon tolerance
+ */
 #define EXPECT_NEARLY_EQUAL(a, b) \
     do { \
         if (!GameEngine::Testing::FloatComparison::IsNearlyEqual(a, b)) { \
-            GameEngine::Testing::TestOutput::PrintTestFail(__func__, \
+            GameEngine::Testing::AssertionReporter::ReportFailure(__func__, \
+                #a " ≈ " #b, \
                 GameEngine::Testing::StringUtils::FormatFloat(b), \
-                GameEngine::Testing::StringUtils::FormatFloat(a)); \
+                GameEngine::Testing::StringUtils::FormatFloat(a), \
+                __FILE__, __LINE__); \
             return false; \
         } \
     } while(0)
 
+/**
+ * Floating-point comparison with custom epsilon
+ */
 #define EXPECT_NEARLY_EQUAL_EPSILON(a, b, epsilon) \
     do { \
         if (!GameEngine::Testing::FloatComparison::IsNearlyEqual(a, b, epsilon)) { \
-            GameEngine::Testing::TestOutput::PrintTestFail(__func__, \
+            GameEngine::Testing::AssertionReporter::ReportFailure(__func__, \
+                #a " ≈ " #b " (ε=" #epsilon ")", \
                 GameEngine::Testing::StringUtils::FormatFloat(b), \
-                GameEngine::Testing::StringUtils::FormatFloat(a)); \
+                GameEngine::Testing::StringUtils::FormatFloat(a), \
+                __FILE__, __LINE__); \
             return false; \
         } \
     } while(0)
 
-#define EXPECT_VEC3_NEARLY_EQUAL(a, b) \
+/**
+ * Vec3 comparison with default epsilon
+ */
+#define EXPECT_NEAR_VEC3(a, b) \
     do { \
         if (!GameEngine::Testing::FloatComparison::IsNearlyEqual(a, b)) { \
-            GameEngine::Testing::TestOutput::PrintTestFail(__func__, \
+            GameEngine::Testing::AssertionReporter::ReportVectorFailure(__func__, \
+                "Vec3", \
                 GameEngine::Testing::StringUtils::FormatVec3(b), \
-                GameEngine::Testing::StringUtils::FormatVec3(a)); \
+                GameEngine::Testing::StringUtils::FormatVec3(a), \
+                __FILE__, __LINE__); \
             return false; \
         } \
     } while(0)
 
+/**
+ * Vec3 comparison with custom epsilon
+ */
+#define EXPECT_NEAR_VEC3_EPSILON(a, b, epsilon) \
+    do { \
+        if (!GameEngine::Testing::FloatComparison::IsNearlyEqual(a, b, epsilon)) { \
+            GameEngine::Testing::AssertionReporter::ReportVectorFailure(__func__, \
+                "Vec3 (ε=" + GameEngine::Testing::StringUtils::FormatFloat(epsilon) + ")", \
+                GameEngine::Testing::StringUtils::FormatVec3(b), \
+                GameEngine::Testing::StringUtils::FormatVec3(a), \
+                __FILE__, __LINE__); \
+            return false; \
+        } \
+    } while(0)
+
+/**
+ * Vec4 comparison with default epsilon
+ */
+#define EXPECT_NEAR_VEC4(a, b) \
+    do { \
+        if (!GameEngine::Testing::FloatComparison::IsNearlyEqual(a, b)) { \
+            GameEngine::Testing::AssertionReporter::ReportVectorFailure(__func__, \
+                "Vec4", \
+                GameEngine::Testing::StringUtils::FormatVec4(b), \
+                GameEngine::Testing::StringUtils::FormatVec4(a), \
+                __FILE__, __LINE__); \
+            return false; \
+        } \
+    } while(0)
+
+/**
+ * Vec4 comparison with custom epsilon
+ */
+#define EXPECT_NEAR_VEC4_EPSILON(a, b, epsilon) \
+    do { \
+        if (!GameEngine::Testing::FloatComparison::IsNearlyEqual(a, b, epsilon)) { \
+            GameEngine::Testing::AssertionReporter::ReportVectorFailure(__func__, \
+                "Vec4 (ε=" + GameEngine::Testing::StringUtils::FormatFloat(epsilon) + ")", \
+                GameEngine::Testing::StringUtils::FormatVec4(b), \
+                GameEngine::Testing::StringUtils::FormatVec4(a), \
+                __FILE__, __LINE__); \
+            return false; \
+        } \
+    } while(0)
+
+/**
+ * Quaternion comparison with default epsilon
+ */
+#define EXPECT_NEAR_QUAT(a, b) \
+    do { \
+        if (!GameEngine::Testing::FloatComparison::IsNearlyEqual(a, b)) { \
+            GameEngine::Testing::AssertionReporter::ReportVectorFailure(__func__, \
+                "Quaternion", \
+                GameEngine::Testing::StringUtils::FormatQuat(b), \
+                GameEngine::Testing::StringUtils::FormatQuat(a), \
+                __FILE__, __LINE__); \
+            return false; \
+        } \
+    } while(0)
+
+/**
+ * Quaternion comparison with custom epsilon
+ */
+#define EXPECT_NEAR_QUAT_EPSILON(a, b, epsilon) \
+    do { \
+        if (!GameEngine::Testing::FloatComparison::IsNearlyEqual(a, b, epsilon)) { \
+            GameEngine::Testing::AssertionReporter::ReportVectorFailure(__func__, \
+                "Quaternion (ε=" + GameEngine::Testing::StringUtils::FormatFloat(epsilon) + ")", \
+                GameEngine::Testing::StringUtils::FormatQuat(b), \
+                GameEngine::Testing::StringUtils::FormatQuat(a), \
+                __FILE__, __LINE__); \
+            return false; \
+        } \
+    } while(0)
+
+/**
+ * Matrix comparison with default epsilon
+ */
+#define EXPECT_MATRIX_EQUAL(a, b) \
+    do { \
+        if (!GameEngine::Testing::FloatComparison::IsNearlyEqual(a, b)) { \
+            GameEngine::Testing::AssertionReporter::ReportMatrixFailure(__func__, b, a, __FILE__, __LINE__); \
+            return false; \
+        } \
+    } while(0)
+
+/**
+ * Matrix comparison with custom epsilon
+ */
+#define EXPECT_MATRIX_EQUAL_EPSILON(a, b, epsilon) \
+    do { \
+        if (!GameEngine::Testing::FloatComparison::IsNearlyEqual(a, b, epsilon)) { \
+            GameEngine::Testing::AssertionReporter::ReportMatrixFailure(__func__, b, a, __FILE__, __LINE__); \
+            return false; \
+        } \
+    } while(0)
+
+/**
+ * Boolean true assertion
+ */
 #define EXPECT_TRUE(condition) \
     do { \
         if (!(condition)) { \
-            GameEngine::Testing::TestOutput::PrintTestFail(__func__, "true", "false"); \
+            GameEngine::Testing::AssertionReporter::ReportFailure(__func__, \
+                #condition, "true", "false", __FILE__, __LINE__); \
             return false; \
         } \
     } while(0)
 
+/**
+ * Boolean false assertion
+ */
 #define EXPECT_FALSE(condition) \
     do { \
         if (condition) { \
-            GameEngine::Testing::TestOutput::PrintTestFail(__func__, "false", "true"); \
+            GameEngine::Testing::AssertionReporter::ReportFailure(__func__, \
+                #condition, "false", "true", __FILE__, __LINE__); \
             return false; \
         } \
     } while(0)
+
+/**
+ * Null pointer assertion
+ */
+#define EXPECT_NULL(ptr) \
+    do { \
+        if ((ptr) != nullptr) { \
+            GameEngine::Testing::AssertionReporter::ReportFailure(__func__, \
+                #ptr " == nullptr", "nullptr", "non-null pointer", __FILE__, __LINE__); \
+            return false; \
+        } \
+    } while(0)
+
+/**
+ * Non-null pointer assertion
+ */
+#define EXPECT_NOT_NULL(ptr) \
+    do { \
+        if ((ptr) == nullptr) { \
+            GameEngine::Testing::AssertionReporter::ReportFailure(__func__, \
+                #ptr " != nullptr", "non-null pointer", "nullptr", __FILE__, __LINE__); \
+            return false; \
+        } \
+    } while(0)
+
+/**
+ * Generic equality assertion
+ */
+#define EXPECT_EQUAL(a, b) \
+    do { \
+        if (!((a) == (b))) { \
+            std::ostringstream expectedStr, actualStr; \
+            expectedStr << (b); \
+            actualStr << (a); \
+            GameEngine::Testing::AssertionReporter::ReportFailure(__func__, \
+                #a " == " #b, expectedStr.str(), actualStr.str(), __FILE__, __LINE__); \
+            return false; \
+        } \
+    } while(0)
+
+/**
+ * Generic inequality assertion
+ */
+#define EXPECT_NOT_EQUAL(a, b) \
+    do { \
+        if ((a) == (b)) { \
+            std::ostringstream valueStr; \
+            valueStr << (a); \
+            GameEngine::Testing::AssertionReporter::ReportFailure(__func__, \
+                #a " != " #b, "different values", "both equal to " + valueStr.str(), __FILE__, __LINE__); \
+            return false; \
+        } \
+    } while(0)
+
+/**
+ * Range assertion (value within bounds)
+ */
+#define EXPECT_IN_RANGE(value, min, max) \
+    do { \
+        if (!((value) >= (min) && (value) <= (max))) { \
+            std::ostringstream valueStr, rangeStr; \
+            valueStr << (value); \
+            rangeStr << "[" << (min) << ", " << (max) << "]"; \
+            GameEngine::Testing::AssertionReporter::ReportFailure(__func__, \
+                #value " in range [" #min ", " #max "]", rangeStr.str(), valueStr.str(), __FILE__, __LINE__); \
+            return false; \
+        } \
+    } while(0)
+
+/**
+ * String equality assertion
+ */
+#define EXPECT_STRING_EQUAL(a, b) \
+    do { \
+        if (std::string(a) != std::string(b)) { \
+            GameEngine::Testing::AssertionReporter::ReportFailure(__func__, \
+                #a " == " #b, std::string(b), std::string(a), __FILE__, __LINE__); \
+            return false; \
+        } \
+    } while(0)
+
+// Backward compatibility aliases
+#define EXPECT_VEC3_NEARLY_EQUAL(a, b) EXPECT_NEAR_VEC3(a, b)
+#define EXPECT_NEARLY_ZERO(value) EXPECT_NEARLY_EQUAL(value, 0.0f)

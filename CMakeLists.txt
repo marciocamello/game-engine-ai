@@ -37,6 +37,7 @@ find_package(Bullet CONFIG REQUIRED)
 find_package(Lua QUIET)
 find_package(nlohmann_json QUIET)
 find_package(fmt QUIET)
+find_package(Stb REQUIRED)
 
 # Engine source files
 file(GLOB_RECURSE ENGINE_SOURCES
@@ -119,6 +120,11 @@ endif()
 if(fmt_FOUND)
     target_link_libraries(GameEngineKiro PUBLIC fmt::fmt)
     target_compile_definitions(GameEngineKiro PUBLIC GAMEENGINE_HAS_FMT)
+endif()
+
+if(Stb_FOUND)
+    target_include_directories(GameEngineKiro PUBLIC ${Stb_INCLUDE_DIR})
+    target_compile_definitions(GameEngineKiro PUBLIC GAMEENGINE_HAS_STB)
 endif()
 
 # Platform-specific libraries

@@ -50,9 +50,15 @@ namespace GameEngine {
         bool IsValid() const { return m_textureID != 0; }
 
     private:
+        void CreateDefaultTexture();
+        
         uint32_t GetGLFormat(TextureFormat format);
+        uint32_t GetGLInternalFormat(TextureFormat format);
         uint32_t GetGLFilter(TextureFilter filter);
         uint32_t GetGLWrap(TextureWrap wrap);
+        
+        TextureFormat GetTextureFormatFromChannels(int channels);
+        int GetChannelsFromFormat(TextureFormat format);
         
         uint32_t m_textureID = 0;
         int m_width = 0;

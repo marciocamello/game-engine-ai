@@ -301,29 +301,53 @@ void ResourceManager::CleanupUnused() {
 
 ## Testing Strategy
 
+### Test Implementation Standards
+
+All tests MUST follow the established Game Engine Kiro testing patterns:
+
+1. **Test Structure Requirements**
+
+   - Use `TestUtils.h` for standardized test utilities
+   - Include `Core/Logger.h` and initialize logger in main()
+   - Use `TestOutput` class for consistent formatting
+   - Use `TestSuite` class for result tracking
+   - Follow the established assertion macros (EXPECT_TRUE, EXPECT_EQUAL, etc.)
+
+2. **Test Output Format**
+
+   - Use `TestOutput::PrintHeader()` for test suite headers
+   - Use `TestOutput::PrintTestStart()` for individual test starts
+   - Use `TestOutput::PrintTestPass()` and `TestOutput::PrintTestFail()` for results
+   - Use `TestOutput::PrintFooter()` for final results
+
+3. **Build and Execution**
+   - Build scripts are located in `/scripts/` directory
+   - Manual build: `cmake --build build --config Release --target <TestName>`
+   - All tests should be terminable and not require user interaction
+
 ### Unit Testing
 
 1. **Audio System Tests**
 
-   - OpenAL initialization/shutdown
-   - Audio file loading (WAV/OGG)
-   - 3D positioning accuracy
-   - Memory leak detection
+   - OpenAL initialization/shutdown using TestSuite pattern
+   - Audio file loading (WAV/OGG) with proper error handling tests
+   - 3D positioning accuracy using EXPECT_NEAR_VEC3 macros
+   - Memory leak detection using MemoryTest utilities
 
 2. **Resource System Tests**
-   - File loading for each format
-   - Cache hit/miss behavior
-   - Memory usage tracking
-   - Error condition handling
+   - File loading for each format with TestOutput formatting
+   - Cache hit/miss behavior validation
+   - Memory usage tracking with detailed logging
+   - Error condition handling with proper test assertions
 
 ### Integration Testing
 
 1. **Engine Integration**
 
-   - Audio system with character movement
+   - Audio system with character movement using established test patterns
    - Resource loading with graphics rendering
-   - Performance under load
-   - Memory usage over time
+   - Performance under load using PerformanceTest utilities
+   - Memory usage over time with TestTimer measurements
 
 2. **Cross-System Testing**
    - Audio resources through resource manager
@@ -334,14 +358,51 @@ void ResourceManager::CleanupUnused() {
 
 1. **Audio Performance**
 
-   - Multiple simultaneous sources
-   - 3D audio calculation overhead
+   - Multiple simultaneous sources using PerformanceTest::ValidatePerformance
+   - 3D audio calculation overhead measurements
    - Memory usage with large audio files
 
 2. **Resource Performance**
-   - Large texture loading times
+   - Large texture loading times with TestTimer
    - Cache efficiency measurements
    - Memory fragmentation analysis
+
+### Test Example Template
+
+```cpp
+#include "Audio/AudioEngine.h"
+#include "Core/Logger.h"
+#include "../TestUtils.h"
+
+using namespace GameEngine;
+using namespace GameEngine::Testing;
+
+bool TestAudioLoaderWAV() {
+    TestOutput::PrintTestStart("WAV file loading");
+
+    AudioLoader loader;
+    AudioData data = loader.LoadWAV("test.wav");
+
+    EXPECT_TRUE(data.isValid);
+    EXPECT_EQUAL(data.sampleRate, 44100);
+    EXPECT_EQUAL(data.channels, 2);
+
+    TestOutput::PrintTestPass("WAV file loading");
+    return true;
+}
+
+int main() {
+    TestOutput::PrintHeader("Audio Loader");
+    Logger::GetInstance().Initialize();
+
+    TestSuite suite("Audio Loader Tests");
+    bool allPassed = suite.RunTest("WAV Loading", TestAudioLoaderWAV);
+
+    suite.PrintSummary();
+    TestOutput::PrintFooter(allPassed);
+    return allPassed ? 0 : 1;
+}
+```
 
 ## Implementation Phases
 

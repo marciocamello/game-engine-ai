@@ -1,4 +1,5 @@
 #include "Audio/AudioEngine.h"
+#include "Audio/AudioLoader.h"
 #include "Core/Logger.h"
 
 #ifdef GAMEENGINE_HAS_OPENAL
@@ -27,6 +28,15 @@ namespace GameEngine {
 
     void AudioEngine::Shutdown() {
         m_audioSources.clear();
+        
+        // Clean up all audio clips and their OpenAL buffers
+#ifdef GAMEENGINE_HAS_OPENAL
+        for (auto& pair : m_audioClips) {
+            if (pair.second->bufferId != 0) {
+                alDeleteBuffers(1, &pair.second->bufferId);
+            }
+        }
+#endif
         m_audioClips.clear();
         m_listener.reset();
         
@@ -39,6 +49,7 @@ namespace GameEngine {
     }
 
     std::shared_ptr<AudioClip> AudioEngine::LoadAudioClip(const std::string& path) {
+        // Check cache first
         auto it = m_audioClips.find(path);
         if (it != m_audioClips.end()) {
             return it->second;
@@ -46,13 +57,66 @@ namespace GameEngine {
 
         auto clip = std::make_shared<AudioClip>();
         clip->path = path;
-        // Load audio file and populate clip data
+
+        // Determine format from file extension
+        if (AudioLoader::IsWAVFile(path)) {
+            clip->format = AudioFormat::WAV;
+        } else if (AudioLoader::IsOGGFile(path)) {
+            clip->format = AudioFormat::OGG;
+        } else {
+            LOG_ERROR("Unsupported audio format for file: " + path);
+            return nullptr;
+        }
+
+        // Load audio data using AudioLoader
+        AudioLoader loader;
+        AudioData audioData;
+        
+        if (clip->format == AudioFormat::WAV) {
+            audioData = loader.LoadWAV(path);
+        } else if (clip->format == AudioFormat::OGG) {
+            audioData = loader.LoadOGG(path);
+        }
+
+        if (!audioData.isValid) {
+            LOG_ERROR("Failed to load audio file: " + path);
+            return nullptr;
+        }
+
+        // Populate clip data
+        clip->duration = audioData.duration;
+        clip->sampleRate = audioData.sampleRate;
+        clip->channels = audioData.channels;
+
+#ifdef GAMEENGINE_HAS_OPENAL
+        // Create OpenAL buffer if OpenAL is available
+        if (m_openALInitialized) {
+            clip->bufferId = loader.CreateOpenALBuffer(audioData);
+            if (clip->bufferId == 0) {
+                LOG_ERROR("Failed to create OpenAL buffer for: " + path);
+                return nullptr;
+            }
+        }
+#endif
+
+        // Cache the loaded clip
         m_audioClips[path] = clip;
         return clip;
     }
 
     void AudioEngine::UnloadAudioClip(const std::string& path) {
-        m_audioClips.erase(path);
+        auto it = m_audioClips.find(path);
+        if (it != m_audioClips.end()) {
+#ifdef GAMEENGINE_HAS_OPENAL
+            // Clean up OpenAL buffer
+            if (it->second->bufferId != 0) {
+                alDeleteBuffers(1, &it->second->bufferId);
+                CheckOpenALError("Deleting audio buffer");
+            }
+#endif
+            m_audioClips.erase(it);
+            LOG_INFO("Unloaded audio clip: " + path);
+        }
     }
 
     uint32_t AudioEngine::CreateAudioSource() {

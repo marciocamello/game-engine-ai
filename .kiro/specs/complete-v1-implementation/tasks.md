@@ -7,16 +7,17 @@
   - Implement basic OpenAL error checking and logging utilities
   - _Requirements: 1.1, 4.1, 4.6_
 
-- [-] 2. Implement WAV audio file loading
+- [x] 2. Implement WAV audio file loading
 
-  - [-] 2.1 Create AudioLoader class with WAV parsing capability
+  - [x] 2.1 Create AudioLoader class with WAV parsing capability
 
     - Write WAV file header parsing and validation
     - Implement PCM audio data extraction from WAV files
     - Create OpenAL buffer creation from WAV data
     - _Requirements: 1.2, 4.3, 6.4_
 
-  - [ ] 2.2 Integrate WAV loading with AudioEngine
+  - [x] 2.2 Integrate WAV loading with AudioEngine
+
     - Modify AudioEngine::LoadAudioClip to use real WAV loading
     - Implement audio buffer caching to prevent duplicate loads
     - Add proper error handling for corrupted or missing WAV files

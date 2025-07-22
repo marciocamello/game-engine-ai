@@ -92,3 +92,18 @@ This specification covers the completion of Game Engine Kiro v1.0 by implementin
 5. WHEN running in debug mode THEN the system SHALL provide additional verbose logging
 6. WHEN querying system status THEN the system SHALL provide current resource counts and memory usage
 7. WHEN audio device changes THEN the system SHALL log device information and capabilities
+
+### Requirement 7: Testing Standards and Build Process
+
+**User Story:** As a developer working on the engine, I want consistent testing patterns and build processes so that I can maintain code quality and easily run tests.
+
+#### Acceptance Criteria
+
+1. WHEN writing tests THEN they SHALL follow the established TestUtils.h patterns with TestOutput formatting
+2. WHEN creating integration tests THEN they SHALL use TestSuite class for result tracking and summary reporting
+3. WHEN implementing test assertions THEN they SHALL use the provided macros (EXPECT_TRUE, EXPECT_EQUAL, EXPECT_NEAR_VEC3, etc.)
+4. WHEN tests need logging THEN they SHALL initialize Logger::GetInstance() in main() function
+5. WHEN building tests THEN they SHALL be buildable using scripts in /scripts/ directory or manual cmake commands
+6. WHEN running tests THEN they SHALL be terminable and provide clear pass/fail output
+7. WHEN tests fail THEN they SHALL provide detailed error information including expected vs actual values
+8. WHEN measuring performance THEN tests SHALL use PerformanceTest utilities for consistent timing measurements

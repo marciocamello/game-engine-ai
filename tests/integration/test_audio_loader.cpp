@@ -1,164 +1,215 @@
 #include "Audio/AudioLoader.h"
 #include "Core/Logger.h"
-#include <iostream>
+#include "../TestUtils.h"
 #include <fstream>
 
 using namespace GameEngine;
+using namespace GameEngine::Testing;
 
-// Create a simple test WAV file
-bool CreateTestWAVFile(const std::string& filename) {
-    std::ofstream file(filename, std::ios::binary);
-    if (!file.is_open()) {
-        return false;
-    }
-
-    // WAV header for 1 second of 44.1kHz 16-bit mono sine wave
-    struct WAVHeader {
-        char riff[4] = {'R', 'I', 'F', 'F'};
-        uint32_t fileSize = 44036; // 44 bytes header + 88200 bytes data - 8
-        char wave[4] = {'W', 'A', 'V', 'E'};
-        char fmt[4] = {'f', 'm', 't', ' '};
-        uint32_t fmtSize = 16;
-        uint16_t audioFormat = 1; // PCM
-        uint16_t numChannels = 1; // Mono
-        uint32_t sampleRate = 44100;
-        uint32_t byteRate = 88200; // sampleRate * numChannels * bitsPerSample/8
-        uint16_t blockAlign = 2; // numChannels * bitsPerSample/8
-        uint16_t bitsPerSample = 16;
-    } header;
-
-    struct DataChunk {
-        char data[4] = {'d', 'a', 't', 'a'};
-        uint32_t dataSize = 88200; // 1 second of 44.1kHz 16-bit mono
-    } dataChunk;
-
-    // Write header
-    file.write(reinterpret_cast<const char*>(&header), sizeof(header));
-    file.write(reinterpret_cast<const char*>(&dataChunk), sizeof(dataChunk));
-
-    // Write simple sine wave data (440Hz tone)
-    const int sampleCount = 44100;
-    const double frequency = 440.0; // A4 note
-    const double amplitude = 16000.0; // Safe amplitude for 16-bit
+// Create a simple test WAV file in memory
+std::vector<char> CreateTestWAVFile() {
+    std::vector<char> wavData;
     
-    for (int i = 0; i < sampleCount; ++i) {
-        double time = static_cast<double>(i) / 44100.0;
-        double sample = amplitude * std::sin(2.0 * 3.14159265359 * frequency * time);
-        int16_t sampleValue = static_cast<int16_t>(sample);
-        file.write(reinterpret_cast<const char*>(&sampleValue), sizeof(sampleValue));
+    // WAV header for 1 second of 44100Hz, 16-bit, mono sine wave
+    const char* riff = "RIFF";
+    const char* wave = "WAVE";
+    const char* fmt = "fmt ";
+    const char* data = "data";
+    
+    uint32_t fileSize = 36 + 88200; // Header size + data size
+    uint32_t fmtSize = 16;
+    uint16_t audioFormat = 1; // PCM
+    uint16_t channels = 1;
+    uint32_t sampleRate = 44100;
+    uint32_t byteRate = 88200; // sampleRate * channels * bitsPerSample/8
+    uint16_t blockAlign = 2; // channels * bitsPerSample/8
+    uint16_t bitsPerSample = 16;
+    uint32_t dataSize = 88200; // 1 second of audio
+    
+    // Write header
+    wavData.insert(wavData.end(), riff, riff + 4);
+    wavData.insert(wavData.end(), (char*)&fileSize, (char*)&fileSize + 4);
+    wavData.insert(wavData.end(), wave, wave + 4);
+    wavData.insert(wavData.end(), fmt, fmt + 4);
+    wavData.insert(wavData.end(), (char*)&fmtSize, (char*)&fmtSize + 4);
+    wavData.insert(wavData.end(), (char*)&audioFormat, (char*)&audioFormat + 2);
+    wavData.insert(wavData.end(), (char*)&channels, (char*)&channels + 2);
+    wavData.insert(wavData.end(), (char*)&sampleRate, (char*)&sampleRate + 4);
+    wavData.insert(wavData.end(), (char*)&byteRate, (char*)&byteRate + 4);
+    wavData.insert(wavData.end(), (char*)&blockAlign, (char*)&blockAlign + 2);
+    wavData.insert(wavData.end(), (char*)&bitsPerSample, (char*)&bitsPerSample + 2);
+    wavData.insert(wavData.end(), data, data + 4);
+    wavData.insert(wavData.end(), (char*)&dataSize, (char*)&dataSize + 4);
+    
+    // Generate simple sine wave data
+    for (int i = 0; i < 44100; i++) {
+        double t = (double)i / 44100.0;
+        double frequency = 440.0; // A4 note
+        int16_t sample = (int16_t)(sin(2.0 * 3.14159 * frequency * t) * 16000);
+        wavData.insert(wavData.end(), (char*)&sample, (char*)&sample + 2);
     }
-
-    return file.good();
+    
+    return wavData;
 }
 
-int main() {
-    std::cout << "AudioLoader Integration Test\n";
-    std::cout << "============================\n\n";
-
-    // Test 1: Create test WAV file
-    std::cout << "Test 1: Creating test WAV file...\n";
-    const std::string testFile = "test_audio.wav";
+bool TestAudioLoaderCreation() {
+    TestOutput::PrintTestStart("AudioLoader creation");
     
-    if (!CreateTestWAVFile(testFile)) {
-        std::cout << "FAILED: Could not create test WAV file\n";
-        return 1;
-    }
-    std::cout << "PASSED: Test WAV file created\n\n";
-
-    // Test 2: Check file type detection
-    std::cout << "Test 2: File type detection...\n";
-    if (!AudioLoader::IsWAVFile(testFile)) {
-        std::cout << "FAILED: WAV file not detected correctly\n";
-        return 1;
-    }
-    
-    if (AudioLoader::IsWAVFile("test.mp3")) {
-        std::cout << "FAILED: Non-WAV file incorrectly detected as WAV\n";
-        return 1;
-    }
-    std::cout << "PASSED: File type detection working\n\n";
-
-    // Test 3: Load WAV file
-    std::cout << "Test 3: Loading WAV file...\n";
     AudioLoader loader;
-    AudioData audioData = loader.LoadWAV(testFile);
     
-    if (!audioData.isValid) {
-        std::cout << "FAILED: Could not load WAV file\n";
-        std::cout << "Error: " << AudioLoader::GetLastError() << "\n";
-        return 1;
+    TestOutput::PrintTestPass("AudioLoader creation");
+    return true;
+}
+
+bool TestWAVFileDetection() {
+    TestOutput::PrintTestStart("WAV file detection");
+    
+    EXPECT_TRUE(AudioLoader::IsWAVFile("test.wav"));
+    EXPECT_TRUE(AudioLoader::IsWAVFile("audio/music.WAV"));
+    EXPECT_FALSE(AudioLoader::IsWAVFile("test.ogg"));
+    EXPECT_FALSE(AudioLoader::IsWAVFile("test.mp3"));
+    EXPECT_FALSE(AudioLoader::IsWAVFile("test"));
+    
+    TestOutput::PrintTestPass("WAV file detection");
+    return true;
+}
+
+bool TestOGGFileDetection() {
+    TestOutput::PrintTestStart("OGG file detection");
+    
+    EXPECT_TRUE(AudioLoader::IsOGGFile("test.ogg"));
+    EXPECT_TRUE(AudioLoader::IsOGGFile("audio/music.OGG"));
+    EXPECT_FALSE(AudioLoader::IsOGGFile("test.wav"));
+    EXPECT_FALSE(AudioLoader::IsOGGFile("test.mp3"));
+    EXPECT_FALSE(AudioLoader::IsOGGFile("test"));
+    
+    TestOutput::PrintTestPass("OGG file detection");
+    return true;
+}
+
+bool TestWAVLoadingFromFile() {
+    TestOutput::PrintTestStart("WAV loading from file");
+    
+    // Create a test WAV file
+    std::vector<char> testWavData = CreateTestWAVFile();
+    
+    // Write to temporary file
+    std::string tempFile = "test_audio.wav";
+    std::ofstream file(tempFile, std::ios::binary);
+    if (!file.is_open()) {
+        TestOutput::PrintTestFail("WAV loading from file");
+        return false;
     }
     
-    // Verify audio data properties
-    if (audioData.sampleRate != 44100) {
-        std::cout << "FAILED: Incorrect sample rate. Expected: 44100, Got: " << audioData.sampleRate << "\n";
-        return 1;
+    file.write(testWavData.data(), testWavData.size());
+    file.close();
+    
+    // Test loading
+    AudioLoader loader;
+    AudioData audioData = loader.LoadWAV(tempFile);
+    
+    EXPECT_TRUE(audioData.isValid);
+    EXPECT_EQUAL(audioData.sampleRate, 44100);
+    EXPECT_EQUAL(audioData.channels, 1);
+    EXPECT_EQUAL(audioData.bitsPerSample, 16);
+    EXPECT_TRUE(audioData.duration > 0.9f && audioData.duration < 1.1f); // ~1 second
+    EXPECT_TRUE(!audioData.data.empty());
+    
+    // Clean up
+    std::remove(tempFile.c_str());
+    
+    TestOutput::PrintTestPass("WAV loading from file");
+    return true;
+}
+
+bool TestInvalidWAVFile() {
+    TestOutput::PrintTestStart("Invalid WAV file handling");
+    
+    AudioLoader loader;
+    
+    // Test non-existent file
+    AudioData audioData = loader.LoadWAV("nonexistent.wav");
+    EXPECT_FALSE(audioData.isValid);
+    
+    // Test invalid file (create a file with wrong header)
+    std::string tempFile = "invalid_test.wav";
+    std::ofstream file(tempFile, std::ios::binary);
+    if (file.is_open()) {
+        file.write("INVALID_HEADER", 14);
+        file.close();
+        
+        audioData = loader.LoadWAV(tempFile);
+        EXPECT_FALSE(audioData.isValid);
+        
+        std::remove(tempFile.c_str());
     }
     
-    if (audioData.channels != 1) {
-        std::cout << "FAILED: Incorrect channel count. Expected: 1, Got: " << audioData.channels << "\n";
-        return 1;
-    }
-    
-    if (audioData.bitsPerSample != 16) {
-        std::cout << "FAILED: Incorrect bits per sample. Expected: 16, Got: " << audioData.bitsPerSample << "\n";
-        return 1;
-    }
-    
-    if (audioData.data.size() != 88200) {
-        std::cout << "FAILED: Incorrect data size. Expected: 88200, Got: " << audioData.data.size() << "\n";
-        return 1;
-    }
-    
-    std::cout << "PASSED: WAV file loaded successfully\n";
-    std::cout << "  Sample Rate: " << audioData.sampleRate << " Hz\n";
-    std::cout << "  Channels: " << audioData.channels << "\n";
-    std::cout << "  Bits per Sample: " << audioData.bitsPerSample << "\n";
-    std::cout << "  Duration: " << audioData.duration << " seconds\n";
-    std::cout << "  Data Size: " << audioData.data.size() << " bytes\n\n";
+    TestOutput::PrintTestPass("Invalid WAV file handling");
+    return true;
+}
 
 #ifdef GAMEENGINE_HAS_OPENAL
-    // Test 4: OpenAL buffer creation (if OpenAL is available)
-    std::cout << "Test 4: OpenAL buffer creation...\n";
+bool TestOpenALBufferCreation() {
+    TestOutput::PrintTestStart("OpenAL buffer creation");
+    
+    // Create test audio data
+    AudioData audioData;
+    audioData.sampleRate = 44100;
+    audioData.channels = 1;
+    audioData.bitsPerSample = 16;
+    audioData.data.resize(1024); // Small amount of data
+    audioData.format = AudioLoader::GetOpenALFormat(1, 16);
+    audioData.isValid = true;
+    
+    AudioLoader loader;
     ALuint buffer = loader.CreateOpenALBuffer(audioData);
     
-    if (buffer == 0) {
-        std::cout << "FAILED: Could not create OpenAL buffer\n";
-        std::cout << "Error: " << AudioLoader::GetLastError() << "\n";
-        return 1;
+    EXPECT_TRUE(buffer != 0);
+    
+    // Clean up
+    if (buffer != 0) {
+        alDeleteBuffers(1, &buffer);
     }
     
-    std::cout << "PASSED: OpenAL buffer created (ID: " << buffer << ")\n\n";
+    TestOutput::PrintTestPass("OpenAL buffer creation");
+    return true;
+}
+
+bool TestOpenALFormatDetection() {
+    TestOutput::PrintTestStart("OpenAL format detection");
     
-    // Clean up OpenAL buffer
-    alDeleteBuffers(1, &buffer);
-#else
-    std::cout << "Test 4: SKIPPED - OpenAL not available\n\n";
+    EXPECT_EQUAL(AudioLoader::GetOpenALFormat(1, 8), AL_FORMAT_MONO8);
+    EXPECT_EQUAL(AudioLoader::GetOpenALFormat(1, 16), AL_FORMAT_MONO16);
+    EXPECT_EQUAL(AudioLoader::GetOpenALFormat(2, 8), AL_FORMAT_STEREO8);
+    EXPECT_EQUAL(AudioLoader::GetOpenALFormat(2, 16), AL_FORMAT_STEREO16);
+    EXPECT_EQUAL(AudioLoader::GetOpenALFormat(3, 16), AL_NONE); // Unsupported
+    EXPECT_EQUAL(AudioLoader::GetOpenALFormat(1, 24), AL_NONE); // Unsupported
+    
+    TestOutput::PrintTestPass("OpenAL format detection");
+    return true;
+}
 #endif
 
-    // Test 5: Error handling
-    std::cout << "Test 5: Error handling...\n";
-    AudioData invalidData = loader.LoadWAV("nonexistent_file.wav");
+int main() {
+    TestOutput::PrintHeader("AudioLoader Tests");
+    Logger::GetInstance().Initialize();
     
-    if (invalidData.isValid) {
-        std::cout << "FAILED: Should have failed to load nonexistent file\n";
-        return 1;
-    }
+    TestSuite suite("AudioLoader Tests");
     
-    std::string error = AudioLoader::GetLastError();
-    if (error.empty()) {
-        std::cout << "FAILED: Error message should not be empty\n";
-        return 1;
-    }
+    bool allPassed = true;
+    allPassed &= suite.RunTest("AudioLoader Creation", TestAudioLoaderCreation);
+    allPassed &= suite.RunTest("WAV File Detection", TestWAVFileDetection);
+    allPassed &= suite.RunTest("OGG File Detection", TestOGGFileDetection);
+    allPassed &= suite.RunTest("WAV Loading from File", TestWAVLoadingFromFile);
+    allPassed &= suite.RunTest("Invalid WAV File Handling", TestInvalidWAVFile);
     
-    std::cout << "PASSED: Error handling working correctly\n";
-    std::cout << "Error message: " << error << "\n\n";
-
-    // Clean up test file
-    std::remove(testFile.c_str());
-
-    std::cout << "All tests passed!\n";
-    std::cout << "AudioLoader is working correctly.\n";
+#ifdef GAMEENGINE_HAS_OPENAL
+    allPassed &= suite.RunTest("OpenAL Buffer Creation", TestOpenALBufferCreation);
+    allPassed &= suite.RunTest("OpenAL Format Detection", TestOpenALFormatDetection);
+#endif
     
-    return 0;
+    suite.PrintSummary();
+    TestOutput::PrintFooter(allPassed);
+    
+    return allPassed ? 0 : 1;
 }

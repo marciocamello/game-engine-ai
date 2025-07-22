@@ -1,15 +1,15 @@
 # Implementation Plan - Complete v1.0 Implementation
 
-- [ ] 1. Set up OpenAL integration foundation
+- [x] 1. Set up OpenAL integration foundation
 
   - Add OpenAL dependency to vcpkg.json and CMakeLists.txt
   - Create OpenAL context initialization and cleanup code
   - Implement basic OpenAL error checking and logging utilities
   - _Requirements: 1.1, 4.1, 4.6_
 
-- [ ] 2. Implement WAV audio file loading
+- [-] 2. Implement WAV audio file loading
 
-  - [ ] 2.1 Create AudioLoader class with WAV parsing capability
+  - [-] 2.1 Create AudioLoader class with WAV parsing capability
 
     - Write WAV file header parsing and validation
     - Implement PCM audio data extraction from WAV files

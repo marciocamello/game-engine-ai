@@ -5,6 +5,11 @@
 #include <memory>
 #include <unordered_map>
 
+#ifdef GAMEENGINE_HAS_OPENAL
+#include <AL/al.h>
+#include <AL/alc.h>
+#endif
+
 namespace GameEngine {
     class AudioSource;
     class AudioListener;
@@ -22,6 +27,10 @@ namespace GameEngine {
         int sampleRate = 44100;
         int channels = 2;
         bool is3D = true;
+        
+#ifdef GAMEENGINE_HAS_OPENAL
+        ALuint bufferId = 0;
+#endif
     };
 
     class AudioEngine {
@@ -58,7 +67,14 @@ namespace GameEngine {
         void SetMusicVolume(float volume);
         void SetSFXVolume(float volume);
 
+        // OpenAL error checking
+        static bool CheckOpenALError(const std::string& operation);
+        static std::string GetOpenALErrorString(ALenum error);
+
     private:
+        bool InitializeOpenAL();
+        void ShutdownOpenAL();
+        
         std::unordered_map<std::string, std::shared_ptr<AudioClip>> m_audioClips;
         std::unordered_map<uint32_t, std::unique_ptr<AudioSource>> m_audioSources;
         std::unique_ptr<AudioListener> m_listener;
@@ -67,6 +83,12 @@ namespace GameEngine {
         float m_masterVolume = 1.0f;
         float m_musicVolume = 1.0f;
         float m_sfxVolume = 1.0f;
+        
+#ifdef GAMEENGINE_HAS_OPENAL
+        ALCdevice* m_device = nullptr;
+        ALCcontext* m_context = nullptr;
+        bool m_openALInitialized = false;
+#endif
     };
 
     class AudioSource {
@@ -79,10 +101,10 @@ namespace GameEngine {
         void Pause();
         void Resume();
 
-        void SetPosition(const Math::Vec3& position) { m_position = position; }
-        void SetVolume(float volume) { m_volume = volume; }
-        void SetPitch(float pitch) { m_pitch = pitch; }
-        void SetLooping(bool looping) { m_looping = looping; }
+        void SetPosition(const Math::Vec3& position);
+        void SetVolume(float volume);
+        void SetPitch(float pitch);
+        void SetLooping(bool looping);
 
         bool IsPlaying() const { return m_isPlaying; }
         bool IsPaused() const { return m_isPaused; }
@@ -96,6 +118,10 @@ namespace GameEngine {
         bool m_isPlaying = false;
         bool m_isPaused = false;
         std::shared_ptr<AudioClip> m_currentClip;
+        
+#ifdef GAMEENGINE_HAS_OPENAL
+        ALuint m_sourceId = 0;
+#endif
     };
 
     class AudioListener {
@@ -103,9 +129,9 @@ namespace GameEngine {
         AudioListener();
         ~AudioListener();
 
-        void SetPosition(const Math::Vec3& position) { m_position = position; }
-        void SetOrientation(const Math::Vec3& forward, const Math::Vec3& up) { m_forward = forward; m_up = up; }
-        void SetVelocity(const Math::Vec3& velocity) { m_velocity = velocity; }
+        void SetPosition(const Math::Vec3& position);
+        void SetOrientation(const Math::Vec3& forward, const Math::Vec3& up);
+        void SetVelocity(const Math::Vec3& velocity);
 
     private:
         Math::Vec3 m_position{0.0f};

@@ -9,7 +9,9 @@
         "glad",
         "stb",
         "nlohmann-json",
-        "fmt"
+        "fmt",
+        "openal-soft",
+        "bullet3"
     ],
     "features": {
         "full": {

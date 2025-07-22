@@ -361,6 +361,12 @@ add_executable(CharacterBehaviorSimpleTest
 )
 apply_coverage_settings(CharacterBehaviorSimpleTest)
 
+# OpenAL integration test
+add_integration_test(OpenALIntegrationTest tests/integration/test_openal_integration.cpp)
+
+# AudioLoader integration test
+add_integration_test(AudioLoaderTest tests/integration/test_audio_loader.cpp)
+
 # Discover and add unit tests automatically
 discover_and_add_tests("tests/unit" "unit")
 
@@ -376,6 +382,7 @@ target_link_libraries(MovementComponentComparisonTest PRIVATE GameEngineKiro)
 target_link_libraries(PhysicsPerformanceSimpleTest PRIVATE GameEngineKiro)
 target_link_libraries(MemoryUsageSimpleTest PRIVATE GameEngineKiro)
 target_link_libraries(CharacterBehaviorSimpleTest PRIVATE GameEngineKiro)
+target_link_libraries(OpenALIntegrationTest PRIVATE GameEngineKiro)
 # Print test summary
 print_test_summary()
 

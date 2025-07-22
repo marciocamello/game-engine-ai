@@ -45,7 +45,7 @@
   - Add automatic listener updates when camera moves
   - _Requirements: 1.6, 3.6, 6.7_
 
-- [-] 5. Add OGG audio file support
+- [x] 5. Add OGG audio file support
 
   - [x] 5.1 Integrate stb_vorbis for OGG loading
 
@@ -54,7 +54,7 @@
     - Create OpenAL buffer creation from OGG data
     - _Requirements: 1.2, 2.2, 4.3_
 
-  - [-] 5.2 Extend AudioLoader with OGG support
+  - [x] 5.2 Extend AudioLoader with OGG support
 
     - Add format detection to automatically choose WAV or OGG loader
     - Implement unified audio loading interface for both formats

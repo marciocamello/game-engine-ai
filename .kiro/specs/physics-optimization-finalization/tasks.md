@@ -201,7 +201,7 @@
 **Key Tools and Technologies:**
 
 - **OpenCppCoverage**: Windows test coverage analysis
-- **GoogleTest + GoogleMock**: Unit and integration testing framework
+- **Internal Testing Framework**: Unit and integration testing system
 - **Visual Studio Profiler**: Performance and memory profiling
 - **PowerShell Scripts**: Automated testing and analysis workflows
 - **JSON/CSV Export**: Performance data analysis and reporting

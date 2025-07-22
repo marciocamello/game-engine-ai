@@ -197,9 +197,9 @@
   - Implement debug drawing interface for Bullet Physics debug renderer
   - Add physics object visualization (collision shapes, forces, contacts)
   - Create debug console commands for physics parameter tuning
-  - Add GoogleTest + GoogleMock for we build our test framwork using these two libs used by industry
-  - Add documentation how to create a tests using this libs
-  - Refactory all tests created until now, include these tests about debuggin visualization
+  - Enhance internal testing framework for comprehensive physics testing
+  - Add documentation for creating tests using our internal framework
+  - Refactor all tests created until now, include tests for debugging visualization
   - _Requirements: 6.3, 1.4_
 
 - [x] 18. Implement visual physics debug renderer

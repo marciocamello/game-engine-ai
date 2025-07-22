@@ -440,6 +440,16 @@ private:
         } \
     } while(0)
 
+#define EXPECT_NEARLY_EQUAL_EPSILON(a, b, epsilon) \
+    do { \
+        if (!GameEngine::Testing::FloatComparison::IsNearlyEqual(a, b, epsilon)) { \
+            GameEngine::Testing::TestOutput::PrintTestFail(__func__, \
+                GameEngine::Testing::StringUtils::FormatFloat(b), \
+                GameEngine::Testing::StringUtils::FormatFloat(a)); \
+            return false; \
+        } \
+    } while(0)
+
 #define EXPECT_VEC3_NEARLY_EQUAL(a, b) \
     do { \
         if (!GameEngine::Testing::FloatComparison::IsNearlyEqual(a, b)) { \

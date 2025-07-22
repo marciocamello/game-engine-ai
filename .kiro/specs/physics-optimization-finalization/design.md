@@ -7,7 +7,7 @@ This design outlines the finalization and optimization of the physics system imp
 **Current State Analysis:**
 
 - ✅ Bullet Physics integration is complete with component-based movement system
-- ✅ Basic unit and integration tests exist using GoogleTest + GoogleMock
+- ✅ Basic unit and integration tests exist using internal testing framework
 - ✅ Performance tests exist but coverage is incomplete
 - ⚠️ Test coverage analysis is not automated
 - ⚠️ Memory profiling tools are not integrated

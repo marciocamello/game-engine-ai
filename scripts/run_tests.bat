@@ -28,6 +28,30 @@ if exist "build\Release\MathTest.exe" (
     )
 )
 
+REM Run Matrix unit test
+if exist "build\Release\MatrixTest.exe" (
+    echo [INFO] Running MatrixTest...
+    build\Release\MatrixTest.exe >nul 2>&1
+    if errorlevel 1 (
+        echo [FAILED] MatrixTest
+        goto :test_failed
+    ) else (
+        echo [PASS] MatrixTest
+    )
+)
+
+REM Run Quaternion unit test
+if exist "build\Release\QuaternionTest.exe" (
+    echo [INFO] Running QuaternionTest...
+    build\Release\QuaternionTest.exe >nul 2>&1
+    if errorlevel 1 (
+        echo [FAILED] QuaternionTest
+        goto :test_failed
+    ) else (
+        echo [PASS] QuaternionTest
+    )
+)
+
 echo.
 echo Running Integration Tests...
 echo ----------------------------------------

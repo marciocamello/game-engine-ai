@@ -58,24 +58,23 @@ namespace GameEngine {
         auto clip = std::make_shared<AudioClip>();
         clip->path = path;
 
-        // Determine format from file extension
-        if (AudioLoader::IsWAVFile(path)) {
-            clip->format = AudioFormat::WAV;
-        } else if (AudioLoader::IsOGGFile(path)) {
-            clip->format = AudioFormat::OGG;
-        } else {
-            LOG_ERROR("Unsupported audio format for file: " + path);
-            return nullptr;
-        }
-
-        // Load audio data using AudioLoader
+        // Load audio data using unified AudioLoader interface
         AudioLoader loader;
-        AudioData audioData;
+        AudioData audioData = loader.LoadAudio(path);
         
-        if (clip->format == AudioFormat::WAV) {
-            audioData = loader.LoadWAV(path);
-        } else if (clip->format == AudioFormat::OGG) {
-            audioData = loader.LoadOGG(path);
+        // Determine format from loaded data or file extension as fallback
+        if (audioData.isValid) {
+            if (AudioLoader::IsWAVFile(path)) {
+                clip->format = AudioFormat::WAV;
+            } else if (AudioLoader::IsOGGFile(path)) {
+                clip->format = AudioFormat::OGG;
+            } else {
+                // Format was detected by content analysis
+                clip->format = AudioFormat::OGG; // Default assumption for successful load
+            }
+        } else {
+            LOG_ERROR("Failed to load audio file (unsupported format or corrupted): " + path);
+            return nullptr;
         }
 
         if (!audioData.isValid) {
@@ -357,16 +356,30 @@ namespace GameEngine {
     }
 
     void AudioSource::Play(std::shared_ptr<AudioClip> clip) {
+        // Stop current playback if any
+        if (m_isPlaying) {
+            Stop();
+        }
+        
         m_currentClip = clip;
-        m_isPlaying = true;
-        m_isPaused = false;
         
 #ifdef GAMEENGINE_HAS_OPENAL
         if (m_sourceId != 0 && clip && clip->bufferId != 0) {
+            // Detach any previous buffer
+            alSourcei(m_sourceId, AL_BUFFER, 0);
+            
+            // Attach new buffer and play
             alSourcei(m_sourceId, AL_BUFFER, clip->bufferId);
             alSourcePlay(m_sourceId);
-            AudioEngine::CheckOpenALError("Playing audio source");
+            
+            if (AudioEngine::CheckOpenALError("Playing audio source")) {
+                m_isPlaying = true;
+                m_isPaused = false;
+            }
         }
+#else
+        m_isPlaying = true;
+        m_isPaused = false;
 #endif
     }
 
@@ -377,6 +390,8 @@ namespace GameEngine {
 #ifdef GAMEENGINE_HAS_OPENAL
         if (m_sourceId != 0) {
             alSourceStop(m_sourceId);
+            // Detach buffer to free resources
+            alSourcei(m_sourceId, AL_BUFFER, 0);
             AudioEngine::CheckOpenALError("Stopping audio source");
         }
 #endif
@@ -396,7 +411,7 @@ namespace GameEngine {
     }
 
     void AudioSource::Resume() {
-        if (m_isPaused) {
+        if (m_isPaused && m_isPlaying) {
             m_isPaused = false;
             
 #ifdef GAMEENGINE_HAS_OPENAL
@@ -450,6 +465,17 @@ namespace GameEngine {
             AudioEngine::CheckOpenALError("Setting audio source looping");
         }
 #endif
+    }
+
+    bool AudioSource::GetOpenALPlayingState() const {
+#ifdef GAMEENGINE_HAS_OPENAL
+        if (m_sourceId != 0) {
+            ALint state;
+            alGetSourcei(m_sourceId, AL_SOURCE_STATE, &state);
+            return state == AL_PLAYING;
+        }
+#endif
+        return false;
     }
 
     // AudioListener implementation

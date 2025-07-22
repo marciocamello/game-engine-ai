@@ -108,6 +108,10 @@ namespace GameEngine {
 
         bool IsPlaying() const { return m_isPlaying; }
         bool IsPaused() const { return m_isPaused; }
+        bool IsStopped() const { return !m_isPlaying && !m_isPaused; }
+        
+        // Get current playback state from OpenAL
+        bool GetOpenALPlayingState() const;
 
     private:
         uint32_t m_id;

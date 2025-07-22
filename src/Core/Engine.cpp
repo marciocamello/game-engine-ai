@@ -107,6 +107,17 @@ namespace GameEngine {
         m_audio->Update(deltaTime);
         m_scripting->Update(deltaTime);
         
+        // Update audio listener with main camera position, orientation, and velocity
+        if (m_mainCamera && m_audio) {
+            // Note: We need to cast away const to update velocity, but this is safe in the update loop
+            Camera* mutableCamera = const_cast<Camera*>(m_mainCamera);
+            mutableCamera->UpdateVelocity(deltaTime);
+            
+            m_audio->SetListenerPosition(m_mainCamera->GetPosition());
+            m_audio->SetListenerOrientation(m_mainCamera->GetForward(), m_mainCamera->GetUp());
+            m_audio->SetListenerVelocity(m_mainCamera->GetVelocity());
+        }
+        
         // Handle physics debug input
         if (m_physicsDebugManager) {
             m_physicsDebugManager->HandleInput();
@@ -162,8 +173,16 @@ namespace GameEngine {
     }
     
     void Engine::SetMainCamera(const Camera* camera) {
+        m_mainCamera = camera;
+        
         if (m_physicsDebugManager) {
             m_physicsDebugManager->SetCamera(camera);
+        }
+        
+        // Immediately update audio listener if camera is set
+        if (m_mainCamera && m_audio) {
+            m_audio->SetListenerPosition(m_mainCamera->GetPosition());
+            m_audio->SetListenerOrientation(m_mainCamera->GetForward(), m_mainCamera->GetUp());
         }
     }
 }

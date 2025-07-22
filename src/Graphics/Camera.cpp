@@ -64,4 +64,11 @@ namespace GameEngine {
             m_projectionMatrix = Math::CreateOrthographicMatrix(m_left, m_right, m_bottom, m_top, m_nearPlane, m_farPlane);
         }
     }
+
+    void Camera::UpdateVelocity(float deltaTime) {
+        if (deltaTime > 0.0f) {
+            m_velocity = (m_position - m_previousPosition) / deltaTime;
+            m_previousPosition = m_position;
+        }
+    }
 }

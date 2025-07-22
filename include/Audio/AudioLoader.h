@@ -32,6 +32,9 @@ namespace GameEngine {
         // Load audio data from file
         AudioData LoadWAV(const std::string& filepath);
         AudioData LoadOGG(const std::string& filepath);
+        
+        // Unified audio loading interface with automatic format detection
+        AudioData LoadAudio(const std::string& filepath);
 
         // Create OpenAL buffer from audio data
 #ifdef GAMEENGINE_HAS_OPENAL

@@ -42,7 +42,7 @@ namespace GameEngine {
         void SetUpdateCallback(std::function<void(float)> callback) { m_updateCallback = callback; }
         void SetRenderCallback(std::function<void()> callback) { m_renderCallback = callback; }
         
-        // Camera management for debug rendering
+        // Camera management for debug rendering and audio
         void SetMainCamera(const Camera* camera);
 
     private:
@@ -64,5 +64,8 @@ namespace GameEngine {
         // Callbacks for custom game logic
         std::function<void(float)> m_updateCallback;
         std::function<void()> m_renderCallback;
+        
+        // Main camera for audio listener integration
+        const Camera* m_mainCamera = nullptr;
     };
 }

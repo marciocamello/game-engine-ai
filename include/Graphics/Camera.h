@@ -23,6 +23,10 @@ namespace GameEngine {
         Math::Vec3 GetForward() const { return m_rotation * Math::Vec3(0, 0, -1); }
         Math::Vec3 GetRight() const { return m_rotation * Math::Vec3(1, 0, 0); }
         Math::Vec3 GetUp() const { return m_rotation * Math::Vec3(0, 1, 0); }
+        Math::Vec3 GetVelocity() const { return m_velocity; }
+        
+        // Update velocity tracking (should be called each frame)
+        void UpdateVelocity(float deltaTime);
 
         // Projection settings
         void SetPerspective(float fov, float aspect, float nearPlane, float farPlane);
@@ -59,5 +63,9 @@ namespace GameEngine {
 
         Math::Mat4 m_viewMatrix{1.0f};
         Math::Mat4 m_projectionMatrix{1.0f};
+        
+        // Velocity tracking for audio Doppler effect
+        Math::Vec3 m_previousPosition{0.0f, 0.0f, 5.0f};
+        Math::Vec3 m_velocity{0.0f};
     };
 }

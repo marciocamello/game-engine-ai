@@ -367,6 +367,9 @@ add_integration_test(OpenALIntegrationTest tests/integration/test_openal_integra
 # AudioLoader integration test
 add_integration_test(AudioLoaderTest tests/integration/test_audio_loader.cpp)
 
+# Audio Camera integration test
+add_integration_test(AudioCameraIntegrationTest tests/integration/test_audio_camera_integration.cpp)
+
 # Discover and add unit tests automatically
 discover_and_add_tests("tests/unit" "unit")
 

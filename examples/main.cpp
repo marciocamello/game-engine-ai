@@ -9,6 +9,7 @@
 #include "Physics/PhysicsDebugManager.h"
 #include "Input/InputManager.h"
 #include "Physics/PhysicsEngine.h"
+#include "Audio/AudioEngine.h"
 #include <GLFW/glfw3.h>
 
 
@@ -23,7 +24,15 @@ public:
   };
 
   GameApplication() = default;
-  ~GameApplication() = default;
+  ~GameApplication() {
+    // Clean up audio source
+    if (m_audioSourceId != 0) {
+      auto* audioEngine = m_engine.GetAudio();
+      if (audioEngine) {
+        audioEngine->DestroyAudioSource(m_audioSourceId);
+      }
+    }
+  }
 
   bool Initialize() {
     // Initialize the engine
@@ -88,6 +97,9 @@ public:
         [this](float deltaTime) { this->Update(deltaTime); });
     m_engine.SetRenderCallback([this]() { this->Render(); });
 
+    // Test audio loading functionality
+    TestAudioLoading();
+
     LOG_INFO("Game application initialized successfully");
     LOG_INFO("Controls:");
     LOG_INFO("  WASD - Move character");
@@ -99,6 +111,9 @@ public:
     LOG_INFO("  ESC - Toggle mouse capture");
     LOG_INFO("  F1 - Exit");
     LOG_INFO("  F2 - Test fall detection (teleport character high up)");
+    LOG_INFO("  F3 - Play WAV audio");
+    LOG_INFO("  F4 - Play OGG audio");
+    LOG_INFO("  F5 - Stop all audio");
     LOG_INFO("Fall Detection System:");
     LOG_INFO("  - Characters automatically reset when falling below Y = -5.0");
     LOG_INFO("  - Test by walking off the ground plane edges or pressing F2");
@@ -184,6 +199,21 @@ public:
       LOG_INFO("Testing fall detection - Character teleported to high position");
     }
 
+    // F3 to play WAV audio
+    if (input->IsKeyPressed(KeyCode::F3)) {
+      TestAudioPlayback(true); // Play WAV
+    }
+
+    // F4 to play OGG audio  
+    if (input->IsKeyPressed(KeyCode::F4)) {
+      TestAudioPlayback(false); // Play OGG
+    }
+
+    // F5 to stop all audio
+    if (input->IsKeyPressed(KeyCode::F5)) {
+      StopAllAudio();
+    }
+
     // Update active character - simplified to use only Character with different movement components
     m_character->Update(deltaTime, m_engine.GetInput(), m_camera.get());
     
@@ -197,6 +227,51 @@ public:
   }
 
 private:
+  void TestAudioLoading() {
+    LOG_INFO("Testing audio loading functionality...");
+    
+    auto* audioEngine = m_engine.GetAudio();
+    if (!audioEngine) {
+      LOG_WARNING("Audio engine not available, skipping audio tests");
+      return;
+    }
+    
+    // Test loading WAV file
+    LOG_INFO("Testing WAV file loading...");
+    auto wavClip = audioEngine->LoadAudioClip("assets/audio/file_example_WAV_5MG.wav");
+    if (wavClip) {
+      LOG_INFO("SUCCESS: WAV file loaded - Duration: " + std::to_string(wavClip->duration) + "s, " +
+               std::to_string(wavClip->channels) + " channels, " + std::to_string(wavClip->sampleRate) + "Hz");
+    } else {
+      LOG_ERROR("FAILED: Could not load WAV file");
+    }
+    
+    // Test loading OGG file
+    LOG_INFO("Testing OGG file loading...");
+    auto oggClip = audioEngine->LoadAudioClip("assets/audio/file_example_OOG_1MG.ogg");
+    if (oggClip) {
+      LOG_INFO("SUCCESS: OGG file loaded - Duration: " + std::to_string(oggClip->duration) + "s, " +
+               std::to_string(oggClip->channels) + " channels, " + std::to_string(oggClip->sampleRate) + "Hz");
+    } else {
+      LOG_ERROR("FAILED: Could not load OGG file");
+    }
+    
+    // Test unified loading interface
+    LOG_INFO("Testing unified audio loading interface...");
+    auto unifiedClip = audioEngine->LoadAudioClip("assets/audio/file_example_OOG_1MG.ogg");
+    if (unifiedClip) {
+      LOG_INFO("SUCCESS: Unified interface loaded OGG file successfully");
+    } else {
+      LOG_ERROR("FAILED: Unified interface could not load OGG file");
+    }
+    
+    // Store clips for playback testing
+    m_wavClip = wavClip;
+    m_oggClip = oggClip;
+    
+    LOG_INFO("Audio loading tests completed");
+  }
+
   void CreateGroundPlane() {
     // Create a static ground plane for physics collision
     auto* physics = m_engine.GetPhysics();
@@ -271,6 +346,47 @@ private:
     }
   }
 
+  void TestAudioPlayback(bool playWav) {
+    auto* audioEngine = m_engine.GetAudio();
+    if (!audioEngine) {
+      LOG_WARNING("Audio engine not available");
+      return;
+    }
+
+    // Create audio source if not exists
+    if (m_audioSourceId == 0) {
+      m_audioSourceId = audioEngine->CreateAudioSource();
+      LOG_INFO("Created audio source with ID: " + std::to_string(m_audioSourceId));
+    }
+
+    // Stop current playback
+    audioEngine->StopAudioSource(m_audioSourceId);
+
+    // Play selected audio clip
+    if (playWav && m_wavClip) {
+      LOG_INFO("Playing WAV audio: " + m_wavClip->path);
+      audioEngine->PlayAudioSource(m_audioSourceId, m_wavClip);
+      audioEngine->SetAudioSourceVolume(m_audioSourceId, 0.5f); // 50% volume
+    } else if (!playWav && m_oggClip) {
+      LOG_INFO("Playing OGG audio: " + m_oggClip->path);
+      audioEngine->PlayAudioSource(m_audioSourceId, m_oggClip);
+      audioEngine->SetAudioSourceVolume(m_audioSourceId, 0.5f); // 50% volume
+    } else {
+      LOG_WARNING("Audio clip not available for playback");
+    }
+  }
+
+  void StopAllAudio() {
+    auto* audioEngine = m_engine.GetAudio();
+    if (!audioEngine || m_audioSourceId == 0) {
+      LOG_WARNING("No audio source to stop");
+      return;
+    }
+
+    audioEngine->StopAudioSource(m_audioSourceId);
+    LOG_INFO("Stopped all audio playback");
+  }
+
   // UpdateCameraForCharacterController removed - using only Character now
 
   Engine m_engine;
@@ -281,6 +397,11 @@ private:
   
   CharacterType m_activeCharacter = CharacterType::Hybrid; // Start with Character + HybridMovement (default)
   bool m_debugPhysicsEnabled = false;
+  
+  // Audio clips for testing
+  std::shared_ptr<AudioClip> m_wavClip;
+  std::shared_ptr<AudioClip> m_oggClip;
+  uint32_t m_audioSourceId = 0;
 };
 
 int main() {

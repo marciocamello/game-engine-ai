@@ -77,16 +77,17 @@
     - Add proper OpenGL texture cleanup in destructor
     - _Requirements: 2.1, 2.5, 4.3_
 
-- [-] 7. Implement basic mesh loading
+- [x] 7. Implement basic mesh loading
 
-  - [ ] 7.1 Create MeshLoader class for OBJ files
+  - [x] 7.1 Create MeshLoader class for OBJ files
 
     - Write basic OBJ file parser for vertices and indices
     - Implement vertex buffer and index buffer creation
     - Add support for vertex normals and texture coordinates
     - _Requirements: 2.3, 4.4, 6.4_
 
-  - [ ] 7.2 Enhance Mesh class with real loading
+  - [x] 7.2 Enhance Mesh class with real loading
+
     - Implement LoadFromFile method with OBJ parsing
     - Create default cube mesh for missing or invalid files
     - Add proper OpenGL buffer cleanup in destructor

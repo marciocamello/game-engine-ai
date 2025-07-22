@@ -3,6 +3,7 @@
 #include "Core/Math.h"
 #include <vector>
 #include <memory>
+#include <string>
 
 namespace GameEngine {
     struct Vertex {
@@ -18,6 +19,10 @@ namespace GameEngine {
         Mesh();
         ~Mesh();
 
+        // Loading methods
+        bool LoadFromFile(const std::string& filepath);
+        void CreateDefault(); // Creates default cube mesh
+        
         void SetVertices(const std::vector<Vertex>& vertices);
         void SetIndices(const std::vector<uint32_t>& indices);
         
@@ -31,6 +36,9 @@ namespace GameEngine {
         void Bind() const;
         void Unbind() const;
         void Draw() const;
+        
+        // Cleanup methods
+        void Cleanup(); // Explicit cleanup of OpenGL resources
 
     private:
         void SetupMesh();

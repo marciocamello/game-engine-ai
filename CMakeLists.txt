@@ -130,10 +130,6 @@ endif()
 # Platform-specific libraries
 if(WIN32)
     target_link_libraries(GameEngineKiro PUBLIC winmm)
-elseif(UNIX AND NOT APPLE)
-    target_link_libraries(GameEngineKiro PUBLIC pthread dl)
-elseif(APPLE)
-    target_link_libraries(GameEngineKiro PUBLIC "-framework Cocoa" "-framework IOKit" "-framework CoreVideo")
 endif()
 
 # Compiler-specific options

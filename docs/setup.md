@@ -71,9 +71,8 @@ build.bat
 ```bash
 git clone https://github.com/yourusername/GameEngineKiro.git
 cd GameEngineKiro
-chmod +x setup_dependencies.sh build.sh
-./setup_dependencies.sh
-./build.sh
+setup_dependencies.bat
+build.bat
 ```
 
 ## Manual Setup

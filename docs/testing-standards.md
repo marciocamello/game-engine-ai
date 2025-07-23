@@ -103,48 +103,57 @@ int main() {
 
 ## Output Formatting Standards
 
-### Status Prefixes
+**IMPORTANT**: All test output formatting must follow the comprehensive standards defined in [Test Output Formatting Standards](testing-output-formatting.md). This section provides a summary of key requirements.
 
-All test output must use standardized prefixes for consistency:
+### Core Requirements
 
-| Prefix      | Usage                      | Color (if supported) | Example                                    |
-| ----------- | -------------------------- | -------------------- | ------------------------------------------ |
-| `[PASS]`    | Individual test success    | Green                | `[PASS] Vector operations passed`          |
-| `[FAILED]`  | Individual test failure    | Red                  | `[FAILED] Matrix multiplication failed`    |
-| `[SUCCESS]` | Overall test suite success | Green                | `[SUCCESS] ALL TESTS PASSED!`              |
-| `[ERROR]`   | Error conditions           | Red                  | `[ERROR] TEST EXCEPTION: Division by zero` |
-| `[WARNING]` | Warning conditions         | Yellow               | `[WARNING] Using fallback implementation`  |
-| `[INFO]`    | Informational messages     | Blue                 | `[INFO] Testing with 1000 iterations`      |
+1. **Use TestOutput Methods Only**: Never use `std::cout`, `printf`, or direct console output
+2. **Consistent Test Names**: Use lowercase with spaces, same string for Start/Pass calls
+3. **Standard Status Prefixes**: `[PASS]`, `[FAILED]`, `[SUCCESS]`, `[ERROR]`, `[WARNING]`, `[INFO]`
+4. **Proper Indentation**: 2 spaces for test results, 4 spaces for error details
+5. **ASCII Only**: No Unicode characters for maximum compatibility
 
-### Output Format Requirements
+### Required Pattern
 
-1. **No Unicode Characters**: Use only ASCII characters for maximum compatibility
-2. **Consistent Spacing**: Use 2 spaces for indentation in test output
-3. **Clear Separators**: Use `========================================` for major sections
-4. **Descriptive Messages**: Include context in all output messages
+```cpp
+bool TestFeatureName() {
+    TestOutput::PrintTestStart("feature name");
 
-### Header Format
+    // Test implementation with assertions
+    EXPECT_TRUE(condition);
+
+    TestOutput::PrintTestPass("feature name");
+    return true;
+}
+```
+
+### Standard Output Structure
 
 ```
 ========================================
- Game Engine Kiro - [Component] Tests
+ Game Engine Kiro - Component Tests
 ========================================
-```
-
-### Test Progress Format
-
-```
-Testing [feature description]...
-  [PASS] [Feature] passed
-```
-
-### Summary Format
-
-```
+Testing feature name...
+  [PASS] feature name passed
+  [INFO] Test Summary:
+  [INFO]   Total: 1
+  [INFO]   Passed: 1
+  [INFO]   Failed: 0
 ========================================
 [SUCCESS] ALL TESTS PASSED!
 ========================================
 ```
+
+### Migration Requirements
+
+Existing tests must be updated to:
+
+- Replace all `std::cout` with `TestOutput::Print*` methods
+- Use consistent lowercase naming for test names
+- Remove excessive `PrintInfo()` calls
+- Follow standard main function exception handling pattern
+
+For complete formatting guidelines and examples, see [Test Output Formatting Standards](testing-output-formatting.md) and [Test Output Consistency Guidelines](testing-output-consistency-guide.md).
 
 ## Error Handling Standards
 
@@ -248,17 +257,15 @@ bool TestVectorAddition() {
 }
 ```
 
-## Cross-Platform Considerations
+## Windows Platform Considerations
 
-### Platform-Specific Code
+### Windows-Specific Code
 
 ```cpp
 #ifdef _WIN32
     // Windows-specific test code
-#elif defined(__linux__)
-    // Linux-specific test code
-#elif defined(__APPLE__)
-    // macOS-specific test code
+    #include <windows.h>
+    // Use Windows APIs as needed
 #endif
 ```
 
@@ -303,14 +310,14 @@ Tests should be automatically discoverable through CMake configuration without m
 - [ ] Includes proper error handling
 - [ ] Has appropriate test coverage
 - [ ] Includes performance considerations
-- [ ] Cross-platform compatible
+- [ ] Windows compatible
 - [ ] Properly documented
 
 ### Automated Checks
 
 1. **Output Format Validation**: Automated checks for consistent prefixes
 2. **Performance Regression**: Automated performance threshold validation
-3. **Cross-Platform Testing**: Validation on all supported platforms
+3. **Windows Testing**: Validation on Windows platform
 
 ## Maintenance Guidelines
 
@@ -320,7 +327,7 @@ Tests should be automatically discoverable through CMake configuration without m
 2. Use consistent naming patterns
 3. Include in CMake configuration
 4. Add to documentation
-5. Validate cross-platform compatibility
+5. Validate Windows compatibility
 
 ### Updating Existing Tests
 

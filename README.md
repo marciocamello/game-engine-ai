@@ -38,7 +38,7 @@ The combination of human expertise and AI assistance allows for rapid prototypin
 
 - **Modular Design**: Clean separation of concerns with well-defined interfaces
 - **Modern C++20**: Leveraging latest language features for performance and safety
-- **Cross-Platform**: Windows support with Linux/macOS planned
+- **Windows-Focused**: Optimized for Windows development
 - **AI-Assisted Development**: Continuous improvement through AI code analysis
 
 ### Graphics & Rendering
@@ -69,7 +69,7 @@ The combination of human expertise and AI assistance allows for rapid prototypin
 ### Audio System
 
 - **3D Spatial Audio**: Positional audio with distance attenuation
-- **OpenAL Integration**: Cross-platform audio backend
+- **OpenAL Integration**: Windows audio backend
 - **Resource Management**: Automatic loading and caching of audio assets
 
 ## Quick Start
@@ -81,16 +81,6 @@ git clone https://github.com/yourusername/GameEngineKiro.git
 cd GameEngineKiro
 setup_dependencies.bat
 build.bat
-```
-
-### Linux/macOS
-
-```bash
-git clone https://github.com/yourusername/GameEngineKiro.git
-cd GameEngineKiro
-chmod +x setup_dependencies.sh build.sh
-./setup_dependencies.sh
-./build.sh
 ```
 
 ## Documentation

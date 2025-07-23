@@ -17,7 +17,7 @@ setup_dependencies.bat && build.bat
 ```bash
 git clone https://github.com/yourusername/GameEngineKiro.git
 cd GameEngineKiro
-chmod +x *.sh && ./setup_dependencies.sh && ./build.sh
+setup_dependencies.bat && build.bat
 ```
 
 That's it! Your game engine is ready to use.
@@ -98,8 +98,7 @@ Math::Vec4 m_color{1.0f, 0.2f, 0.2f, 1.0f}; // Red character
 ### 3. Rebuild and Run
 
 ```cmd
-build.bat  # Windows
-./build.sh # Linux/macOS
+build.bat
 ```
 
 Your character is now red! 🔴
@@ -240,10 +239,8 @@ renderSettings.msaaSamples = 4;      // Lower for better performance
 setup_dependencies.bat   # Windows
 
 # Rebuild from scratch
-rm -rf build/            # Linux/macOS
-rmdir /s /q build        # Windows
-./build.sh               # Linux/macOS
-build.bat                # Windows
+rmdir /s /q build
+build.bat
 ```
 
 ### Low FPS

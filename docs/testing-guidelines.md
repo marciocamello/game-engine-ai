@@ -83,9 +83,14 @@ bool TestMeshDataLoading() {
 
 ## Test Output Standards
 
-### Consistent Formatting
+### Formatting Requirements
 
-All tests must follow the established output format:
+All tests must follow the standardized output formatting defined in [Test Output Formatting Standards](testing-output-formatting.md) and maintain consistency as outlined in [Test Output Consistency Guidelines](testing-output-consistency-guide.md). Key requirements include:
+
+- **TestOutput Methods Only**: Never use `std::cout`, `printf`, or direct console output
+- **Consistent Naming**: Use lowercase with spaces for test names
+- **Matching Start/Pass Names**: Same string for `PrintTestStart()` and `PrintTestPass()`
+- **Minimal Information**: Use `PrintInfo()` only for essential context
 
 ```cpp
 // ✅ CORRECT
@@ -95,15 +100,17 @@ TestOutput::PrintTestPass("vector operations");
 
 // ❌ INCORRECT
 TestOutput::PrintTestStart("Vector Operations");  // PascalCase
-std::cout << "Test result: " << result << std::endl;  // std::cout
+std::cout << "Test result: " << result << std::endl;  // Direct output
+TestOutput::PrintTestPass("vector operations test completed");  // Different string
 ```
 
-### Logging Guidelines
+### Output Structure Requirements
 
-- Use `TestOutput::Print*` methods only
-- No `std::cout` or direct console output
-- Keep test names in lowercase
-- Use `TestOutput::PrintInfo()` sparingly, only for critical debug info
+- **Headers**: Use `TestOutput::PrintHeader("Component Name")`
+- **Footers**: Use `TestOutput::PrintFooter(allPassed)`
+- **Status Prefixes**: `[PASS]`, `[FAILED]`, `[INFO]`, `[WARNING]`, `[ERROR]`
+- **Indentation**: 2 spaces for test results, 4 spaces for error details
+- **Separators**: Use `========================================` for major sections only
 
 ## Resource Testing Patterns
 

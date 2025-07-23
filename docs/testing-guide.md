@@ -6,16 +6,17 @@
 2. [Getting Started](#getting-started)
 3. [Test Creation](#test-creation)
 4. [Test Execution](#test-execution)
-5. [Best Practices](#best-practices)
-6. [Common Patterns](#common-patterns)
-7. [Troubleshooting](#troubleshooting)
-8. [Adding New Tests](#adding-new-tests)
-9. [Framework Integration](#framework-integration)
-10. [Advanced Topics](#advanced-topics)
+5. [Test Output Formatting](#test-output-formatting)
+6. [Best Practices](#best-practices)
+7. [Common Patterns](#common-patterns)
+8. [Troubleshooting](#troubleshooting)
+9. [Adding New Tests](#adding-new-tests)
+10. [Framework Integration](#framework-integration)
+11. [Advanced Topics](#advanced-topics)
 
 ## Overview
 
-Game Engine Kiro uses a lightweight, framework-independent testing system designed for simplicity, cross-platform compatibility, and professional output formatting. This guide provides comprehensive instructions for creating, executing, and maintaining tests within the engine.
+Game Engine Kiro uses a lightweight, framework-independent testing system designed for simplicity and professional output formatting. This guide provides comprehensive instructions for creating, executing, and maintaining tests within the engine.
 
 ### Testing Philosophy
 
@@ -23,7 +24,7 @@ Game Engine Kiro uses a lightweight, framework-independent testing system design
 - **Professional Output**: Consistent, text-based formatting compatible across all platforms
 - **Simple Patterns**: Predictable test structure that's easy to learn and maintain
 - **Build Integration**: Seamless integration with existing CMake build system
-- **Cross-Platform**: Compatible with Windows, Linux, and macOS development environments
+- **Windows-Focused**: Optimized for Windows development environment
 
 ### Test Types
 
@@ -38,7 +39,7 @@ Game Engine Kiro uses a lightweight, framework-independent testing system design
 ### Prerequisites
 
 - CMake 3.16+
-- C++20 compatible compiler (MSVC 2019+, GCC 10+, or Clang 10+)
+- C++20 compatible compiler (MSVC 2019+)
 - Game Engine Kiro development environment set up
 
 ### Quick Start
@@ -346,6 +347,86 @@ Testing math performance...
   [PASS] dot product passed
 ```
 
+## Test Output Formatting
+
+Game Engine Kiro enforces strict standards for test output formatting to ensure consistency, professionalism, and maintainability across all test types. All tests must follow the standardized output patterns defined in the [Test Output Formatting Standards](testing-output-formatting.md).
+
+### Key Requirements
+
+1. **Use TestOutput Methods Only**: Never use `std::cout`, `printf`, or other direct console output
+2. **Consistent Naming**: Use lowercase with spaces for test names
+3. **Matching Start/Pass Names**: The same string must be used for both `PrintTestStart()` and `PrintTestPass()`
+4. **Minimal Information Output**: Use `PrintInfo()` sparingly, only for essential context
+
+### Standard Pattern
+
+```cpp
+bool TestFeatureName() {
+    TestOutput::PrintTestStart("feature name");
+
+    // Test implementation with assertions
+    EXPECT_TRUE(condition);
+    EXPECT_NEARLY_EQUAL(actual, expected);
+
+    TestOutput::PrintTestPass("feature name");
+    return true;
+}
+```
+
+### Required Methods
+
+| Method                  | Purpose          | Example                                                   |
+| ----------------------- | ---------------- | --------------------------------------------------------- |
+| `PrintTestStart(name)`  | Begin test       | `TestOutput::PrintTestStart("vector operations");`        |
+| `PrintTestPass(name)`   | Test success     | `TestOutput::PrintTestPass("vector operations");`         |
+| `PrintTestFail(name)`   | Test failure     | `TestOutput::PrintTestFail("vector operations");`         |
+| `PrintInfo(message)`    | Essential info   | `TestOutput::PrintInfo("Using fallback implementation");` |
+| `PrintWarning(message)` | Non-fatal issues | `TestOutput::PrintWarning("OpenGL context unavailable");` |
+| `PrintError(message)`   | Error conditions | `TestOutput::PrintError("Exception: " + e.what());`       |
+
+### Output Format Example
+
+```
+========================================
+ Game Engine Kiro - Math Tests
+========================================
+Testing vector operations...
+  [PASS] vector operations passed
+Testing matrix multiplication...
+  [PASS] matrix multiplication passed
+  [INFO] Test Summary:
+  [INFO]   Total: 2
+  [INFO]   Passed: 2
+  [INFO]   Failed: 0
+  [INFO]   Total Time: 1.234ms
+========================================
+[SUCCESS] ALL TESTS PASSED!
+========================================
+```
+
+### Common Mistakes to Avoid
+
+```cpp
+// ❌ WRONG - Direct console output
+std::cout << "Testing feature..." << std::endl;
+
+// ❌ WRONG - Inconsistent naming
+TestOutput::PrintTestStart("vector operations");
+TestOutput::PrintTestPass("Vector Operations Test");
+
+// ❌ WRONG - Excessive information
+TestOutput::PrintInfo("Setting up test data...");
+TestOutput::PrintInfo("Running calculations...");
+TestOutput::PrintInfo("Validating results...");
+
+// ✅ CORRECT - Standard pattern
+TestOutput::PrintTestStart("vector operations");
+// Test logic without excessive output
+TestOutput::PrintTestPass("vector operations");
+```
+
+For complete formatting guidelines, see [Test Output Formatting Standards](testing-output-formatting.md) and [Test Output Consistency Guidelines](testing-output-consistency-guide.md).
+
 ## Best Practices
 
 ### Test Design Principles
@@ -397,29 +478,17 @@ bool TestWithErrorHandling() {
 }
 ```
 
-### Platform-Specific Testing
+### Windows-Specific Testing
 
 ```cpp
-bool TestPlatformSpecificFeature() {
-    TestOutput::PrintTestStart("platform-specific feature");
+bool TestWindowsSpecificFeature() {
+    TestOutput::PrintTestStart("windows-specific feature");
 
-#ifdef _WIN32
     // Windows-specific test code
     TestOutput::PrintInfo("Running Windows-specific validation");
     EXPECT_TRUE(WindowsSpecificFunction());
-#elif defined(__linux__)
-    // Linux-specific test code
-    TestOutput::PrintInfo("Running Linux-specific validation");
-    EXPECT_TRUE(LinuxSpecificFunction());
-#elif defined(__APPLE__)
-    // macOS-specific test code
-    TestOutput::PrintInfo("Running macOS-specific validation");
-    EXPECT_TRUE(MacOSSpecificFunction());
-#else
-    TestOutput::PrintWarning("Platform-specific test skipped on unknown platform");
-#endif
 
-    TestOutput::PrintTestPass("platform-specific feature");
+    TestOutput::PrintTestPass("windows-specific feature");
     return true;
 }
 ```
@@ -631,24 +700,25 @@ Assertion failed: result.IsValid(), file test_component.cpp, line 45
 2. Adjust thresholds based on actual hardware capabilities
 3. Consider system load and other factors affecting performance
 
-#### Platform-Specific Issues
+#### Windows-Specific Issues
 
-**Issue**: Tests pass on Windows but fail on Linux
+**Issue**: Windows-specific functions not available
 
 ```
-[ERROR] Platform-specific function not available
+[ERROR] Windows-specific function not available
 ```
 
 **Solution**:
 
-1. Add platform-specific conditional compilation:
+1. Ensure proper Windows headers are included:
    ```cpp
-   #ifdef __linux__
-       // Linux-specific implementation
+   #ifdef _WIN32
+   #include <windows.h>
+       // Windows-specific implementation
    #endif
    ```
-2. Use platform-agnostic alternatives where possible
-3. Skip platform-specific tests when not applicable
+2. Use Windows API alternatives when available
+3. Provide fallback implementations for missing functionality
 
 ### Debugging Test Failures
 

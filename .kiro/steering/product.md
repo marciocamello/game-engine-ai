@@ -12,7 +12,7 @@ Game Engine Kiro is a modern 3D game engine built with AI assistance, specifical
 ## Key Features
 
 - **Modular Architecture**: Clean separation of concerns with well-defined interfaces
-- **Cross-Platform**: Windows support with Linux/macOS planned
+- **Windows-Focused**: Optimized for Windows development
 - **OpenGL 4.6+ Rendering**: Modern graphics pipeline with PBR shading
 - **Professional Camera System**: Third-person camera with SpringArm component
 - **Dual Physics Backends**: Intelligent selection between Bullet Physics and PhysX

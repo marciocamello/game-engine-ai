@@ -4,7 +4,7 @@
 
 - **CMake 3.16+**: Primary build system with modern CMake practices
 - **vcpkg**: Dependency management with manifest mode (vcpkg.json)
-- **C++20 Standard**: Required with MSVC 2019+, GCC 10+, or Clang 10+
+- **C++20 Standard**: Required with MSVC 2019+
 
 ## Core Dependencies
 
@@ -87,14 +87,11 @@ build\Release\BulletConversionTest.exe
 ## Compiler Configuration
 
 - **MSVC**: `/W4` warning level, `_CRT_SECURE_NO_WARNINGS` defined
-- **GCC/Clang**: `-Wall -Wextra -Wpedantic` warnings enabled
-- **All Platforms**: `CMAKE_EXPORT_COMPILE_COMMANDS=ON` for clangd support
+- **Windows**: `CMAKE_EXPORT_COMPILE_COMMANDS=ON` for clangd support
 
-## Platform-Specific Libraries
+## Windows Libraries
 
 - **Windows**: `winmm` for multimedia
-- **Linux**: `pthread`, `dl` for threading and dynamic loading
-- **macOS**: Cocoa, IOKit, CoreVideo frameworks
 
 ## CMake Features
 

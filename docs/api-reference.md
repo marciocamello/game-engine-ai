@@ -661,35 +661,105 @@ public:
 
 ### ResourceManager
 
-Template-based resource management with automatic caching and lifetime management.
+Comprehensive resource management system with automatic caching, memory management, and debugging capabilities.
 
 ```cpp
-template<typename T>
 class ResourceManager {
 public:
     // Lifecycle
     bool Initialize();
     void Shutdown();
 
-    // Resource Loading
-    std::shared_ptr<T> Load(const std::string& filepath);
-    void Unload(const std::string& filepath);
+    // Resource Loading (Template-based)
+    template<typename T>
+    std::shared_ptr<T> Load(const std::string& path);
+
+    template<typename T>
+    void Unload(const std::string& path);
+
     void UnloadAll();
+    void UnloadUnused();
 
-    // Cache Management
-    void SetCacheSize(size_t maxSize);
-    size_t GetCacheSize() const;
-    void ClearCache();
+    // Memory Management
+    void UnloadLeastRecentlyUsed(size_t targetMemoryReduction = 0);
+    void SetMemoryPressureThreshold(size_t thresholdBytes);
+    void CheckMemoryPressure();
 
-    // Statistics
-    size_t GetLoadedResourceCount() const;
+    // Statistics and Debugging
     size_t GetMemoryUsage() const;
-};
+    size_t GetResourceCount() const;
+    ResourceStats GetResourceStats() const;
+    void LogResourceUsage() const;
+    void LogDetailedResourceInfo() const;
 
-// Specialized resource managers
-using TextureManager = ResourceManager<Texture>;
-using MeshManager = ResourceManager<Mesh>;
-using AudioClipManager = ResourceManager<AudioClip>;
+    // Asset Pipeline
+    bool ImportAsset(const std::string& sourcePath, const std::string& targetPath);
+    bool ExportAsset(const std::string& assetPath, const std::string& exportPath);
+};
+```
+
+### ResourceStats
+
+Detailed statistics structure for resource monitoring and debugging.
+
+```cpp
+struct ResourceStats {
+    size_t totalResources = 0;           // Total number of loaded resources
+    size_t totalMemoryUsage = 0;         // Total memory usage in bytes
+    size_t expiredReferences = 0;        // Number of expired weak references
+    std::unordered_map<std::string, size_t> resourcesByType;  // Resources by type
+    std::unordered_map<std::string, size_t> memoryByType;     // Memory usage by type
+};
+```
+
+### Resource Base Class
+
+Base class for all resources with memory tracking and access time monitoring.
+
+```cpp
+class Resource {
+public:
+    Resource(const std::string& path);
+    virtual ~Resource() = default;
+
+    // Path and Identity
+    const std::string& GetPath() const;
+
+    // Memory Management
+    virtual size_t GetMemoryUsage() const;
+
+    // Access Tracking
+    std::chrono::steady_clock::time_point GetLoadTime() const;
+    std::chrono::steady_clock::time_point GetLastAccessTime() const;
+    void UpdateLastAccessTime() const;
+};
+```
+
+**Usage Examples:**
+
+```cpp
+// Basic resource loading
+auto* resourceManager = engine.GetResourceManager();
+auto texture = resourceManager->Load<Texture>("textures/player.png");
+auto mesh = resourceManager->Load<Mesh>("models/character.obj");
+
+// Memory management
+resourceManager->SetMemoryPressureThreshold(256 * 1024 * 1024); // 256 MB
+resourceManager->CheckMemoryPressure(); // Manual check
+resourceManager->UnloadLeastRecentlyUsed(50 * 1024 * 1024); // Free 50 MB
+
+// Statistics and debugging
+size_t totalMemory = resourceManager->GetMemoryUsage();
+size_t resourceCount = resourceManager->GetResourceCount();
+ResourceStats stats = resourceManager->GetResourceStats();
+
+// Detailed logging
+resourceManager->LogResourceUsage();
+resourceManager->LogDetailedResourceInfo();
+
+// Cleanup
+resourceManager->UnloadUnused(); // Remove unused resources
+resourceManager->UnloadAll();    // Remove all resources
 ```
 
 ## 🧮 Math Library
@@ -727,6 +797,72 @@ namespace Math {
 ```
 
 ## 🔧 Utility Classes
+
+### OpenGLContext
+
+Utility class for OpenGL context management and checking, essential for testing and resource creation.
+
+```cpp
+class OpenGLContext {
+public:
+    // Context Detection
+    static bool HasActiveContext();
+    static bool IsReady();
+    static const char* GetVersionString();
+};
+```
+
+**Usage Examples:**
+
+```cpp
+// Context-aware resource creation
+if (OpenGLContext::HasActiveContext()) {
+    auto texture = std::make_shared<Texture>("player.png");
+    texture->LoadFromFile("assets/textures/player.png");
+} else {
+    // Use mock resource or skip OpenGL-dependent operations
+    LOG_WARNING("No OpenGL context available, using fallback");
+    auto mockTexture = std::make_shared<MockTexture>("player.png");
+}
+
+// Testing with context awareness
+bool TestTextureLoading() {
+    TestOutput::PrintTestStart("texture loading");
+
+    if (!OpenGLContext::HasActiveContext()) {
+        TestOutput::PrintInfo("Skipping OpenGL-dependent test (no context)");
+        TestOutput::PrintTestPass("texture loading");
+        return true;
+    }
+
+    // Perform actual OpenGL texture test
+    auto texture = resourceManager->Load<Texture>("test.png");
+    EXPECT_NOT_NULL(texture);
+
+    TestOutput::PrintTestPass("texture loading");
+    return true;
+}
+
+// Debug information
+void PrintOpenGLInfo() {
+    if (OpenGLContext::IsReady()) {
+        LOG_INFO("OpenGL Version: " + std::string(OpenGLContext::GetVersionString()));
+    } else {
+        LOG_WARNING("OpenGL context not available");
+    }
+}
+
+// Safe resource initialization pattern
+template<typename ResourceType>
+std::shared_ptr<ResourceType> SafeCreateResource(const std::string& path) {
+    if (OpenGLContext::HasActiveContext()) {
+        return std::make_shared<ResourceType>(path);
+    } else {
+        // Return mock or null based on testing requirements
+        return std::make_shared<MockResource<ResourceType>>(path);
+    }
+}
+```
 
 ### Logger
 
@@ -914,6 +1050,314 @@ auto arcadeConfig = MovementComponentFactory::GetArcadeConfig();
 deterministicComponent->SetMovementConfig(platformingConfig);
 ```
 
+## 🧪 Testing Framework
+
+### TestOutput
+
+Standardized test output formatting utilities for consistent test reporting across the engine.
+
+```cpp
+class TestOutput {
+public:
+    // Test Structure
+    static void PrintHeader(const std::string& testSuiteName);
+    static void PrintFooter(bool allPassed);
+
+    // Test Lifecycle
+    static void PrintTestStart(const std::string& testName);
+    static void PrintTestPass(const std::string& testName);
+    static void PrintTestFail(const std::string& testName);
+    static void PrintTestFail(const std::string& testName, const std::string& expected,
+                             const std::string& actual);
+
+    // Information and Diagnostics
+    static void PrintInfo(const std::string& message);
+    static void PrintWarning(const std::string& message);
+    static void PrintError(const std::string& message);
+    static void PrintTiming(const std::string& operation, double timeMs, int iterations = 1);
+};
+```
+
+### FloatComparison
+
+Floating-point comparison utilities with configurable epsilon tolerance for mathematical testing.
+
+```cpp
+class FloatComparison {
+public:
+    static constexpr float DEFAULT_EPSILON = 0.001f;
+    static constexpr float LOOSE_EPSILON = 0.01f;
+    static constexpr float TIGHT_EPSILON = 0.0001f;
+
+    // Basic Comparisons
+    static bool IsNearlyEqual(float a, float b, float epsilon = DEFAULT_EPSILON);
+    static bool IsNearlyZero(float value, float epsilon = DEFAULT_EPSILON);
+
+    // Vector Comparisons
+    static bool IsNearlyEqual(const Math::Vec3& a, const Math::Vec3& b, float epsilon = DEFAULT_EPSILON);
+    static bool IsNearlyEqual(const Math::Vec4& a, const Math::Vec4& b, float epsilon = DEFAULT_EPSILON);
+    static bool IsNearlyEqual(const Math::Quat& a, const Math::Quat& b, float epsilon = DEFAULT_EPSILON);
+    static bool IsNearlyEqual(const Math::Mat4& a, const Math::Mat4& b, float epsilon = DEFAULT_EPSILON);
+    static bool IsNearlyZero(const Math::Vec3& vec, float epsilon = DEFAULT_EPSILON);
+};
+```
+
+### TestTimer
+
+High-precision timing utility for performance testing and benchmarking.
+
+```cpp
+class TestTimer {
+public:
+    TestTimer();
+
+    // Time Measurement
+    double ElapsedMs() const;      // Milliseconds
+    long long ElapsedUs() const;   // Microseconds
+    long long ElapsedNs() const;   // Nanoseconds
+    void Restart();
+};
+```
+
+### PerformanceTest
+
+Performance testing utilities with threshold validation and statistical analysis.
+
+```cpp
+class PerformanceTest {
+public:
+    // Performance Measurement
+    template<typename Func>
+    static double MeasureAverageTime(Func&& func, int iterations = 1000);
+
+    // Performance Validation
+    template<typename Func>
+    static bool ValidatePerformance(const std::string& testName, Func&& func,
+                                   double thresholdMs, int iterations = 1000);
+};
+```
+
+### TestSuite
+
+Test result tracking and management for organized test execution.
+
+```cpp
+struct TestResult {
+    std::string testName;
+    bool passed;
+    std::string errorMessage;
+    double executionTimeMs;
+};
+
+class TestSuite {
+public:
+    TestSuite(const std::string& suiteName);
+
+    // Test Execution
+    template<typename TestFunc>
+    bool RunTest(const std::string& testName, TestFunc&& testFunc);
+
+    // Results
+    void PrintSummary() const;
+    bool AllTestsPassed() const;
+};
+```
+
+### Mock Resource System
+
+Base classes and patterns for creating mock resources for testing without OpenGL context.
+
+```cpp
+// Base Mock Resource Pattern
+template<typename ResourceType>
+class MockResource : public ResourceType {
+public:
+    MockResource(const std::string& path) : ResourceType(path), m_simulateError(false) {}
+
+    // Error Simulation
+    void SimulateLoadError(bool shouldFail) { m_simulateError = shouldFail; }
+    void SimulateMemoryUsage(size_t bytes) { m_mockMemoryUsage = bytes; }
+
+    // Overridden Methods
+    bool LoadFromFile(const std::string& filepath) override {
+        if (m_simulateError) {
+            throw std::runtime_error("Simulated load error");
+        }
+        m_loaded = true;
+        return true;
+    }
+
+    size_t GetMemoryUsage() const override {
+        return m_mockMemoryUsage > 0 ? m_mockMemoryUsage : ResourceType::GetMemoryUsage();
+    }
+
+    void CreateDefault() override {
+        m_loaded = true;
+        // Create minimal default resource data
+    }
+
+protected:
+    bool m_simulateError;
+    bool m_loaded = false;
+    size_t m_mockMemoryUsage = 0;
+};
+
+// Specialized Mock Resources
+class MockTexture : public MockResource<Texture> {
+public:
+    MockTexture(const std::string& path) : MockResource<Texture>(path) {
+        m_width = 256;
+        m_height = 256;
+        m_channels = 4;
+    }
+
+    void SetDimensions(int width, int height, int channels = 4) {
+        m_width = width;
+        m_height = height;
+        m_channels = channels;
+        m_mockMemoryUsage = width * height * channels;
+    }
+
+private:
+    int m_width, m_height, m_channels;
+};
+
+class MockMesh : public MockResource<Mesh> {
+public:
+    MockMesh(const std::string& path) : MockResource<Mesh>(path) {
+        m_vertexCount = 8;  // Default cube
+        m_indexCount = 36;
+    }
+
+    void SetGeometry(size_t vertexCount, size_t indexCount) {
+        m_vertexCount = vertexCount;
+        m_indexCount = indexCount;
+        m_mockMemoryUsage = (vertexCount * sizeof(float) * 8) + (indexCount * sizeof(unsigned int));
+    }
+
+private:
+    size_t m_vertexCount, m_indexCount;
+};
+
+class MockAudioClip : public MockResource<AudioClip> {
+public:
+    MockAudioClip(const std::string& path) : MockResource<AudioClip>(path) {
+        m_duration = 1.0f;  // 1 second default
+        m_sampleRate = 44100;
+        m_channels = 2;
+    }
+
+    void SetAudioProperties(float duration, int sampleRate = 44100, int channels = 2) {
+        m_duration = duration;
+        m_sampleRate = sampleRate;
+        m_channels = channels;
+        m_mockMemoryUsage = static_cast<size_t>(duration * sampleRate * channels * sizeof(float));
+    }
+
+private:
+    float m_duration;
+    int m_sampleRate, m_channels;
+};
+```
+
+### Testing Assertion Macros
+
+Enhanced assertion macros with detailed error reporting and context information.
+
+```cpp
+// Basic Assertions
+#define EXPECT_TRUE(condition)
+#define EXPECT_FALSE(condition)
+#define EXPECT_NULL(ptr)
+#define EXPECT_NOT_NULL(ptr)
+#define EXPECT_EQUAL(a, b)
+#define EXPECT_NOT_EQUAL(a, b)
+
+// Floating-Point Assertions
+#define EXPECT_NEARLY_EQUAL(a, b)
+#define EXPECT_NEARLY_EQUAL_EPSILON(a, b, epsilon)
+#define EXPECT_NEARLY_ZERO(value)
+
+// Vector and Matrix Assertions
+#define EXPECT_NEAR_VEC3(a, b)
+#define EXPECT_NEAR_VEC3_EPSILON(a, b, epsilon)
+#define EXPECT_NEAR_VEC4(a, b)
+#define EXPECT_NEAR_VEC4_EPSILON(a, b, epsilon)
+#define EXPECT_NEAR_QUAT(a, b)
+#define EXPECT_NEAR_QUAT_EPSILON(a, b, epsilon)
+#define EXPECT_MATRIX_EQUAL(a, b)
+#define EXPECT_MATRIX_EQUAL_EPSILON(a, b, epsilon)
+
+// Range and String Assertions
+#define EXPECT_IN_RANGE(value, min, max)
+#define EXPECT_STRING_EQUAL(a, b)
+```
+
+**Testing Framework Usage Examples:**
+
+```cpp
+// Basic test structure
+bool TestResourceManager() {
+    TestOutput::PrintTestStart("ResourceManager functionality");
+
+    auto resourceManager = std::make_unique<ResourceManager>();
+    EXPECT_TRUE(resourceManager->Initialize());
+
+    // Test with mock resources if no OpenGL context
+    if (!OpenGLContext::HasActiveContext()) {
+        auto mockTexture = std::make_shared<MockTexture>("test.png");
+        mockTexture->SetDimensions(512, 512, 4);
+        EXPECT_EQUAL(mockTexture->GetMemoryUsage(), 512 * 512 * 4);
+    }
+
+    TestOutput::PrintTestPass("ResourceManager functionality");
+    return true;
+}
+
+// Performance testing
+bool TestResourceLoadingPerformance() {
+    return PerformanceTest::ValidatePerformance(
+        "resource loading",
+        []() {
+            auto texture = resourceManager->Load<Texture>("test.png");
+            // Use texture...
+        },
+        5.0, // 5ms threshold
+        100  // 100 iterations
+    );
+}
+
+// Test suite usage
+int main() {
+    TestSuite suite("Resource Management Tests");
+
+    suite.RunTest("ResourceManager Basic", TestResourceManager);
+    suite.RunTest("Resource Loading Performance", TestResourceLoadingPerformance);
+    suite.RunTest("Memory Management", TestMemoryManagement);
+
+    suite.PrintSummary();
+    return suite.AllTestsPassed() ? 0 : 1;
+}
+
+// Mock resource integration with ResourceManager
+template<typename T>
+std::shared_ptr<T> CreateTestResource(const std::string& path) {
+    if (OpenGLContext::HasActiveContext()) {
+        return resourceManager->Load<T>(path);
+    } else {
+        // Use appropriate mock resource
+        if constexpr (std::is_same_v<T, Texture>) {
+            return std::make_shared<MockTexture>(path);
+        } else if constexpr (std::is_same_v<T, Mesh>) {
+            return std::make_shared<MockMesh>(path);
+        } else if constexpr (std::is_same_v<T, AudioClip>) {
+            return std::make_shared<MockAudioClip>(path);
+        }
+        return nullptr;
+    }
+}
+```
+
 ---
 
-This API reference provides comprehensive coverage of all public interfaces in Game Engine Kiro, including the new component-based movement system that enables deterministic character physics and hybrid collision detection. For implementation details and advanced usage patterns, refer to the examples in the `examples/` directory and the architecture documentation.
+This API reference provides comprehensive coverage of all public interfaces in Game Engine Kiro, including the enhanced resource management system with memory tracking and debugging capabilities, OpenGL context utilities for safe resource creation, and a complete testing framework with mock resource support for context-independent testing. For implementation details and advanced usage patterns, refer to the examples in the `examples/` directory and the architecture documentation.

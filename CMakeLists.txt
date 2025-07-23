@@ -376,6 +376,9 @@ add_integration_test(AudioLoaderTest tests/integration/test_audio_loader.cpp)
 # Audio Camera integration test
 add_integration_test(AudioCameraIntegrationTest tests/integration/test_audio_camera_integration.cpp)
 
+# Resource Statistics integration test
+add_integration_test(ResourceStatisticsTest tests/integration/test_resource_statistics.cpp)
+
 # Discover and add unit tests automatically
 discover_and_add_tests("tests/unit" "unit")
 

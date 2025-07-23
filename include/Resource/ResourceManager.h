@@ -4,17 +4,35 @@
 #include <unordered_map>
 #include <memory>
 #include <typeindex>
+#include <mutex>
+#include <chrono>
+#include "Core/Logger.h"
 
 namespace GameEngine {
     class Resource {
     public:
-        Resource(const std::string& path) : m_path(path) {}
+        Resource(const std::string& path) : m_path(path), m_loadTime(std::chrono::steady_clock::now()) {}
         virtual ~Resource() = default;
         
         const std::string& GetPath() const { return m_path; }
+        virtual size_t GetMemoryUsage() const { return sizeof(*this); }
+        
+        std::chrono::steady_clock::time_point GetLoadTime() const { return m_loadTime; }
+        std::chrono::steady_clock::time_point GetLastAccessTime() const { return m_lastAccessTime; }
+        void UpdateLastAccessTime() const { m_lastAccessTime = std::chrono::steady_clock::now(); }
         
     protected:
         std::string m_path;
+        std::chrono::steady_clock::time_point m_loadTime;
+        mutable std::chrono::steady_clock::time_point m_lastAccessTime;
+    };
+
+    struct ResourceStats {
+        size_t totalResources = 0;
+        size_t totalMemoryUsage = 0;
+        size_t expiredReferences = 0;
+        std::unordered_map<std::string, size_t> resourcesByType;
+        std::unordered_map<std::string, size_t> memoryByType;
     };
 
     class ResourceManager {
@@ -32,6 +50,19 @@ namespace GameEngine {
         void Unload(const std::string& path);
 
         void UnloadAll();
+        void UnloadUnused();
+        
+        // Memory management
+        void UnloadLeastRecentlyUsed(size_t targetMemoryReduction = 0);
+        void SetMemoryPressureThreshold(size_t thresholdBytes);
+        void CheckMemoryPressure();
+        
+        // Statistics and debugging
+        size_t GetMemoryUsage() const;
+        size_t GetResourceCount() const;
+        ResourceStats GetResourceStats() const;
+        void LogResourceUsage() const;
+        void LogDetailedResourceInfo() const;
         
         // Asset pipeline functions
         bool ImportAsset(const std::string& sourcePath, const std::string& targetPath);
@@ -40,34 +71,96 @@ namespace GameEngine {
     private:
         template<typename T>
         std::string GetResourceKey(const std::string& path);
+        
+        template<typename T>
+        std::shared_ptr<T> CreateResource(const std::string& path);
 
-        std::unordered_map<std::string, std::shared_ptr<Resource>> m_resources;
+        mutable std::mutex m_resourcesMutex;
+        std::unordered_map<std::string, std::weak_ptr<Resource>> m_resources;
         std::string m_assetDirectory = "assets/";
+        
+        // Memory management
+        size_t m_memoryPressureThreshold = 512 * 1024 * 1024; // 512 MB default
+        bool m_autoMemoryManagement = true;
+        
+        // Statistics tracking
+        mutable size_t m_totalLoads = 0;
+        mutable size_t m_cacheHits = 0;
+        mutable size_t m_cacheMisses = 0;
+        mutable size_t m_lruCleanups = 0;
     };
 
     template<typename T>
     std::shared_ptr<T> ResourceManager::Load(const std::string& path) {
+        // Check memory pressure before acquiring lock (every 10 loads)
+        if (m_autoMemoryManagement && (m_totalLoads % 10 == 0)) {
+            CheckMemoryPressure();
+        }
+        
+        std::lock_guard<std::mutex> lock(m_resourcesMutex);
         std::string key = GetResourceKey<T>(path);
         
+        ++m_totalLoads;
+        
+        // Check if resource exists and is still valid
         auto it = m_resources.find(key);
         if (it != m_resources.end()) {
-            return std::static_pointer_cast<T>(it->second);
+            if (auto resource = it->second.lock()) {
+                ++m_cacheHits;
+                resource->UpdateLastAccessTime();
+                LOG_INFO("Resource cache hit: " + path + " (" + std::to_string(resource->GetMemoryUsage() / 1024) + " KB)");
+                return std::static_pointer_cast<T>(resource);
+            } else {
+                // Weak pointer expired, remove it
+                m_resources.erase(it);
+            }
         }
 
+        ++m_cacheMisses;
+        
         // Create new resource
-        auto resource = std::make_shared<T>(m_assetDirectory + path);
-        m_resources[key] = resource;
+        auto resource = CreateResource<T>(path);
+        if (resource) {
+            m_resources[key] = resource;
+            LOG_INFO("Resource loaded: " + path + " (" + std::to_string(resource->GetMemoryUsage() / 1024) + " KB)");
+        }
+        
         return resource;
     }
 
     template<typename T>
     void ResourceManager::Unload(const std::string& path) {
+        std::lock_guard<std::mutex> lock(m_resourcesMutex);
         std::string key = GetResourceKey<T>(path);
-        m_resources.erase(key);
+        
+        auto it = m_resources.find(key);
+        if (it != m_resources.end()) {
+            if (auto resource = it->second.lock()) {
+                LOG_INFO("Resource unloaded: " + path + " (" + std::to_string(resource->GetMemoryUsage() / 1024) + " KB)");
+            }
+            m_resources.erase(it);
+        }
     }
 
     template<typename T>
     std::string ResourceManager::GetResourceKey(const std::string& path) {
         return std::string(typeid(T).name()) + ":" + path;
+    }
+    
+    template<typename T>
+    std::shared_ptr<T> ResourceManager::CreateResource(const std::string& path) {
+        auto resource = std::make_shared<T>(m_assetDirectory + path);
+        
+        // Try to load the resource if it has a LoadFromFile method
+        if constexpr (requires { resource->LoadFromFile(std::string{}); }) {
+            if (!resource->LoadFromFile(m_assetDirectory + path)) {
+                // If loading fails, try to create a default resource
+                if constexpr (requires { resource->CreateDefault(); }) {
+                    resource->CreateDefault();
+                }
+            }
+        }
+        
+        return resource;
     }
 }

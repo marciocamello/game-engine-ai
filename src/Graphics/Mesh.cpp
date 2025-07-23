@@ -4,7 +4,7 @@
 #include <glad/glad.h>
 
 namespace GameEngine {
-    Mesh::Mesh() : m_VAO(0), m_VBO(0), m_EBO(0) {
+    Mesh::Mesh(const std::string& path) : Resource(path), m_VAO(0), m_VBO(0), m_EBO(0) {
         // Generate OpenGL objects
         glGenVertexArrays(1, &m_VAO);
         glGenBuffers(1, &m_VBO);
@@ -192,5 +192,19 @@ namespace GameEngine {
         m_indices.clear();
         
         Logger::GetInstance().Log(LogLevel::Debug, "Mesh cleanup completed");
+    }
+    
+    size_t Mesh::GetMemoryUsage() const {
+        // Base resource memory usage
+        size_t baseSize = Resource::GetMemoryUsage();
+        
+        // Calculate mesh memory usage
+        size_t vertexMemory = m_vertices.size() * sizeof(Vertex);
+        size_t indexMemory = m_indices.size() * sizeof(uint32_t);
+        
+        // Add estimated GPU memory usage (VAO, VBO, EBO are relatively small)
+        size_t gpuMemory = vertexMemory + indexMemory;
+        
+        return baseSize + vertexMemory + indexMemory + gpuMemory;
     }
 }

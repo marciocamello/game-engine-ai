@@ -93,16 +93,17 @@
     - Add proper OpenGL buffer cleanup in destructor
     - _Requirements: 2.3, 2.5, 4.4_
 
-- [ ] 8. Enhance ResourceManager with real caching
+- [x] 8. Enhance ResourceManager with real caching
 
-  - [ ] 8.1 Implement proper resource caching system
+  - [x] 8.1 Implement proper resource caching system
 
     - Modify Load method to use weak_ptr caching for automatic cleanup
     - Add UnloadUnused method to clean up expired weak references
     - Implement memory usage tracking for loaded resources
     - _Requirements: 2.4, 2.7, 5.3, 6.6_
 
-  - [ ] 8.2 Add resource statistics and debugging
+  - [x] 8.2 Add resource statistics and debugging
+
     - Implement GetMemoryUsage and GetResourceCount methods
     - Add detailed logging for resource load/unload operations
     - Create resource usage reporting for debugging purposes

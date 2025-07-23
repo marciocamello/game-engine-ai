@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Core/Math.h"
+#include "Resource/ResourceManager.h"
 #include <vector>
 #include <memory>
 #include <string>
@@ -14,9 +15,9 @@ namespace GameEngine {
         Math::Vec3 bitangent;
     };
 
-    class Mesh {
+    class Mesh : public Resource {
     public:
-        Mesh();
+        Mesh(const std::string& path = "");
         ~Mesh();
 
         // Loading methods
@@ -39,6 +40,9 @@ namespace GameEngine {
         
         // Cleanup methods
         void Cleanup(); // Explicit cleanup of OpenGL resources
+        
+        // Resource interface
+        size_t GetMemoryUsage() const override;
 
     private:
         void SetupMesh();

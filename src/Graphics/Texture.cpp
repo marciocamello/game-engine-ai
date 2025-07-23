@@ -5,7 +5,7 @@
 
 namespace GameEngine {
 
-    Texture::Texture() {
+    Texture::Texture(const std::string& path) : Resource(path) {
     }
 
     Texture::~Texture() {
@@ -248,4 +248,32 @@ namespace GameEngine {
             default: return 4;
         }
     }
-}
+
+    size_t Texture::GetMemoryUsage() const {
+        // Base resource memory usage
+        size_t baseSize = Resource::GetMemoryUsage();
+        
+        // Calculate texture memory usage based on dimensions and format
+        size_t textureSize = 0;
+        if (m_textureID != 0) {
+            // Calculate bytes per pixel based on format
+            size_t bytesPerPixel = 0;
+            switch (m_format) {
+                case TextureFormat::RGB: bytesPerPixel = 3; break;
+                case TextureFormat::RGBA: bytesPerPixel = 4; break;
+                case TextureFormat::Depth: bytesPerPixel = 4; break; // 32-bit depth
+                case TextureFormat::DepthStencil: bytesPerPixel = 4; break; // 24-bit depth + 8-bit stencil
+                default: bytesPerPixel = 4; break;
+            }
+            
+            textureSize = static_cast<size_t>(m_width) * static_cast<size_t>(m_height) * bytesPerPixel;
+            
+            // Account for mipmaps (approximately 1/3 additional memory)
+            textureSize = textureSize + (textureSize / 3);
+        }
+        
+        // Add object overhead
+        size_t objectSize = sizeof(*this);
+        
+        return baseSize + textureSize + objectSize;
+    }}

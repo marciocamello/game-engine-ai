@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Resource/ResourceManager.h"
 #include <string>
 
 namespace GameEngine {
@@ -26,9 +27,9 @@ namespace GameEngine {
         ClampToBorder
     };
 
-    class Texture {
+    class Texture : public Resource {
     public:
-        Texture();
+        Texture(const std::string& path = "");
         ~Texture();
 
         bool LoadFromFile(const std::string& filepath);
@@ -48,6 +49,9 @@ namespace GameEngine {
         TextureFormat GetFormat() const { return m_format; }
         
         bool IsValid() const { return m_textureID != 0; }
+        
+        // Resource interface implementation
+        size_t GetMemoryUsage() const override;
 
     private:
         void CreateDefaultTexture();

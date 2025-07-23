@@ -204,17 +204,17 @@
 
 - [ ] 15. Create comprehensive testing and validation
 
-  - [ ] 15.1 Implement unit tests for PhysX backend
+  - [ ] 15.1 Implement unit tests for PhysX backend using TestOutput standards
 
-    - Create tests for PhysX initialization and cleanup
-    - Add tests for rigid body creation and management
-    - Implement collision detection accuracy tests
+    - Create tests for PhysX initialization and cleanup with proper TestOutput formatting
+    - Add tests for rigid body creation and management following testing guidelines
+    - Implement collision detection accuracy tests with OpenGL context awareness
     - _Requirements: 2.1, 2.3, 2.4, 7.4_
 
-  - [ ] 15.2 Create integration and performance tests
-    - Implement backend switching tests with state preservation
-    - Add performance regression tests comparing backends
-    - Create stress tests for GPU acceleration and memory usage
+  - [ ] 15.2 Create integration and performance tests with proper output formatting
+    - Implement backend switching tests with state preservation using TestOutput methods
+    - Add performance regression tests comparing backends with timing output
+    - Create stress tests for GPU acceleration and memory usage with proper error handling
     - _Requirements: 1.4, 3.1, 3.4, 6.5_
 
 - [ ] 16. Documentation and examples

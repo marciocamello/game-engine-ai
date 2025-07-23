@@ -169,19 +169,19 @@
     - Optimize GPU upload processes for textures and meshes
     - _Requirements: 5.1, 5.4, 5.6_
 
-- [ ] 13. Create comprehensive testing suite
+- [ ] 13. Create comprehensive testing suite using TestOutput standards
 
-  - [ ] 13.1 Write unit tests for audio system
+  - [ ] 13.1 Write unit tests for audio system with proper formatting
 
-    - Create tests for OpenAL initialization and cleanup
-    - Add tests for WAV and OGG audio loading
-    - Implement tests for 3D audio positioning accuracy
+    - Create tests for OpenAL initialization and cleanup using TestOutput methods
+    - Add tests for WAV and OGG audio loading with OpenGL context awareness
+    - Implement tests for 3D audio positioning accuracy following testing guidelines
     - _Requirements: 1.1, 1.2, 1.5, 6.1_
 
-  - [ ] 13.2 Write unit tests for resource system
-    - Create tests for texture, mesh, and audio clip loading
-    - Add tests for resource caching and memory management
-    - Implement tests for error handling and fallback resources
+  - [ ] 13.2 Write unit tests for resource system with mock resources
+    - Create tests for texture, mesh, and audio clip loading using mock resources
+    - Add tests for resource caching and memory management with proper assertions
+    - Implement tests for error handling and fallback resources with TestOutput formatting
     - _Requirements: 2.1, 2.3, 2.4, 4.3_
 
 - [ ] 14. Create example usage and documentation

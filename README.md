@@ -175,8 +175,8 @@ All dependencies are automatically managed through vcpkg.
 - [x] Third-person camera system
 - [x] Input management
 - [x] Basic physics (Bullet)
-- [x] Audio system
-- [x] Resource management
+- [x] Audio system (OpenAL implementation completed)
+- [x] Resource management (STB texture/mesh loading completed)
 
 ### Next (v1.1)
 

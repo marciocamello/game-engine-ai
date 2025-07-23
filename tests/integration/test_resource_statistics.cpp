@@ -23,14 +23,25 @@ private:
 };
 
 bool TestResourceStatistics() {
-    TestOutput::PrintTestStart("Resource Statistics");
+    TestOutput::PrintTestStart("resource statistics");
     
     ResourceManager resourceManager;
     EXPECT_TRUE(resourceManager.Initialize());
     
     // Test initial state
-    EXPECT_EQUAL(resourceManager.GetResourceCount(), 0);
-    EXPECT_EQUAL(resourceManager.GetMemoryUsage(), 0);
+    size_t initialCount = resourceManager.GetResourceCount();
+    size_t initialMemory = resourceManager.GetMemoryUsage();
+    
+    // Debug output to see what's happening
+    if (initialCount != 0) {
+        TestOutput::PrintError("Initial resource count is " + std::to_string(initialCount) + ", expected 0");
+    }
+    if (initialMemory != 0) {
+        TestOutput::PrintError("Initial memory usage is " + std::to_string(initialMemory) + ", expected 0");
+    }
+    
+    EXPECT_EQUAL(initialCount, static_cast<size_t>(0));
+    EXPECT_EQUAL(initialMemory, static_cast<size_t>(0));
     
     // Use mock resources that don't depend on OpenGL
     auto resource1 = resourceManager.Load<MockResource>("test/resource1.dat");
@@ -46,9 +57,6 @@ bool TestResourceStatistics() {
     size_t resourceCount = resourceManager.GetResourceCount();
     size_t memoryUsage = resourceManager.GetMemoryUsage();
     
-    std::cout << "Resources loaded: " << resourceCount << std::endl;
-    std::cout << "Memory usage: " << memoryUsage << " bytes" << std::endl;
-    
     EXPECT_TRUE(resourceCount >= 3); // At least 3 resources loaded
     EXPECT_TRUE(memoryUsage > 0); // Some memory should be used
     
@@ -62,12 +70,13 @@ bool TestResourceStatistics() {
     resourceManager.LogResourceUsage();
     resourceManager.LogDetailedResourceInfo();
     
-    TestOutput::PrintTestPass("Resource Statistics");
+    TestOutput::PrintTestPass("resource statistics");
     return true;
 }
 
 bool TestMissingResourceHandling() {
-    TestOutput::PrintTestStart("Missing Resource Handling");
+    TestOutput::PrintTestStart("missing resource handling");
+    TestOutput::PrintInfo("Starting missing resource handling test...");
     
     ResourceManager resourceManager;
     EXPECT_TRUE(resourceManager.Initialize());
@@ -80,20 +89,20 @@ bool TestMissingResourceHandling() {
     EXPECT_TRUE(missingResource1 != nullptr);
     EXPECT_TRUE(missingResource2 != nullptr);
     
-    std::cout << "Missing resource1 memory: " << missingResource1->GetMemoryUsage() << " bytes" << std::endl;
-    std::cout << "Missing resource2 memory: " << missingResource2->GetMemoryUsage() << " bytes" << std::endl;
+    // Check that they have some memory usage (default resources)
+    EXPECT_TRUE(missingResource1->GetMemoryUsage() > 0);
+    EXPECT_TRUE(missingResource2->GetMemoryUsage() > 0);
     
     // Check statistics include these resources
     size_t resourceCount = resourceManager.GetResourceCount();
-    std::cout << "Resource count after loading missing resources: " << resourceCount << std::endl;
     EXPECT_TRUE(resourceCount >= 2);
     
-    TestOutput::PrintTestPass("Missing Resource Handling");
+    TestOutput::PrintTestPass("missing resource handling");
     return true;
 }
 
 bool TestMemoryPressureHandling() {
-    TestOutput::PrintTestStart("Memory Pressure Handling");
+    TestOutput::PrintTestStart("memory pressure handling");
     
     ResourceManager resourceManager;
     EXPECT_TRUE(resourceManager.Initialize());
@@ -114,9 +123,6 @@ bool TestMemoryPressureHandling() {
     size_t initialCount = resourceManager.GetResourceCount();
     size_t initialMemory = resourceManager.GetMemoryUsage();
     
-    std::cout << "Before memory pressure: " << initialCount << " resources, " << 
-                 (initialMemory / 1024) << " KB" << std::endl;
-    
     // Manually trigger memory pressure check
     resourceManager.CheckMemoryPressure();
     
@@ -132,18 +138,15 @@ bool TestMemoryPressureHandling() {
     size_t finalCount = resourceManager.GetResourceCount();
     size_t finalMemory = resourceManager.GetMemoryUsage();
     
-    std::cout << "After memory pressure: " << finalCount << " resources, " << 
-                 (finalMemory / 1024) << " KB" << std::endl;
-    
     // Memory management should have had some effect
     EXPECT_TRUE(finalCount <= initialCount); // Should not have more resources
     
-    TestOutput::PrintTestPass("Memory Pressure Handling");
+    TestOutput::PrintTestPass("memory pressure handling");
     return true;
 }
 
 bool TestDetailedLogging() {
-    TestOutput::PrintTestStart("Detailed Resource Logging");
+    TestOutput::PrintTestStart("detailed resource logging");
     
     ResourceManager resourceManager;
     EXPECT_TRUE(resourceManager.Initialize());
@@ -171,12 +174,12 @@ bool TestDetailedLogging() {
     // Test cache hit tracking
     resourceManager.LogResourceUsage(); // Should show cache hit rate
     
-    TestOutput::PrintTestPass("Detailed Resource Logging");
+    TestOutput::PrintTestPass("detailed resource logging");
     return true;
 }
 
 bool TestResourceCacheHits() {
-    TestOutput::PrintTestStart("Resource Cache Hits");
+    TestOutput::PrintTestStart("resource cache hits");
     
     ResourceManager resourceManager;
     EXPECT_TRUE(resourceManager.Initialize());
@@ -202,25 +205,30 @@ bool TestResourceCacheHits() {
     // Check statistics show cache hits
     resourceManager.LogResourceUsage();
     
-    TestOutput::PrintTestPass("Resource Cache Hits");
+    TestOutput::PrintTestPass("resource cache hits");
     return true;
 }
 
 int main() {
-    TestOutput::PrintHeader("Resource Statistics and Debugging Tests");
+    TestOutput::PrintHeader("Resource Statistics and Debugging");
     Logger::GetInstance().Initialize();
     
-    TestSuite suite("Resource Statistics Tests");
-    
     bool allPassed = true;
-    allPassed &= suite.RunTest("Resource Statistics", TestResourceStatistics);
-    allPassed &= suite.RunTest("Missing Resource Handling", TestMissingResourceHandling);
-    allPassed &= suite.RunTest("Memory Pressure Handling", TestMemoryPressureHandling);
-    allPassed &= suite.RunTest("Detailed Logging", TestDetailedLogging);
-    allPassed &= suite.RunTest("Resource Cache Hits", TestResourceCacheHits);
-    
-    suite.PrintSummary();
-    TestOutput::PrintFooter(allPassed);
-    
-    return allPassed ? 0 : 1;
+
+    try {
+        allPassed &= TestResourceStatistics();
+        allPassed &= TestMissingResourceHandling();
+        allPassed &= TestMemoryPressureHandling();
+        allPassed &= TestDetailedLogging();
+        allPassed &= TestResourceCacheHits();
+
+        TestOutput::PrintFooter(allPassed);
+        return allPassed ? 0 : 1;
+    } catch (const std::exception& e) {
+        TestOutput::PrintError("TEST EXCEPTION: " + std::string(e.what()));
+        return 1;
+    } catch (...) {
+        TestOutput::PrintError("UNKNOWN TEST ERROR!");
+        return 1;
+    }
 }

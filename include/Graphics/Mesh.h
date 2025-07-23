@@ -45,13 +45,18 @@ namespace GameEngine {
         size_t GetMemoryUsage() const override;
 
     private:
-        void SetupMesh();
+        void SetupMesh() const;
+        void EnsureGPUResourcesCreated() const; // Lazy initialization
+        void CreateGPUResources() const;
         
+        // CPU data (always available)
         std::vector<Vertex> m_vertices;
         std::vector<uint32_t> m_indices;
         
-        uint32_t m_VAO = 0;
-        uint32_t m_VBO = 0;
-        uint32_t m_EBO = 0;
+        // GPU resources (created lazily)
+        mutable uint32_t m_VAO = 0;
+        mutable uint32_t m_VBO = 0;
+        mutable uint32_t m_EBO = 0;
+        mutable bool m_gpuResourcesCreated = false;
     };
 }

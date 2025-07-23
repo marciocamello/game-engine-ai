@@ -49,7 +49,7 @@ This specification defines a lightweight, framework-independent testing system f
 
 1. WHEN running on Windows THEN the system SHALL display output correctly in cmd and PowerShell
 2. WHEN running on different terminals THEN the system SHALL avoid encoding issues
-3. WHEN integrating with CI/CD THEN the system SHALL produce parseable output
+3. WHEN running in batch mode THEN the system SHALL produce parseable output
 4. WHEN using in automated systems THEN the system SHALL return proper exit codes (0 for success, 1 for failure)
 
 ### Requirement 5: Integration with Build System

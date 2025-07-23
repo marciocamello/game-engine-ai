@@ -2,6 +2,7 @@
 
 #include "Resource/ResourceManager.h"
 #include <string>
+#include <vector>
 
 namespace GameEngine {
     enum class TextureFormat {
@@ -55,20 +56,29 @@ namespace GameEngine {
 
     private:
         void CreateDefaultTexture();
+        void EnsureGPUResourcesCreated() const; // Lazy initialization
+        void CreateGPUResources() const;
         
-        uint32_t GetGLFormat(TextureFormat format);
-        uint32_t GetGLInternalFormat(TextureFormat format);
-        uint32_t GetGLFilter(TextureFilter filter);
-        uint32_t GetGLWrap(TextureWrap wrap);
+        uint32_t GetGLFormat(TextureFormat format) const;
+        uint32_t GetGLInternalFormat(TextureFormat format) const;
+        uint32_t GetGLFilter(TextureFilter filter) const;
+        uint32_t GetGLWrap(TextureWrap wrap) const;
         
         TextureFormat GetTextureFormatFromChannels(int channels);
         int GetChannelsFromFormat(TextureFormat format);
         
-        uint32_t m_textureID = 0;
+        // GPU resources (created lazily)
+        mutable uint32_t m_textureID = 0;
+        mutable bool m_gpuResourcesCreated = false;
+        
+        // CPU data (always available)
         int m_width = 0;
         int m_height = 0;
         int m_channels = 0;
         TextureFormat m_format = TextureFormat::RGBA;
         std::string m_filepath;
+        
+        // Raw image data for lazy GPU resource creation
+        mutable std::vector<unsigned char> m_imageData;
     };
 }

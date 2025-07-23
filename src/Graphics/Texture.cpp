@@ -1,6 +1,7 @@
 #include "Graphics/Texture.h"
 #include "Resource/TextureLoader.h"
 #include "Core/Logger.h"
+#include "Core/OpenGLContext.h"
 #include <glad/glad.h>
 
 namespace GameEngine {
@@ -9,47 +10,60 @@ namespace GameEngine {
     }
 
     Texture::~Texture() {
-        if (m_textureID != 0) {
+        if (m_textureID != 0 && OpenGLContext::HasActiveContext()) {
             glDeleteTextures(1, &m_textureID);
-            m_textureID = 0;
             LOG_INFO("Deleted texture with ID: " + std::to_string(m_textureID));
         }
+        m_textureID = 0;
+        m_gpuResourcesCreated = false;
     }
 
     bool Texture::LoadFromFile(const std::string& filepath) {
-        // Clean up existing texture if any
-        if (m_textureID != 0) {
+        // Clean up existing GPU resources if any
+        if (m_textureID != 0 && OpenGLContext::HasActiveContext()) {
             glDeleteTextures(1, &m_textureID);
-            m_textureID = 0;
         }
+        m_textureID = 0;
+        m_gpuResourcesCreated = false;
 
-        // Use TextureLoader to load the image
+        // Use TextureLoader to load the image data (CPU only)
         TextureLoader loader;
         TextureLoader::ImageData imageData = loader.LoadImageData(filepath);
 
         if (!imageData.isValid) {
             LOG_ERROR("Failed to load texture from file: " + filepath);
-            // Create default pink/magenta texture
-            CreateDefaultTexture();
+            // Set default properties for fallback
+            m_width = 2;
+            m_height = 2;
+            m_channels = 4;
+            m_format = TextureFormat::RGBA;
+            m_filepath = "[DEFAULT_TEXTURE]";
+            
+            // Create default image data (pink/magenta checkerboard)
+            m_imageData = {
+                255, 0, 255, 255,  // Magenta
+                0, 0, 0, 255,      // Black
+                0, 0, 0, 255,      // Black  
+                255, 0, 255, 255   // Magenta
+            };
             return false;
         }
 
-        // Create OpenGL texture
-        m_textureID = loader.CreateOpenGLTexture(imageData);
-        if (m_textureID == 0) {
-            LOG_ERROR("Failed to create OpenGL texture for: " + filepath);
-            CreateDefaultTexture();
-            return false;
-        }
-
-        // Store texture properties
+        // Store texture properties (CPU data)
         m_width = imageData.width;
         m_height = imageData.height;
         m_channels = imageData.channels;
         m_format = GetTextureFormatFromChannels(imageData.channels);
         m_filepath = filepath;
+        
+        // Store image data for lazy GPU resource creation
+        if (imageData.data && imageData.width > 0 && imageData.height > 0) {
+            size_t dataSize = static_cast<size_t>(imageData.width) * imageData.height * imageData.channels;
+            m_imageData.assign(imageData.data, imageData.data + dataSize);
+        }
 
-        LOG_INFO("Successfully loaded texture: " + filepath + " (ID: " + std::to_string(m_textureID) + ")");
+        LOG_INFO("Successfully loaded texture data: " + filepath + " (" + 
+                 std::to_string(m_width) + "x" + std::to_string(m_height) + ")");
         return true;
     }
 
@@ -100,8 +114,9 @@ namespace GameEngine {
     }
 
     void Texture::Bind(uint32_t slot) const {
+        EnsureGPUResourcesCreated();
         if (m_textureID == 0) {
-            return; // Silently ignore invalid textures
+            return; // Silently ignore invalid textures or no OpenGL context
         }
         glActiveTexture(GL_TEXTURE0 + slot);
         glBindTexture(GL_TEXTURE_2D, m_textureID);
@@ -118,8 +133,9 @@ namespace GameEngine {
     }
 
     void Texture::SetFilter(TextureFilter minFilter, TextureFilter magFilter) {
+        EnsureGPUResourcesCreated();
         if (m_textureID == 0) {
-            return; // Silently ignore invalid textures
+            return; // Silently ignore invalid textures or no OpenGL context
         }
 
         glBindTexture(GL_TEXTURE_2D, m_textureID);
@@ -186,7 +202,7 @@ namespace GameEngine {
         LOG_INFO("Created default pink/magenta texture (ID: " + std::to_string(m_textureID) + ")");
     }
 
-    uint32_t Texture::GetGLFormat(TextureFormat format) {
+    uint32_t Texture::GetGLFormat(TextureFormat format) const {
         switch (format) {
             case TextureFormat::RGB: return GL_RGB;
             case TextureFormat::RGBA: return GL_RGBA;
@@ -196,7 +212,7 @@ namespace GameEngine {
         }
     }
 
-    uint32_t Texture::GetGLInternalFormat(TextureFormat format) {
+    uint32_t Texture::GetGLInternalFormat(TextureFormat format) const {
         switch (format) {
             case TextureFormat::RGB: return GL_RGB8;
             case TextureFormat::RGBA: return GL_RGBA8;
@@ -206,7 +222,7 @@ namespace GameEngine {
         }
     }
 
-    uint32_t Texture::GetGLFilter(TextureFilter filter) {
+    uint32_t Texture::GetGLFilter(TextureFilter filter) const {
         switch (filter) {
             case TextureFilter::Nearest: return GL_NEAREST;
             case TextureFilter::Linear: return GL_LINEAR;
@@ -218,7 +234,7 @@ namespace GameEngine {
         }
     }
 
-    uint32_t Texture::GetGLWrap(TextureWrap wrap) {
+    uint32_t Texture::GetGLWrap(TextureWrap wrap) const {
         switch (wrap) {
             case TextureWrap::Repeat: return GL_REPEAT;
             case TextureWrap::MirroredRepeat: return GL_MIRRORED_REPEAT;
@@ -276,4 +292,65 @@ namespace GameEngine {
         size_t objectSize = sizeof(*this);
         
         return baseSize + textureSize + objectSize;
-    }}
+    }
+    
+    void Texture::EnsureGPUResourcesCreated() const {
+        if (m_gpuResourcesCreated || !OpenGLContext::HasActiveContext()) {
+            return;
+        }
+        
+        CreateGPUResources();
+        m_gpuResourcesCreated = true;
+    }
+    
+    void Texture::CreateGPUResources() const {
+        if (!OpenGLContext::HasActiveContext()) {
+            LOG_WARNING("Cannot create texture GPU resources: No OpenGL context available");
+            return;
+        }
+        
+        // Generate OpenGL texture
+        glGenTextures(1, &m_textureID);
+        if (m_textureID == 0) {
+            LOG_ERROR("Failed to generate OpenGL texture ID");
+            return;
+        }
+        
+        glBindTexture(GL_TEXTURE_2D, m_textureID);
+        
+        // Set default texture parameters
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        
+        // Upload texture data if available
+        if (!m_imageData.empty()) {
+            uint32_t glFormat = GetGLFormat(m_format);
+            uint32_t glInternalFormat = GetGLInternalFormat(m_format);
+            
+            glTexImage2D(GL_TEXTURE_2D, 0, glInternalFormat, m_width, m_height, 0, 
+                        glFormat, GL_UNSIGNED_BYTE, m_imageData.data());
+        } else {
+            // Create empty texture
+            uint32_t glFormat = GetGLFormat(m_format);
+            uint32_t glInternalFormat = GetGLInternalFormat(m_format);
+            
+            glTexImage2D(GL_TEXTURE_2D, 0, glInternalFormat, m_width, m_height, 0, 
+                        glFormat, GL_UNSIGNED_BYTE, nullptr);
+        }
+        
+        glBindTexture(GL_TEXTURE_2D, 0);
+        
+        // Check for OpenGL errors
+        GLenum error = glGetError();
+        if (error != GL_NO_ERROR) {
+            LOG_ERROR("OpenGL error creating texture GPU resources: " + std::to_string(error));
+            glDeleteTextures(1, &m_textureID);
+            m_textureID = 0;
+        } else {
+            LOG_INFO("Created GPU resources for texture: " + m_filepath + " (ID: " + std::to_string(m_textureID) + ")");
+        }
+    }
+
+}

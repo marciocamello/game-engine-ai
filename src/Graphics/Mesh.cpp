@@ -1,41 +1,51 @@
 #include "Graphics/Mesh.h"
 #include "Resource/MeshLoader.h"
 #include "Core/Logger.h"
+#include "Core/OpenGLContext.h"
 #include <glad/glad.h>
 
 namespace GameEngine {
     Mesh::Mesh(const std::string& path) : Resource(path), m_VAO(0), m_VBO(0), m_EBO(0) {
-        // Generate OpenGL objects
-        glGenVertexArrays(1, &m_VAO);
-        glGenBuffers(1, &m_VBO);
-        glGenBuffers(1, &m_EBO);
-        
-        Logger::GetInstance().Log(LogLevel::Debug, "Mesh created with VAO: " + std::to_string(m_VAO) + 
-                                 ", VBO: " + std::to_string(m_VBO) + ", EBO: " + std::to_string(m_EBO));
+        // Only create OpenGL resources if context is available
+        if (OpenGLContext::HasActiveContext()) {
+            glGenVertexArrays(1, &m_VAO);
+            glGenBuffers(1, &m_VBO);
+            glGenBuffers(1, &m_EBO);
+            m_gpuResourcesCreated = true;
+            Logger::GetInstance().Log(LogLevel::Debug, "Mesh created with VAO: " + std::to_string(m_VAO) + 
+                                     ", VBO: " + std::to_string(m_VBO) + ", EBO: " + std::to_string(m_EBO));
+        } else {
+            Logger::GetInstance().Log(LogLevel::Debug, "Mesh created (no OpenGL context - will use lazy initialization)");
+        }
     }
 
     Mesh::~Mesh() {
-        // Ensure proper cleanup of OpenGL resources
-        if (m_VAO != 0) {
-            glDeleteVertexArrays(1, &m_VAO);
-            m_VAO = 0;
+        // Only cleanup OpenGL resources if context is available
+        if (OpenGLContext::HasActiveContext()) {
+            if (m_VAO != 0) {
+                glDeleteVertexArrays(1, &m_VAO);
+                m_VAO = 0;
+            }
+            
+            if (m_VBO != 0) {
+                glDeleteBuffers(1, &m_VBO);
+                m_VBO = 0;
+            }
+            
+            if (m_EBO != 0) {
+                glDeleteBuffers(1, &m_EBO);
+                m_EBO = 0;
+            }
+            
+            Logger::GetInstance().Log(LogLevel::Debug, "Mesh destroyed and OpenGL buffers cleaned up");
+        } else {
+            Logger::GetInstance().Log(LogLevel::Debug, "Mesh destroyed (no OpenGL context for cleanup)");
         }
         
-        if (m_VBO != 0) {
-            glDeleteBuffers(1, &m_VBO);
-            m_VBO = 0;
-        }
-        
-        if (m_EBO != 0) {
-            glDeleteBuffers(1, &m_EBO);
-            m_EBO = 0;
-        }
-        
-        // Clear vertex and index data
+        // Clear CPU data
         m_vertices.clear();
         m_indices.clear();
-        
-        Logger::GetInstance().Log(LogLevel::Debug, "Mesh destroyed and OpenGL buffers cleaned up");
+        m_gpuResourcesCreated = false;
     }
 
     bool Mesh::LoadFromFile(const std::string& filepath) {
@@ -83,12 +93,15 @@ namespace GameEngine {
         SetupMesh();
     }
 
-    void Mesh::SetupMesh() {
+    void Mesh::SetupMesh() const {
         if (m_vertices.empty()) {
             Logger::GetInstance().Log(LogLevel::Warning, "Attempting to setup mesh with no vertices");
             return;
         }
 
+        // Ensure GPU resources are created before setting up
+        EnsureGPUResourcesCreated();
+        
         if (m_VAO == 0 || m_VBO == 0) {
             Logger::GetInstance().Log(LogLevel::Error, "Invalid OpenGL buffer IDs in SetupMesh");
             return;
@@ -146,7 +159,10 @@ namespace GameEngine {
     }
 
     void Mesh::Bind() const {
-        glBindVertexArray(m_VAO);
+        EnsureGPUResourcesCreated();
+        if (m_VAO != 0) {
+            glBindVertexArray(m_VAO);
+        }
     }
 
     void Mesh::Unbind() const {
@@ -206,5 +222,39 @@ namespace GameEngine {
         size_t gpuMemory = vertexMemory + indexMemory;
         
         return baseSize + vertexMemory + indexMemory + gpuMemory;
+    }
+    
+    void Mesh::EnsureGPUResourcesCreated() const {
+        if (m_gpuResourcesCreated || !OpenGLContext::HasActiveContext()) {
+            return;
+        }
+        
+        CreateGPUResources();
+        m_gpuResourcesCreated = true;
+    }
+    
+    void Mesh::CreateGPUResources() const {
+        if (!OpenGLContext::HasActiveContext()) {
+            LOG_WARNING("Cannot create mesh GPU resources: No OpenGL context available");
+            return;
+        }
+        
+        // Generate OpenGL objects
+        glGenVertexArrays(1, &m_VAO);
+        glGenBuffers(1, &m_VBO);
+        glGenBuffers(1, &m_EBO);
+        
+        if (m_VAO == 0 || m_VBO == 0 || m_EBO == 0) {
+            LOG_ERROR("Failed to generate OpenGL mesh resources");
+            return;
+        }
+        
+        Logger::GetInstance().Log(LogLevel::Debug, "Created GPU resources for mesh with VAO: " + std::to_string(m_VAO) + 
+                                 ", VBO: " + std::to_string(m_VBO) + ", EBO: " + std::to_string(m_EBO));
+        
+        // Setup mesh data if available
+        if (!m_vertices.empty()) {
+            SetupMesh();
+        }
     }
 }

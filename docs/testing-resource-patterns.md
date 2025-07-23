@@ -25,6 +25,33 @@ This guide provides comprehensive patterns and best practices for testing resour
 - **Cache Behavior**: Verify caching mechanisms work correctly
 - **Error Resilience**: Test error conditions and recovery scenarios
 
+### Related Documentation
+
+**Core Testing Framework:**
+
+- **[Testing Guide](testing-guide.md)**: Comprehensive testing instructions with resource examples
+- **[Testing Guidelines](testing-guidelines.md)**: High-level guidelines for resource testing
+- **[Testing Standards](testing-standards.md)**: Coding standards for resource test implementation
+
+**Context and Mocking:**
+
+- **[OpenGL Context Limitations](testing-opengl-limitations.md)**: Essential for graphics resource testing
+- **[Mock Resource Implementation](testing-mock-resources.md)**: Detailed mock resource patterns used in this guide
+
+**Output and Quality:**
+
+- **[Test Output Formatting](testing-output-formatting.md)**: Proper formatting for resource test output
+- **[Code Examples Validation](testing-code-examples-validation.md)**: Validating resource-related examples
+
+**API Documentation:**
+
+- **[API Reference](api-reference.md)**: ResourceManager API and OpenGLContext utilities
+
+**Advanced Topics:**
+
+- **[Testing Strategy](testing-strategy.md)**: Strategic approach to resource testing
+- **[Testing Migration](testing-migration.md)**: Migrating resource tests to new patterns
+
 ## ResourceManager Testing Patterns
 
 ### Basic ResourceManager Functionality

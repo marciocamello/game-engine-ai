@@ -23,6 +23,30 @@ Game Engine Kiro's testing system must handle the reality that many tests run in
 - **Development Workflow**: Developers need fast, reliable tests that don't depend on graphics hardware
 - **Cross-Platform Compatibility**: Different platforms have varying OpenGL context requirements
 
+### Related Documentation
+
+**Essential Testing Guides:**
+
+- **[Testing Guide](testing-guide.md)**: Comprehensive testing instructions with context-aware examples
+- **[Testing Guidelines](testing-guidelines.md)**: High-level guidelines including OpenGL context handling
+- **[Resource Testing Patterns](testing-resource-patterns.md)**: Resource testing with context awareness
+- **[Mock Resource Implementation](testing-mock-resources.md)**: Mock resources for context-free testing
+
+**Output and Standards:**
+
+- **[Test Output Formatting](testing-output-formatting.md)**: Proper formatting for context-aware test output
+- **[Testing Standards](testing-standards.md)**: Coding standards including context handling patterns
+
+**API and Examples:**
+
+- **[API Reference](api-reference.md)**: OpenGLContext utility class documentation
+- **[Code Examples Validation](testing-code-examples-validation.md)**: Validating context-dependent examples
+
+**See Also:**
+
+- **[Testing Strategy](testing-strategy.md)**: Overall approach to context-aware testing
+- **[Testing Migration](testing-migration.md)**: Migrating tests to handle context limitations
+
 ## The Problem
 
 ### What Happens Without OpenGL Context

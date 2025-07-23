@@ -661,7 +661,7 @@ public:
 
 ### ResourceManager
 
-Comprehensive resource management system with automatic caching, memory management, and debugging capabilities.
+Comprehensive resource management system with automatic caching, memory management, and debugging capabilities. Enhanced with new statistics tracking and memory management features for improved testing and debugging.
 
 ```cpp
 class ResourceManager {
@@ -685,12 +685,12 @@ public:
     void SetMemoryPressureThreshold(size_t thresholdBytes);
     void CheckMemoryPressure();
 
-    // Statistics and Debugging
-    size_t GetMemoryUsage() const;
-    size_t GetResourceCount() const;
-    ResourceStats GetResourceStats() const;
-    void LogResourceUsage() const;
-    void LogDetailedResourceInfo() const;
+    // Statistics and Debugging (Enhanced)
+    size_t GetMemoryUsage() const;           // Total memory usage across all resources
+    size_t GetResourceCount() const;         // Total number of loaded resources
+    ResourceStats GetResourceStats() const;  // Detailed statistics breakdown
+    void LogResourceUsage() const;           // Log basic usage information
+    void LogDetailedResourceInfo() const;    // Log comprehensive resource details
 
     // Asset Pipeline
     bool ImportAsset(const std::string& sourcePath, const std::string& targetPath);
@@ -700,7 +700,7 @@ public:
 
 ### ResourceStats
 
-Detailed statistics structure for resource monitoring and debugging.
+Detailed statistics structure for resource monitoring and debugging. Enhanced with additional metrics for comprehensive resource analysis.
 
 ```cpp
 struct ResourceStats {
@@ -709,6 +709,12 @@ struct ResourceStats {
     size_t expiredReferences = 0;        // Number of expired weak references
     std::unordered_map<std::string, size_t> resourcesByType;  // Resources by type
     std::unordered_map<std::string, size_t> memoryByType;     // Memory usage by type
+
+    // Enhanced statistics for testing and debugging
+    size_t cacheHits = 0;                // Number of cache hits
+    size_t cacheMisses = 0;              // Number of cache misses
+    double averageLoadTime = 0.0;        // Average resource loading time (ms)
+    size_t peakMemoryUsage = 0;          // Peak memory usage since last reset
 };
 ```
 
@@ -800,7 +806,9 @@ namespace Math {
 
 ### OpenGLContext
 
-Utility class for OpenGL context management and checking, essential for testing and resource creation.
+Utility class for OpenGL context management and checking, essential for testing and resource creation. Critical for handling headless testing environments and ensuring robust resource creation.
+
+**Related Documentation**: See [OpenGL Context Limitations in Testing](testing-opengl-limitations.md) for comprehensive testing patterns.
 
 ```cpp
 class OpenGLContext {
@@ -811,6 +819,12 @@ public:
     static const char* GetVersionString();
 };
 ```
+
+**Related Testing Documentation:**
+
+- **[OpenGL Context Limitations](testing-opengl-limitations.md)**: Comprehensive guide for testing without OpenGL context
+- **[Resource Testing Patterns](testing-resource-patterns.md)**: Testing ResourceManager functionality
+- **[Mock Resource Implementation](testing-mock-resources.md)**: Mock resources for context-free testing
 
 **Usage Examples:**
 
@@ -1052,9 +1066,19 @@ deterministicComponent->SetMovementConfig(platformingConfig);
 
 ## 🧪 Testing Framework
 
+Comprehensive testing framework with standardized output formatting, OpenGL context awareness, and mock resource support for robust testing across all environments.
+
+**Related Documentation**:
+
+- [Testing Guide](testing-guide.md) - Complete testing instructions and examples
+- [Test Output Formatting Standards](testing-output-formatting.md) - Detailed formatting requirements
+- [OpenGL Context Limitations](testing-opengl-limitations.md) - Context-aware testing patterns
+- [Resource Testing Patterns](testing-resource-patterns.md) - Resource management testing
+- [Mock Resource Implementation](testing-mock-resources.md) - Mock resource creation and usage
+
 ### TestOutput
 
-Standardized test output formatting utilities for consistent test reporting across the engine.
+Standardized test output formatting utilities for consistent test reporting across the engine. All tests MUST use these methods instead of direct console output.
 
 ```cpp
 class TestOutput {
@@ -1165,7 +1189,9 @@ public:
 
 ### Mock Resource System
 
-Base classes and patterns for creating mock resources for testing without OpenGL context.
+Base classes and patterns for creating mock resources for testing without OpenGL context. Essential for unit testing and headless CI/CD environments.
+
+**Related Documentation**: See [Mock Resource Implementation Guide](testing-mock-resources.md) for comprehensive patterns and examples.
 
 ```cpp
 // Base Mock Resource Pattern
@@ -1360,4 +1386,34 @@ std::shared_ptr<T> CreateTestResource(const std::string& path) {
 
 ---
 
-This API reference provides comprehensive coverage of all public interfaces in Game Engine Kiro, including the enhanced resource management system with memory tracking and debugging capabilities, OpenGL context utilities for safe resource creation, and a complete testing framework with mock resource support for context-independent testing. For implementation details and advanced usage patterns, refer to the examples in the `examples/` directory and the architecture documentation.
+## 📚 Testing Documentation Cross-References
+
+This API reference works in conjunction with comprehensive testing documentation:
+
+### Core Testing Documentation
+
+- **[Testing Guide](testing-guide.md)** - Complete testing instructions, examples, and best practices
+- **[Testing Guidelines](testing-guidelines.md)** - High-level guidelines for writing effective tests
+- **[Testing Standards](testing-standards.md)** - Coding standards and conventions for test code
+
+### Specialized Testing Topics
+
+- **[OpenGL Context Limitations](testing-opengl-limitations.md)** - Comprehensive guide for handling OpenGL context issues in testing environments
+- **[Resource Testing Patterns](testing-resource-patterns.md)** - Best practices for testing ResourceManager functionality and resource operations
+- **[Mock Resource Implementation](testing-mock-resources.md)** - Detailed patterns for creating and using mock resources in tests
+
+### Output and Consistency
+
+- **[Test Output Formatting Standards](testing-output-formatting.md)** - Complete standards for consistent test output formatting
+- **[Test Output Consistency Guidelines](testing-output-consistency-guide.md)** - Guidelines for maintaining consistency across different test types
+
+### Key Integration Points
+
+1. **ResourceManager API** integrates with [Resource Testing Patterns](testing-resource-patterns.md) for comprehensive resource testing
+2. **OpenGLContext utilities** work with [OpenGL Context Limitations](testing-opengl-limitations.md) patterns for context-aware testing
+3. **TestOutput methods** follow [Test Output Formatting Standards](testing-output-formatting.md) for consistent reporting
+4. **Mock Resource System** implements patterns from [Mock Resource Implementation Guide](testing-mock-resources.md)
+
+---
+
+This API reference provides comprehensive coverage of all public interfaces in Game Engine Kiro, including the enhanced resource management system with memory tracking and debugging capabilities, OpenGL context utilities for safe resource creation, and a complete testing framework with mock resource support for context-independent testing. For implementation details and advanced usage patterns, refer to the testing documentation above and the examples in the `examples/` directory.

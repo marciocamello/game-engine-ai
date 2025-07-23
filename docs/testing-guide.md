@@ -25,6 +25,8 @@ Game Engine Kiro uses a lightweight, framework-independent testing system design
 - **Simple Patterns**: Predictable test structure that's easy to learn and maintain
 - **Build Integration**: Seamless integration with existing CMake build system
 - **Windows-Focused**: Optimized for Windows development environment
+- **Context-Aware**: Handles OpenGL context limitations gracefully for headless testing
+- **Resource Testing**: Comprehensive patterns for testing resource management systems
 
 ### Test Types
 
@@ -33,6 +35,28 @@ Game Engine Kiro uses a lightweight, framework-independent testing system design
 | **Unit Tests**        | `tests/unit/`        | Individual component testing            | Math operations, Logger functionality       |
 | **Integration Tests** | `tests/integration/` | System interaction testing              | Physics integration, Component interactions |
 | **Performance Tests** | `tests/performance/` | Benchmarking and performance validation | Math operation speed, Memory usage          |
+
+### Related Documentation
+
+**Core Testing Documentation:**
+
+- **[Testing Guidelines](testing-guidelines.md)**: High-level guidelines and best practices
+- **[Testing Standards](testing-standards.md)**: Coding standards and conventions for test code
+- **[Test Output Formatting](testing-output-formatting.md)**: Complete standards for consistent test output formatting
+- **[Test Output Consistency](testing-output-consistency-guide.md)**: Consistency guidelines across test types
+
+**Specialized Testing Guides:**
+
+- **[OpenGL Context Limitations](testing-opengl-limitations.md)**: Comprehensive guide for handling OpenGL context issues in testing
+- **[Resource Testing Patterns](testing-resource-patterns.md)**: Best practices for testing ResourceManager and resource operations
+- **[Mock Resource Implementation](testing-mock-resources.md)**: Patterns for creating and using mock resources in tests
+- **[Code Examples Validation](testing-code-examples-validation.md)**: Best practices for keeping documentation examples current
+
+**Additional Testing Resources:**
+
+- **[API Reference](api-reference.md)**: Complete API documentation with testing-relevant examples
+- **[Testing Strategy](testing-strategy.md)**: Overall testing approach and methodology
+- **[Testing Migration](testing-migration.md)**: Guide for updating existing tests to new standards
 
 ## Getting Started
 
@@ -426,6 +450,137 @@ TestOutput::PrintTestPass("vector operations");
 ```
 
 For complete formatting guidelines, see [Test Output Formatting Standards](testing-output-formatting.md) and [Test Output Consistency Guidelines](testing-output-consistency-guide.md).
+
+## OpenGL Context Awareness
+
+Many tests in Game Engine Kiro must handle environments without an active OpenGL context, such as headless CI/CD systems or unit testing environments. The engine provides comprehensive support for context-aware testing.
+
+### Context Detection
+
+Always check for OpenGL context before graphics operations:
+
+```cpp
+#include "Graphics/OpenGLContext.h"
+
+bool TestGraphicsFeature() {
+    TestOutput::PrintTestStart("graphics feature");
+
+    if (!OpenGLContext::HasActiveContext()) {
+        TestOutput::PrintInfo("Skipping OpenGL-dependent test (no context)");
+        TestOutput::PrintTestPass("graphics feature");
+        return true; // Pass the test gracefully
+    }
+
+    // Safe to use OpenGL functions here
+    GLuint textureID;
+    glGenTextures(1, &textureID);
+
+    TestOutput::PrintTestPass("graphics feature");
+    return true;
+}
+```
+
+### Testing Strategies
+
+1. **Mock Resources**: Use lightweight mock implementations that don't require OpenGL
+2. **Context-Aware Classes**: Design resource classes to handle missing context gracefully
+3. **Separate Data Tests**: Test data processing separately from GPU resource creation
+4. **Conditional Execution**: Use runtime checks to adjust test behavior
+
+For comprehensive guidance, see [OpenGL Context Limitations in Testing](testing-opengl-limitations.md).
+
+## Resource Testing Patterns
+
+Testing resource management systems requires special consideration for memory tracking, cache behavior, and performance characteristics.
+
+### Basic ResourceManager Testing
+
+```cpp
+bool TestResourceManagerBasics() {
+    TestOutput::PrintTestStart("resource manager basics");
+
+    ResourceManager manager;
+    EXPECT_TRUE(manager.Initialize());
+
+    // Use mock resources to avoid OpenGL dependencies
+    auto resource = manager.Load<MockResource>("test.dat");
+    EXPECT_NOT_NULL(resource);
+    EXPECT_TRUE(resource->GetMemoryUsage() > 0);
+
+    // Test statistics
+    EXPECT_EQUAL(manager.GetResourceCount(), static_cast<size_t>(1));
+    EXPECT_TRUE(manager.GetMemoryUsage() > 0);
+
+    TestOutput::PrintTestPass("resource manager basics");
+    return true;
+}
+```
+
+### Cache Validation
+
+```cpp
+bool TestResourceCaching() {
+    TestOutput::PrintTestStart("resource caching");
+
+    ResourceManager manager;
+    manager.Initialize();
+
+    // Load same resource twice
+    auto resource1 = manager.Load<MockResource>("test.dat");
+    auto resource2 = manager.Load<MockResource>("test.dat");
+
+    // Should be the same instance (cached)
+    EXPECT_TRUE(resource1.get() == resource2.get());
+    EXPECT_EQUAL(manager.GetResourceCount(), static_cast<size_t>(1));
+
+    TestOutput::PrintTestPass("resource caching");
+    return true;
+}
+```
+
+For detailed patterns and examples, see [Resource Testing Best Practices Guide](testing-resource-patterns.md).
+
+## Mock Resource Implementation
+
+Mock resources allow testing of resource-dependent code without requiring actual files or OpenGL context.
+
+### Basic Mock Resource
+
+```cpp
+class MockResource : public Resource {
+public:
+    MockResource(const std::string& path) : Resource(path), m_size(1024) {}
+
+    size_t GetMemoryUsage() const override {
+        return Resource::GetMemoryUsage() + m_size;
+    }
+
+    void SetSize(size_t size) { m_size = size; }
+    void SimulateLoadFailure(bool shouldFail) { m_simulateFailure = shouldFail; }
+
+private:
+    size_t m_size;
+    bool m_simulateFailure = false;
+};
+```
+
+### Usage in Tests
+
+```cpp
+bool TestWithMockResource() {
+    TestOutput::PrintTestStart("mock resource usage");
+
+    auto mockResource = std::make_shared<MockResource>("test.dat");
+    mockResource->SetSize(2048); // Configure for testing
+
+    EXPECT_EQUAL(mockResource->GetMemoryUsage(), 2048 + sizeof(Resource));
+
+    TestOutput::PrintTestPass("mock resource usage");
+    return true;
+}
+```
+
+For comprehensive mock resource patterns, see [Mock Resource Implementation Guide](testing-mock-resources.md).
 
 ## Best Practices
 

@@ -12,6 +12,30 @@ This document establishes comprehensive standards for test output formatting in 
 4. **Windows Compatibility**: Use only ASCII characters for maximum compatibility
 5. **Minimal Noise**: Avoid excessive output that clutters test results
 
+## Related Documentation
+
+**Implementation Guides:**
+
+- **[Testing Guide](testing-guide.md)**: Comprehensive guide with proper output formatting examples
+- **[Testing Guidelines](testing-guidelines.md)**: Guidelines that reference these formatting standards
+- **[Testing Standards](testing-standards.md)**: Coding standards that enforce these formatting rules
+
+**Consistency and Quality:**
+
+- **[Test Output Consistency](testing-output-consistency-guide.md)**: Detailed consistency guidelines
+- **[Code Examples Validation](testing-code-examples-validation.md)**: Validating output formatting in examples
+
+**Specialized Testing:**
+
+- **[OpenGL Context Limitations](testing-opengl-limitations.md)**: Context-aware output formatting
+- **[Resource Testing Patterns](testing-resource-patterns.md)**: Resource test output formatting
+- **[Mock Resource Implementation](testing-mock-resources.md)**: Mock resource test output
+
+**Migration and Strategy:**
+
+- **[Testing Migration](testing-migration.md)**: Migrating tests to new output standards
+- **[Testing Strategy](testing-strategy.md)**: Strategic approach to consistent output
+
 ## TestOutput Method Usage Patterns
 
 ### Required Methods

@@ -1,5 +1,30 @@
 # 🔄 Testing Migration Guide
 
+## Related Documentation
+
+**Migration Targets:**
+
+- **[Testing Guide](testing-guide.md)**: Target patterns for migrated tests
+- **[Testing Standards](testing-standards.md)**: New standards to migrate to
+- **[Test Output Formatting](testing-output-formatting.md)**: New output formatting standards
+
+**Implementation Support:**
+
+- **[Testing Guidelines](testing-guidelines.md)**: Guidelines for migration approach
+- **[Test Output Consistency](testing-output-consistency-guide.md)**: Consistency targets for migration
+
+**Specialized Migration:**
+
+- **[OpenGL Context Limitations](testing-opengl-limitations.md)**: Migrating to context-aware testing
+- **[Resource Testing Patterns](testing-resource-patterns.md)**: Migrating resource tests
+- **[Mock Resource Implementation](testing-mock-resources.md)**: Migrating to mock resources
+
+**Quality Assurance:**
+
+- **[Code Examples Validation](testing-code-examples-validation.md)**: Validating migrated examples
+- **[Testing Strategy](testing-strategy.md)**: Strategic approach to migration
+- **[Testing Navigation Index](testing-navigation-index.md)**: Navigation for migration planning
+
 ## 📊 Current Status
 
 ### ✅ **Completed**

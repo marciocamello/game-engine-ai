@@ -2,7 +2,32 @@
 
 ## Overview
 
-This document provides guidelines for writing tests in Game Engine Kiro, with special attention to OpenGL context limitations and resource testing patterns.
+This document provides guidelines for writing tests in Game Engine Kiro, with special attention to OpenGL context limitations and resource testing patterns. This guide works in conjunction with other testing documentation to provide comprehensive testing guidance.
+
+### Related Documentation
+
+**Essential Reading:**
+
+- **[Testing Guide](testing-guide.md)**: Comprehensive testing instructions and examples
+- **[Testing Standards](testing-standards.md)**: Coding standards and conventions for test code
+- **[Test Output Formatting](testing-output-formatting.md)**: Complete formatting standards
+
+**Context-Aware Testing:**
+
+- **[OpenGL Context Limitations](testing-opengl-limitations.md)**: Detailed guide for handling OpenGL context issues
+- **[Resource Testing Patterns](testing-resource-patterns.md)**: Best practices for testing resource management
+- **[Mock Resource Implementation](testing-mock-resources.md)**: Patterns for creating and using mock resources
+
+**Quality Assurance:**
+
+- **[Test Output Consistency](testing-output-consistency-guide.md)**: Consistency guidelines across test types
+- **[Code Examples Validation](testing-code-examples-validation.md)**: Keeping documentation examples current
+- **[API Reference](api-reference.md)**: Complete API documentation with usage examples
+
+**See Also:**
+
+- **[Testing Strategy](testing-strategy.md)**: Overall testing methodology
+- **[Testing Migration](testing-migration.md)**: Updating existing tests
 
 ## Test Categories
 
@@ -12,74 +37,56 @@ This document provides guidelines for writing tests in Game Engine Kiro, with sp
 - Should not depend on OpenGL context
 - Use mock objects when necessary
 - Focus on logic and data validation
+- Follow patterns in [Mock Resource Implementation Guide](testing-mock-resources.md)
 
 ### Integration Tests (`tests/integration/`)
 
 - Test system interactions
 - May require OpenGL context for graphics tests
-- Should handle missing context gracefully
+- Should handle missing context gracefully using [OpenGL Context Limitations](testing-opengl-limitations.md) patterns
 - Use real assets when available, fallback to mocks
+- Apply [Resource Testing Patterns](testing-resource-patterns.md) for resource management testing
+
+### Performance Tests (`tests/performance/`)
+
+- Benchmark critical operations and validate performance thresholds
+- Use consistent timing patterns from [Test Output Formatting](testing-output-formatting.md)
+- Handle context limitations gracefully
+- Focus on realistic performance scenarios
 
 ## OpenGL Context Limitations
 
-### The Problem
+Many tests run without an active OpenGL context (no window created), which causes crashes when creating textures, meshes, or making any OpenGL function calls. Game Engine Kiro provides comprehensive solutions for this challenge.
 
-Many tests run without an active OpenGL context (no window created), which causes crashes when:
+### Quick Reference
 
-- Creating textures (`glGenTextures`, `glTexImage2D`)
-- Creating meshes (`glGenVertexArrays`, `glGenBuffers`)
-- Any OpenGL function calls
-
-### Solutions
-
-#### 1. Context-Safe Resource Classes
-
-Our Texture and Mesh classes now check for OpenGL context:
+For immediate solutions, use these patterns:
 
 ```cpp
-// Safe approach - check context before OpenGL calls
-if (OpenGLContext::HasActiveContext()) {
-    glGenTextures(1, &m_textureID);
-    // ... other OpenGL calls
-} else {
-    LOG_WARNING("No OpenGL context available for texture creation");
+// Always check context before OpenGL operations
+if (!OpenGLContext::HasActiveContext()) {
+    TestOutput::PrintInfo("Skipping OpenGL-dependent test (no context)");
+    TestOutput::PrintTestPass("graphics feature");
+    return true;
 }
+
+// Use mock resources for logic testing
+auto mockResource = std::make_shared<MockResource>("test.dat");
+EXPECT_NOT_NULL(mockResource);
+EXPECT_TRUE(mockResource->GetMemoryUsage() > 0);
 ```
 
-#### 2. Mock Resources for Testing
+### Comprehensive Solutions
 
-Use mock resources that don't depend on OpenGL:
+The engine provides multiple strategies for handling OpenGL context limitations:
 
-```cpp
-// Example: MockResource for ResourceManager tests
-class MockResource : public Resource {
-public:
-    MockResource(const std::string& path) : Resource(path), m_size(1024) {}
+1. **Context Detection**: Use `OpenGLContext::HasActiveContext()` to check availability
+2. **Mock Resources**: Lightweight implementations that don't require OpenGL
+3. **Context-Aware Classes**: Resource classes that handle missing context gracefully
+4. **Separate Testing**: Test data processing separately from GPU operations
+5. **Fallback Behavior**: Graceful degradation when context is unavailable
 
-    size_t GetMemoryUsage() const override {
-        return Resource::GetMemoryUsage() + m_size;
-    }
-
-    void SetSize(size_t size) { m_size = size; }
-
-private:
-    size_t m_size;
-};
-```
-
-#### 3. CPU-Only Data Testing
-
-Test data loading and processing separately from GPU resource creation:
-
-```cpp
-// Test data loading without OpenGL
-bool TestMeshDataLoading() {
-    MeshLoader::MeshData data = MeshLoader::LoadOBJ("test.obj");
-    EXPECT_TRUE(data.isValid);
-    EXPECT_TRUE(data.vertices.size() > 0);
-    // Don't test OpenGL buffer creation here
-}
-```
+For complete implementation details, examples, and troubleshooting, see [OpenGL Context Limitations in Testing](testing-opengl-limitations.md).
 
 ## Test Output Standards
 
@@ -114,114 +121,92 @@ TestOutput::PrintTestPass("vector operations test completed");  // Different str
 
 ## Resource Testing Patterns
 
-### Pattern 1: Mock Resources
+Game Engine Kiro provides comprehensive patterns for testing resource management systems, including memory tracking, cache validation, and performance testing.
 
-Best for testing resource management logic:
+### Quick Reference Patterns
 
 ```cpp
+// Pattern 1: Mock Resources for Logic Testing
 bool TestResourceCaching() {
     ResourceManager manager;
-
-    // Use mock resources that don't need OpenGL
-    auto resource1 = manager.Load<MockResource>("test1.dat");
-    auto resource2 = manager.Load<MockResource>("test1.dat"); // Same path
-
-    // Test caching behavior
-    EXPECT_TRUE(resource1.get() == resource2.get());
+    auto resource1 = manager.Load<MockResource>("test.dat");
+    auto resource2 = manager.Load<MockResource>("test.dat"); // Same path
+    EXPECT_TRUE(resource1.get() == resource2.get()); // Should be cached
     return true;
 }
-```
 
-### Pattern 2: Real Assets with Fallbacks
-
-For integration tests that can use real assets:
-
-```cpp
+// Pattern 2: Context-Aware Integration Testing
 bool TestTextureLoading() {
     ResourceManager manager;
-
-    // Try to load real texture, fallback to default if no OpenGL
-    auto texture = manager.Load<Texture>("textures/wall.png");
-    EXPECT_TRUE(texture != nullptr);
-
-    // Test should pass whether real texture loaded or default created
+    auto texture = manager.Load<Texture>("textures/test.png");
+    EXPECT_NOT_NULL(texture);
     EXPECT_TRUE(texture->GetMemoryUsage() > 0);
+    return true; // Works with or without OpenGL context
+}
+
+// Pattern 3: Memory Management Testing
+bool TestMemoryTracking() {
+    ResourceManager manager;
+    auto resource = manager.Load<MockResource>("test.dat");
+    EXPECT_TRUE(manager.GetMemoryUsage() > 0);
+    EXPECT_EQUAL(manager.GetResourceCount(), static_cast<size_t>(1));
     return true;
 }
 ```
 
-### Pattern 3: Context-Aware Testing
+### Comprehensive Testing Patterns
 
-Check for OpenGL context and adjust test behavior:
+The engine supports multiple resource testing approaches:
 
-```cpp
-bool TestGraphicsFeatures() {
-    if (!OpenGLContext::HasActiveContext()) {
-        TestOutput::PrintInfo("Skipping OpenGL-dependent tests (no context)");
-        return true; // Pass the test
-    }
+1. **Mock Resource Testing**: Lightweight resources for logic validation
+2. **Cache Behavior Testing**: Verify resource caching and reuse
+3. **Memory Management Testing**: Track memory usage and cleanup
+4. **Performance Testing**: Benchmark resource operations
+5. **Integration Testing**: Test with real engine systems
+6. **Error Handling Testing**: Validate failure scenarios
 
-    // Run full OpenGL tests
-    // ...
-}
-```
+For detailed implementations, examples, and best practices, see [Resource Testing Best Practices Guide](testing-resource-patterns.md).
 
 ## Memory Management Testing
 
-### Testing Resource Statistics
+Resource memory management testing is critical for ensuring proper resource lifecycle and preventing memory leaks.
 
-Use the ResourceManager's built-in statistics:
+### Quick Reference
 
 ```cpp
+// Test memory usage tracking
 bool TestMemoryTracking() {
     ResourceManager manager;
-
-    // Load resources
-    auto resource1 = manager.Load<MockResource>("test1.dat");
-    auto resource2 = manager.Load<MockResource>("test2.dat");
-
-    // Test statistics
-    EXPECT_TRUE(manager.GetResourceCount() >= 2);
+    auto resource = manager.Load<MockResource>("test.dat");
     EXPECT_TRUE(manager.GetMemoryUsage() > 0);
-
-    // Test detailed stats
-    ResourceStats stats = manager.GetResourceStats();
-    EXPECT_TRUE(stats.totalResources >= 2);
-
+    EXPECT_EQUAL(manager.GetResourceCount(), static_cast<size_t>(1));
     return true;
 }
-```
 
-### Testing LRU Cleanup
-
-Test automatic memory management:
-
-```cpp
-bool TestLRUCleanup() {
+// Test resource cleanup
+bool TestResourceCleanup() {
     ResourceManager manager;
-    manager.SetMemoryPressureThreshold(1024); // Low threshold
-
-    // Load many resources to trigger cleanup
-    std::vector<std::shared_ptr<MockResource>> resources;
-    for (int i = 0; i < 10; ++i) {
-        auto resource = manager.Load<MockResource>("test" + std::to_string(i) + ".dat");
-        resources.push_back(resource);
-    }
-
-    size_t initialCount = manager.GetResourceCount();
-
-    // Clear references and trigger cleanup
-    resources.clear();
-    manager.CheckMemoryPressure();
-    manager.UnloadLeastRecentlyUsed(512);
-
-    // Verify cleanup occurred
-    size_t finalCount = manager.GetResourceCount();
-    EXPECT_TRUE(finalCount <= initialCount);
-
+    {
+        auto resource = manager.Load<MockResource>("test.dat");
+        EXPECT_EQUAL(manager.GetResourceCount(), static_cast<size_t>(1));
+    } // resource goes out of scope
+    manager.UnloadUnused();
+    EXPECT_EQUAL(manager.GetResourceCount(), static_cast<size_t>(0));
     return true;
 }
 ```
+
+### Advanced Memory Testing
+
+The ResourceManager provides comprehensive memory management features:
+
+1. **Memory Usage Tracking**: Monitor total memory consumption
+2. **Resource Statistics**: Detailed breakdown by type and usage
+3. **LRU Cleanup**: Automatic cleanup of least recently used resources
+4. **Memory Pressure Handling**: Configurable thresholds and cleanup strategies
+5. **Leak Detection**: Validation of proper resource cleanup
+
+For detailed memory testing patterns, performance validation, and troubleshooting, see [Resource Testing Best Practices Guide](testing-resource-patterns.md).
 
 ## Common Pitfalls
 

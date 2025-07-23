@@ -4,6 +4,30 @@
 
 This guide provides specific guidelines for maintaining consistent test output formatting across different test types in Game Engine Kiro. It complements the [Test Output Formatting Standards](testing-output-formatting.md) by focusing on consistency patterns and common scenarios.
 
+## Related Documentation
+
+**Core Formatting Standards:**
+
+- **[Test Output Formatting](testing-output-formatting.md)**: Detailed formatting standards that this guide implements
+- **[Testing Standards](testing-standards.md)**: Coding standards that enforce these consistency guidelines
+
+**Implementation Guides:**
+
+- **[Testing Guide](testing-guide.md)**: Comprehensive guide with consistent output examples
+- **[Testing Guidelines](testing-guidelines.md)**: High-level guidelines for consistent testing approach
+
+**Specialized Testing:**
+
+- **[OpenGL Context Limitations](testing-opengl-limitations.md)**: Consistent context-aware output patterns
+- **[Resource Testing Patterns](testing-resource-patterns.md)**: Consistent resource test output
+- **[Mock Resource Implementation](testing-mock-resources.md)**: Consistent mock resource test output
+
+**Quality and Migration:**
+
+- **[Code Examples Validation](testing-code-examples-validation.md)**: Validating output consistency in examples
+- **[Testing Migration](testing-migration.md)**: Migrating tests to consistent output standards
+- **[Testing Navigation Index](testing-navigation-index.md)**: Complete navigation for all testing documentation
+
 ## Consistency Across Test Types
 
 ### Naming Consistency

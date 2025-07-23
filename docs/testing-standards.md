@@ -4,6 +4,36 @@
 
 This document establishes comprehensive coding standards for the Game Engine Kiro testing system. These standards ensure consistent, professional output formatting and maintainable test code across all engine components.
 
+### Related Documentation
+
+**This document works in conjunction with other testing documentation:**
+
+**Foundation Documents:**
+
+- **[Testing Guide](testing-guide.md)**: Comprehensive testing instructions and examples
+- **[Testing Guidelines](testing-guidelines.md)**: High-level guidelines and best practices
+
+**Output and Formatting:**
+
+- **[Test Output Formatting](testing-output-formatting.md)**: Detailed formatting standards
+- **[Test Output Consistency](testing-output-consistency-guide.md)**: Consistency guidelines across test types
+
+**Specialized Testing:**
+
+- **[OpenGL Context Limitations](testing-opengl-limitations.md)**: Handling OpenGL context issues
+- **[Resource Testing Patterns](testing-resource-patterns.md)**: Resource management testing patterns
+- **[Mock Resource Implementation](testing-mock-resources.md)**: Mock resource creation and usage
+
+**Documentation Quality:**
+
+- **[Code Examples Validation](testing-code-examples-validation.md)**: Keeping examples current and accurate
+- **[API Reference](api-reference.md)**: Complete API documentation with examples
+
+**Migration and Strategy:**
+
+- **[Testing Migration](testing-migration.md)**: Updating existing tests to new standards
+- **[Testing Strategy](testing-strategy.md)**: Overall testing approach and methodology
+
 ## Test File Organization
 
 ### File Naming Convention
@@ -144,6 +174,44 @@ Testing feature name...
 ========================================
 ```
 
+### Context-Aware Testing Standards
+
+Tests must handle OpenGL context limitations gracefully:
+
+```cpp
+bool TestGraphicsFeature() {
+    TestOutput::PrintTestStart("graphics feature");
+
+    if (!OpenGLContext::HasActiveContext()) {
+        TestOutput::PrintInfo("Skipping OpenGL-dependent test (no context)");
+        TestOutput::PrintTestPass("graphics feature");
+        return true;
+    }
+
+    // OpenGL-dependent test logic
+    TestOutput::PrintTestPass("graphics feature");
+    return true;
+}
+```
+
+### Resource Testing Standards
+
+Use mock resources for consistent testing:
+
+```cpp
+bool TestResourceFeature() {
+    TestOutput::PrintTestStart("resource feature");
+
+    ResourceManager manager;
+    auto resource = manager.Load<MockResource>("test.dat");
+    EXPECT_NOT_NULL(resource);
+    EXPECT_TRUE(resource->GetMemoryUsage() > 0);
+
+    TestOutput::PrintTestPass("resource feature");
+    return true;
+}
+```
+
 ### Migration Requirements
 
 Existing tests must be updated to:
@@ -152,6 +220,8 @@ Existing tests must be updated to:
 - Use consistent lowercase naming for test names
 - Remove excessive `PrintInfo()` calls
 - Follow standard main function exception handling pattern
+- Add OpenGL context awareness where needed
+- Use mock resources for resource-dependent tests
 
 For complete formatting guidelines and examples, see [Test Output Formatting Standards](testing-output-formatting.md) and [Test Output Consistency Guidelines](testing-output-consistency-guide.md).
 

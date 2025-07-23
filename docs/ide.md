@@ -7,7 +7,7 @@ Este documento explica como configurar o VS Code para trabalhar com o projeto Ga
 Execute o script de configuração automática:
 
 ```powershell
-.\configure_ide.ps1
+.\scripts\configure_ide.bat
 ```
 
 Este script irá:
@@ -47,7 +47,7 @@ O script cria os seguintes arquivos em `.vscode/`:
 **Solução Automática:**
 
 ```powershell
-.\reload_intellisense.ps1
+.\scripts\reload_intellisense.bat
 ```
 
 **Solução Manual:**
@@ -62,9 +62,9 @@ O script cria os seguintes arquivos em `.vscode/`:
 
 **Solução:**
 
-1. Execute: `.\setup_dependencies.bat`
+1. Execute: `.\scripts\setup_dependencies.bat`
 2. Verifique se existe `vcpkg/vcpkg.exe`
-3. Execute: `.\configure_ide.ps1`
+3. Execute: `.\scripts\configure_ide.bat`
 4. Verifique se existe `vcpkg_installed/x64-windows/include/`
 
 ### Problema: Erros de compilação no IntelliSense
@@ -75,7 +75,7 @@ O script cria os seguintes arquivos em `.vscode/`:
 
 1. Verifique se o build foi executado: `.\build.bat`
 2. Confirme que existe `build/compile_commands.json`
-3. Execute: `.\reload_intellisense.ps1`
+3. Execute: `.\scripts\reload_intellisense.bat`
 
 ## Extensões Necessárias
 
@@ -159,7 +159,7 @@ Se o IntelliSense continuar com problemas:
 
 1. Feche o VS Code completamente
 2. Delete a pasta `.vscode/ipch` (se existir)
-3. Execute: `.\reload_intellisense.ps1`
+3. Execute: `.\scripts\reload_intellisense.bat`
 4. Abra o VS Code novamente: `code .`
 
 ### Problemas com vcpkg
@@ -169,7 +169,7 @@ Se as dependências não forem encontradas:
 1. Verifique se `vcpkg.exe` existe em `vcpkg/`
 2. Execute: `.\setup_dependencies.bat`
 3. Verifique se existe `vcpkg_installed/x64-windows/`
-4. Reconfigure: `.\configure_ide.ps1`
+4. Reconfigure: `.\scripts\configure_ide.bat`
 
 ### Problemas com Visual Studio
 
@@ -185,7 +185,7 @@ Certifique-se de ter instalado:
 Execute para verificar se tudo está configurado:
 
 ```powershell
-.\check_ide_setup.ps1
+.\scripts\check_ide_setup.bat
 ```
 
 Este script verifica:
@@ -205,7 +205,7 @@ Este script verifica:
 rmdir /s /q build
 
 # Reconfigurar IDE
-.\configure_ide.ps1
+.\scripts\configure_ide.bat
 
 # Abrir VS Code
 code .
@@ -215,10 +215,10 @@ code .
 
 ```powershell
 # Verificar configuração
-.\check_ide_setup.ps1
+.\scripts\check_ide_setup.bat
 
 # Recarregar IntelliSense
-.\reload_intellisense.ps1
+.\scripts\reload_intellisense.bat
 ```
 
 ### Build e Execução

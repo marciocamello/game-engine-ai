@@ -28,4 +28,4 @@ if %ERRORLEVEL% neq 0 (
 
 cd ..
 echo Coverage build completed successfully!
-echo Run "powershell -ExecutionPolicy Bypass -File run_coverage_analysis.ps1" to generate coverage reports.
+echo Run "powershell -ExecutionPolicy Bypass -File .\scripts\run_coverage_analysis.bat" to generate coverage reports.

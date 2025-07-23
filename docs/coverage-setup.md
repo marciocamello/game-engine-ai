@@ -40,19 +40,19 @@ This will:
 
 ```powershell
 # Basic coverage analysis
-powershell -ExecutionPolicy Bypass -File run_coverage_analysis.ps1
+powershell -ExecutionPolicy Bypass -File .\scripts\run_coverage_analysis.bat
 
 # With verbose output
-powershell -ExecutionPolicy Bypass -File run_coverage_analysis.ps1 -Verbose
+powershell -ExecutionPolicy Bypass -File .\scripts\run_coverage_analysis.bat -Verbose
 
 # Build first, then analyze
-powershell -ExecutionPolicy Bypass -File run_coverage_analysis.ps1 -BuildFirst
+powershell -ExecutionPolicy Bypass -File .\scripts\run_coverage_analysis.bat -BuildFirst
 
 # Custom thresholds
-powershell -ExecutionPolicy Bypass -File run_coverage_analysis.ps1 -LineCoverageThreshold 95.0 -BranchCoverageThreshold 90.0
+powershell -ExecutionPolicy Bypass -File .\scripts\run_coverage_analysis.bat -LineCoverageThreshold 95.0 -BranchCoverageThreshold 90.0
 
 # Open HTML report automatically
-powershell -ExecutionPolicy Bypass -File run_coverage_analysis.ps1 -OpenReport
+powershell -ExecutionPolicy Bypass -File .\scripts\run_coverage_analysis.bat -OpenReport
 ```
 
 ### 3. Coverage Reports
@@ -83,7 +83,7 @@ Add to your CI pipeline:
 - name: Run Coverage Analysis
   run: |
     .\build_coverage.bat
-    powershell -ExecutionPolicy Bypass -File run_coverage_analysis.ps1
+    powershell -ExecutionPolicy Bypass -File .\scripts\run_coverage_analysis.bat
   shell: cmd
 ```
 
@@ -93,7 +93,7 @@ Add coverage validation to pre-commit hooks:
 
 ```bash
 #!/bin/bash
-powershell -ExecutionPolicy Bypass -File run_coverage_analysis.ps1 -LineCoverageThreshold 100.0
+powershell -ExecutionPolicy Bypass -File .\scripts\run_coverage_analysis.bat -LineCoverageThreshold 100.0
 ```
 
 ### IDE Integration
@@ -111,7 +111,7 @@ Add to `.vscode/tasks.json`:
     "-ExecutionPolicy",
     "Bypass",
     "-File",
-    "run_coverage_analysis.ps1",
+    ".scripts\run_coverage_analysis.bat",
     "-OpenReport"
   ],
   "group": "test",
@@ -186,7 +186,7 @@ Add to `.vscode/tasks.json`:
 Run with verbose output to see detailed execution:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File run_coverage_analysis.ps1 -Verbose
+powershell -ExecutionPolicy Bypass -File .\scripts\run_coverage_analysis.bat -Verbose
 ```
 
 ### Manual Testing
@@ -212,10 +212,10 @@ Filter specific tests:
 
 ```powershell
 # Run only Bullet-related tests
-powershell -ExecutionPolicy Bypass -File run_coverage_analysis.ps1 -Filter "Bullet*"
+powershell -ExecutionPolicy Bypass -File .\scripts\run_coverage_analysis.bat -Filter "Bullet*"
 
 # Run only integration tests
-powershell -ExecutionPolicy Bypass -File run_coverage_analysis.ps1 -Filter "*Test.exe"
+powershell -ExecutionPolicy Bypass -File .\scripts\run_coverage_analysis.bat -Filter "*Test.exe"
 ```
 
 ### Baseline Comparison
@@ -239,7 +239,7 @@ Coverage analysis includes performance metrics:
 
 The coverage system creates these files:
 
-- `run_coverage_analysis.ps1` - Main coverage analysis script
+- `.\scripts\run_coverage_analysis.bat` - Main coverage analysis script
 - `build_coverage.bat` - Coverage-enabled build script
 - `coverage_config.json` - Configuration file
 - `coverage_baseline.json` - Baseline coverage metrics

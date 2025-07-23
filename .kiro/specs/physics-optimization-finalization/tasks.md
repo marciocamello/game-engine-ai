@@ -9,39 +9,40 @@
 - [x] 1. Set up automated test coverage analysis system
 
   - Integrate OpenCppCoverage tool for Windows test coverage analysis
-  - Create PowerShell script `run_coverage_analysis.ps1` for automated coverage reporting
+  - Create PowerShell script `.\scripts\run_coverage_analysis.bat` for automated coverage reporting
   - Configure CMake to generate coverage-enabled builds with debug symbols
   - Create HTML coverage report generation with line and branch coverage metrics
   - Set up coverage baseline measurement and tracking system
   - _Requirements: 1.1, 1.2_
 
-- [ ] 2. Implement comprehensive unit test coverage
+- [ ] 2. Implement comprehensive unit test coverage using TestOutput standards
 
-  - Create complete test coverage for PhysicsEngine class (all public methods)
-  - Add comprehensive tests for BulletPhysicsWorld wrapper class
-  - Implement thorough testing of all three movement component types
-  - Create edge case tests for invalid inputs and boundary conditions
-  - Add resource management tests for proper cleanup and memory handling
-  - Write error path tests for all exception and error handling scenarios
+  - Create complete test coverage for PhysicsEngine class using TestOutput formatting
+  - Add comprehensive tests for BulletPhysicsWorld wrapper class with proper assertions
+  - Implement thorough testing of all three movement component types following testing guidelines
+  - Create edge case tests for invalid inputs using OpenGL context awareness
+  - Add resource management tests with mock resources for proper cleanup validation
+  - Write error path tests using TestOutput error handling patterns
   - _Requirements: 1.1, 1.3, 1.4_
 
-- [ ] 3. Expand integration test coverage
+- [ ] 3. Expand integration test coverage with TestOutput framework
 
-  - Create comprehensive component interaction tests (physics + graphics + input)
-  - Implement character physics behavior validation tests across all movement types
-  - Add multi-object physics interaction tests (collisions, forces, constraints)
-  - Create system integration tests for physics with other engine subsystems
-  - Implement thread safety validation tests for concurrent physics operations
-  - Add long-duration stability tests for extended physics simulations
+  - Create comprehensive component interaction tests using TestOutput methods
+  - Implement character physics behavior validation tests with proper output formatting
+  - Add multi-object physics interaction tests following testing standards
+  - Create system integration tests with OpenGL context awareness
+  - Implement thread safety validation tests using TestOutput error handling
+  - Add long-duration stability tests with proper timing output
   - _Requirements: 1.4, 1.5, 4.4_
 
-- [ ] 4. Create stress and load testing suite
-  - Implement large-scale physics simulation tests (1000+ rigid bodies)
-  - Create memory pressure tests with limited available memory
-  - Add performance stress tests under high CPU load conditions
-  - Implement resource exhaustion tests (maximum physics objects)
-  - Create boundary condition tests for extreme physics parameters
-  - Add concurrent access stress tests for multi-threaded scenarios
+- [ ] 4. Create stress and load testing suite with standardized output
+
+  - Implement large-scale physics simulation tests using TestOutput timing methods
+  - Create memory pressure tests with TestOutput memory usage reporting
+  - Add performance stress tests with proper TestOutput performance formatting
+  - Implement resource exhaustion tests using TestOutput error handling
+  - Create boundary condition tests with TestOutput validation patterns
+  - Add concurrent access stress tests following TestOutput threading guidelines
   - _Requirements: 1.5, 3.5, 4.5_
 
 ## Phase 2: Performance Profiling and Benchmarking
@@ -192,26 +193,28 @@
 
 **Windows Development Workflow:**
 
-- Use `.\build.bat` for standard builds with physics integration
-- Use `.\run_coverage_analysis.ps1` for test coverage analysis
-- Use `.\run_performance_benchmarks.ps1` for performance testing
-- Use `.\run_memory_tests.ps1` for memory validation
+- Use `.\scripts\build.bat` for standard builds with physics integration
+- Use `.\scripts\run_coverage_analysis.bat` for test coverage analysis
+- Use `.\scripts\run_performance_benchmarks.bat` for performance testing
+- Use `.\scripts\run_memory_tests.bat` for memory validation
 - Visual Studio 2022 for debugging and profiling
 
 **Key Tools and Technologies:**
 
 - **OpenCppCoverage**: Windows test coverage analysis
-- **Internal Testing Framework**: Unit and integration testing system
+- **TestOutput Framework**: Unit and integration testing system with standardized output formatting
 - **Visual Studio Profiler**: Performance and memory profiling
 - **PowerShell Scripts**: Automated testing and analysis workflows
 - **JSON/CSV Export**: Performance data analysis and reporting
 
 **Testing Strategy:**
 
-- Automated test coverage analysis with 100% line coverage target
-- Comprehensive performance benchmarking with regression detection
-- Memory optimization with leak detection and object pooling
-- Production readiness validation with quality gates
+- Automated test coverage analysis with 100% line coverage target using TestOutput framework
+- Comprehensive performance benchmarking with TestOutput timing methods
+- Memory optimization with leak detection using TestOutput memory reporting
+- Production readiness validation with TestOutput-based quality gates
+- OpenGL context awareness in all graphics-related physics tests
+- Mock resource usage for resource-dependent physics tests
 
 **Quality Gates:**
 

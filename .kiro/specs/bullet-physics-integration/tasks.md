@@ -188,7 +188,7 @@
   - ✅ Created integration tests for character physics behavior (CharacterBehaviorSimpleTest)
   - ✅ Added performance benchmarks for physics operations (PhysicsPerformanceSimpleTest)
   - ✅ Implemented memory usage and leak detection tests (MemoryUsageSimpleTest)
-  - ✅ Created PowerShell test script for automated test execution (run_physics_tests.ps1)
+  - ✅ Created PowerShell test script for automated test execution (.\scripts\run_physics_tests.bat)
   - ✅ All tests pass successfully with comprehensive coverage of physics integration
   - _Requirements: 1.1, 1.2, 1.3, 2.1, 2.2, 2.3, 3.1, 3.2_
 

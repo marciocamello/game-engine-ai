@@ -13,6 +13,15 @@ namespace GameEngine {
         Math::Vec2 texCoords;
         Math::Vec3 tangent;
         Math::Vec3 bitangent;
+        Math::Vec4 color = Math::Vec4(1.0f, 1.0f, 1.0f, 1.0f); // Default white color
+        
+        // Skinning data (for future animation support)
+        Math::Vec4 boneIds = Math::Vec4(0.0f);
+        Math::Vec4 boneWeights = Math::Vec4(0.0f);
+        
+        // Additional texture coordinates (for future use)
+        Math::Vec2 texCoords2 = Math::Vec2(0.0f);
+        Math::Vec2 texCoords3 = Math::Vec2(0.0f);
     };
 
     class Mesh : public Resource {
@@ -29,6 +38,14 @@ namespace GameEngine {
         
         const std::vector<Vertex>& GetVertices() const { return m_vertices; }
         const std::vector<uint32_t>& GetIndices() const { return m_indices; }
+        
+        // Statistics methods
+        uint32_t GetVertexCount() const { return static_cast<uint32_t>(m_vertices.size()); }
+        uint32_t GetTriangleCount() const { return static_cast<uint32_t>(m_indices.size() / 3); }
+        
+        // Name management
+        void SetName(const std::string& name) { m_name = name; }
+        const std::string& GetName() const { return m_name; }
         
         uint32_t GetVAO() const { return m_VAO; }
         uint32_t GetVBO() const { return m_VBO; }
@@ -52,6 +69,7 @@ namespace GameEngine {
         // CPU data (always available)
         std::vector<Vertex> m_vertices;
         std::vector<uint32_t> m_indices;
+        std::string m_name;
         
         // GPU resources (created lazily)
         mutable uint32_t m_VAO = 0;

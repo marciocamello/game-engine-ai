@@ -11,7 +11,8 @@
         "nlohmann-json",
         "fmt",
         "openal-soft",
-        "bullet3"
+        "bullet3",
+        "assimp"
     ],
     "features": {
         "full": {

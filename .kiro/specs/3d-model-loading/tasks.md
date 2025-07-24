@@ -1,6 +1,6 @@
 # Implementation Plan - 3D Model Loading System
 
-- [ ] 1. Set up Assimp integration and core infrastructure
+- [x] 1. Set up Assimp integration and core infrastructure
 
   - Add Assimp dependency to vcpkg.json and CMakeLists.txt configuration
   - Create ModelLoader class with basic Assimp importer initialization
@@ -238,3 +238,9 @@
   - Test error handling and recovery with corrupted and invalid files
   - Verify integration with graphics, animation, and physics systems
   - _Requirements: 1.1, 6.5, 9.7, 7.7_
+
+## Build and Development Notes
+
+**Windows Development Workflow:**
+
+- Use `.\scripts\build.bat` to build project

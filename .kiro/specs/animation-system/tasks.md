@@ -216,3 +216,9 @@
   - Test memory usage and optimization under various scenarios
   - Verify animation quality and visual correctness across all features
   - _Requirements: 9.1, 9.3, 10.7, 1.5_
+
+## Build and Development Notes
+
+**Windows Development Workflow:**
+
+- Use `.\scripts\build.bat` to build project

@@ -381,6 +381,9 @@ add_integration_test(ErrorHandlingTest tests/integration/test_error_handling.cpp
 # Final v1.0 Validation integration test
 add_integration_test(FinalV1ValidationTest tests/integration/test_final_v1_validation.cpp)
 
+# ModelLoader Assimp integration test
+add_integration_test(ModelLoaderAssimpTest tests/integration/test_model_loader_assimp.cpp)
+
 # Discover and add unit tests automatically
 discover_and_add_tests("tests/unit" "unit")
 

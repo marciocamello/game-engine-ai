@@ -216,3 +216,9 @@
   - Test hot-reload system stability under continuous development workflow
   - Verify cross-platform compatibility and hardware fallback behavior
   - _Requirements: 7.7, 9.4, 1.6, 8.6_
+
+## Build and Development Notes
+
+**Windows Development Workflow:**
+
+- Use `.\scripts\build.bat` to build project

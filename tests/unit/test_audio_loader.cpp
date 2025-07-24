@@ -150,13 +150,113 @@ bool TestWAVLoadingErrors() {
     AudioData data = loader.LoadWAV("nonexistent.wav");
     EXPECT_FALSE(data.isValid);
 
-    // Test non-WAV file
+    // Test empty filename
+    data = loader.LoadWAV("");
+    EXPECT_FALSE(data.isValid);
+
+    // Test invalid file extension (should still try to load but fail)
     data = loader.LoadWAV("test.mp3");
     EXPECT_FALSE(data.isValid);
 
     TestOutput::PrintTestPass("WAV loading error handling");
     return true;
 }
+
+bool TestOGGFileDetection() {
+    TestOutput::PrintTestStart("OGG file detection");
+
+    EXPECT_TRUE(AudioLoader::IsOGGFile("test.ogg"));
+    EXPECT_TRUE(AudioLoader::IsOGGFile("TEST.OGG"));
+    EXPECT_TRUE(AudioLoader::IsOGGFile("path/to/file.ogg"));
+    EXPECT_FALSE(AudioLoader::IsOGGFile("test.wav"));
+    EXPECT_FALSE(AudioLoader::IsOGGFile("test.mp3"));
+    EXPECT_FALSE(AudioLoader::IsOGGFile("test"));
+    EXPECT_FALSE(AudioLoader::IsOGGFile(""));
+
+    TestOutput::PrintTestPass("OGG file detection");
+    return true;
+}
+
+bool TestOGGLoadingErrors() {
+    TestOutput::PrintTestStart("OGG loading error handling");
+
+    AudioLoader loader;
+
+    // Test non-existent file
+    AudioData data = loader.LoadOGG("nonexistent.ogg");
+    EXPECT_FALSE(data.isValid);
+
+    // Test empty filename
+    data = loader.LoadOGG("");
+    EXPECT_FALSE(data.isValid);
+
+    // Test invalid file (WAV file with OGG extension)
+    const std::string fakeOggFile = "fake.ogg";
+    if (CreateTestWAVFile(fakeOggFile)) {
+        data = loader.LoadOGG(fakeOggFile);
+        EXPECT_FALSE(data.isValid); // Should fail because it's not actually OGG
+        std::remove(fakeOggFile.c_str());
+    }
+
+    TestOutput::PrintTestPass("OGG loading error handling");
+    return true;
+}
+
+bool TestUnifiedAudioLoading() {
+    TestOutput::PrintTestStart("Unified audio loading interface");
+
+    AudioLoader loader;
+
+    // Create test WAV file
+    const std::string wavFile = "test_unified.wav";
+    if (CreateTestWAVFile(wavFile)) {
+        AudioData data = loader.LoadAudio(wavFile);
+        EXPECT_TRUE(data.isValid);
+        EXPECT_EQUAL(data.sampleRate, 44100u);
+        EXPECT_EQUAL(data.channels, 2);
+        std::remove(wavFile.c_str());
+    }
+
+    // Test with non-existent file
+    AudioData data = loader.LoadAudio("nonexistent_unified.wav");
+    EXPECT_FALSE(data.isValid);
+
+    // Test with empty filename
+    data = loader.LoadAudio("");
+    EXPECT_FALSE(data.isValid);
+
+    TestOutput::PrintTestPass("Unified audio loading interface");
+    return true;
+}
+
+#ifdef GAMEENGINE_HAS_OPENAL
+bool TestOpenALFormatConversion() {
+    TestOutput::PrintTestStart("OpenAL format conversion");
+
+    // Test various channel/bit combinations
+    ALenum format1 = AudioLoader::GetOpenALFormat(1, 8);  // Mono 8-bit
+    ALenum format2 = AudioLoader::GetOpenALFormat(1, 16); // Mono 16-bit
+    ALenum format3 = AudioLoader::GetOpenALFormat(2, 8);  // Stereo 8-bit
+    ALenum format4 = AudioLoader::GetOpenALFormat(2, 16); // Stereo 16-bit
+
+    EXPECT_TRUE(format1 == AL_FORMAT_MONO8);
+    EXPECT_TRUE(format2 == AL_FORMAT_MONO16);
+    EXPECT_TRUE(format3 == AL_FORMAT_STEREO8);
+    EXPECT_TRUE(format4 == AL_FORMAT_STEREO16);
+
+    // Test unsupported formats
+    ALenum invalidFormat1 = AudioLoader::GetOpenALFormat(3, 16); // 3 channels
+    ALenum invalidFormat2 = AudioLoader::GetOpenALFormat(2, 24); // 24-bit
+    ALenum invalidFormat3 = AudioLoader::GetOpenALFormat(0, 16); // 0 channels
+
+    EXPECT_TRUE(invalidFormat1 == AL_NONE);
+    EXPECT_TRUE(invalidFormat2 == AL_NONE);
+    EXPECT_TRUE(invalidFormat3 == AL_NONE);
+
+    TestOutput::PrintTestPass("OpenAL format conversion");
+    return true;
+}
+#endif
 
 #ifdef GAMEENGINE_HAS_OPENAL
 bool TestOpenALBufferCreation() {
@@ -230,11 +330,15 @@ int main() {
     allPassed &= suite.RunTest("WAV Loading", TestWAVLoading);
     allPassed &= suite.RunTest("WAV Different Formats", TestWAVLoadingDifferentFormats);
     allPassed &= suite.RunTest("WAV Error Handling", TestWAVLoadingErrors);
+    allPassed &= suite.RunTest("OGG Detection", TestOGGFileDetection);
+    allPassed &= suite.RunTest("OGG Error Handling", TestOGGLoadingErrors);
+    allPassed &= suite.RunTest("Unified Audio Loading", TestUnifiedAudioLoading);
 
-// OpenAL buffer creation test disabled - requires OpenAL context initialization
-// #ifdef GAMEENGINE_HAS_OPENAL
-//     allPassed &= suite.RunTest("OpenAL Buffer Creation", TestOpenALBufferCreation);
-// #endif
+#ifdef GAMEENGINE_HAS_OPENAL
+    allPassed &= suite.RunTest("OpenAL Format Conversion", TestOpenALFormatConversion);
+    // OpenAL buffer creation test disabled - requires OpenAL context initialization
+    // allPassed &= suite.RunTest("OpenAL Buffer Creation", TestOpenALBufferCreation);
+#endif
 
     suite.PrintSummary();
     TestOutput::PrintFooter(allPassed);

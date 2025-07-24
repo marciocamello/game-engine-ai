@@ -35,6 +35,7 @@ namespace GameEngine {
 
         bool LoadFromFile(const std::string& filepath);
         bool CreateEmpty(int width, int height, TextureFormat format = TextureFormat::RGBA);
+        void CreateDefault(); // Creates fallback pink/magenta texture
         
         void Bind(uint32_t slot = 0) const;
         void Unbind() const;

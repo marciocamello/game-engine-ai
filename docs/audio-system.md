@@ -58,9 +58,12 @@ AudioEngine
 ```cpp
 // Initialize audio system
 AudioEngine audioEngine;
-audioEngine.Initialize();
+if (!audioEngine.Initialize()) {
+    LOG_ERROR("Failed to initialize audio system");
+    return false;
+}
 
-// Load audio clips
+// Load audio clips (returns shared_ptr)
 auto clip = audioEngine.LoadAudioClip("assets/audio/sound.wav");
 auto music = audioEngine.LoadAudioClip("assets/audio/music.ogg");
 
@@ -69,6 +72,27 @@ uint32_t sourceId = audioEngine.CreateAudioSource();
 audioEngine.PlayAudioSource(sourceId, clip);
 audioEngine.SetAudioSourcePosition(sourceId, Math::Vec3(10.0f, 0.0f, 5.0f));
 audioEngine.SetAudioSourceVolume(sourceId, 0.8f);
+audioEngine.SetAudioSourceLooping(sourceId, true);
+
+// Error handling and recovery
+if (!audioEngine.IsAudioAvailable()) {
+    LOG_WARNING("Audio system not available");
+} else if (!audioEngine.IsOpenALInitialized()) {
+    if (audioEngine.AttemptAudioRecovery()) {
+        LOG_INFO("Audio system recovered");
+    }
+}
+
+// Performance optimization
+audioEngine.EnableBufferPooling(true);
+audioEngine.EnableSourcePooling(true);
+audioEngine.SetBufferPoolSize(64);
+audioEngine.SetSourcePoolSize(8, 32);
+
+// Performance monitoring
+float bufferHitRatio = audioEngine.GetBufferPoolHitRatio();
+float sourceUtilization = audioEngine.GetSourcePoolUtilization();
+size_t bufferMemory = audioEngine.GetBufferPoolMemoryUsage();
 ```
 
 ### AudioLoader
@@ -192,6 +216,211 @@ LOG_INFO("Channels: " + std::to_string(clip->channels));
 LOG_INFO("Sample Rate: " + std::to_string(clip->sampleRate) + "Hz");
 ```
 
+## Complete Usage Examples
+
+### Basic Audio Setup
+
+```cpp
+#include "Audio/AudioEngine.h"
+#include "Core/Engine.h"
+
+// Initialize audio system
+auto* audioEngine = engine.GetAudio();
+if (!audioEngine->Initialize()) {
+    LOG_ERROR("Failed to initialize audio system");
+    return false;
+}
+
+// Load various audio formats
+auto jumpSound = audioEngine->LoadAudioClip("assets/audio/jump.wav");
+auto backgroundMusic = audioEngine->LoadAudioClip("assets/audio/music.ogg");
+auto footstepSound = audioEngine->LoadAudioClip("assets/audio/footstep.wav");
+
+// Create audio sources
+uint32_t jumpSourceId = audioEngine->CreateAudioSource();
+uint32_t musicSourceId = audioEngine->CreateAudioSource();
+uint32_t footstepSourceId = audioEngine->CreateAudioSource();
+```
+
+### 3D Spatial Audio Implementation
+
+```cpp
+// Character-based 3D audio
+void UpdateCharacterAudio(float deltaTime) {
+    // Update listener position to character position
+    Math::Vec3 characterPos = character->GetPosition();
+    Math::Vec3 cameraForward = camera->GetForward();
+    Math::Vec3 cameraUp = camera->GetUp();
+
+    audioEngine->SetListenerPosition(characterPos);
+    audioEngine->SetListenerOrientation(cameraForward, cameraUp);
+
+    // Position footstep sounds at character feet
+    audioEngine->SetAudioSourcePosition(footstepSourceId,
+        Math::Vec3(characterPos.x, characterPos.y - 0.9f, characterPos.z));
+
+    // Play footsteps based on movement
+    if (character->IsGrounded() && character->GetVelocity().length() > 0.1f) {
+        static float footstepTimer = 0.0f;
+        footstepTimer += deltaTime;
+
+        if (footstepTimer >= 0.5f) { // Every 0.5 seconds
+            audioEngine->PlayAudioSource(footstepSourceId, footstepSound);
+            footstepTimer = 0.0f;
+        }
+    }
+}
+
+// Environmental 3D audio sources
+void SetupEnvironmentalAudio() {
+    // Create positioned audio sources around the world
+    struct AudioSource3D {
+        uint32_t sourceId;
+        Math::Vec3 position;
+        std::shared_ptr<AudioClip> clip;
+        std::string description;
+    };
+
+    std::vector<AudioSource3D> environmentalSources = {
+        {audioEngine->CreateAudioSource(), {10.0f, 1.0f, 0.0f}, windSound, "Wind source"},
+        {audioEngine->CreateAudioSource(), {-5.0f, 2.0f, 8.0f}, waterSound, "Water source"},
+        {audioEngine->CreateAudioSource(), {0.0f, 5.0f, -10.0f}, birdSound, "Bird source"}
+    };
+
+    for (auto& source : environmentalSources) {
+        audioEngine->SetAudioSourcePosition(source.sourceId, source.position);
+        audioEngine->SetAudioSourceLooping(source.sourceId, true);
+        audioEngine->SetAudioSourceVolume(source.sourceId, 0.6f);
+        audioEngine->PlayAudioSource(source.sourceId, source.clip);
+
+        LOG_INFO("Created environmental audio: " + source.description);
+    }
+}
+```
+
+### Performance Optimization
+
+```cpp
+// Optimize audio system for better performance
+void OptimizeAudioSystem() {
+    // Enable performance features
+    audioEngine->EnableBufferPooling(true);
+    audioEngine->EnableSourcePooling(true);
+    audioEngine->EnableOptimized3DAudio(true);
+
+    // Configure pool sizes based on game requirements
+    audioEngine->SetBufferPoolSize(64);        // 64 audio buffers
+    audioEngine->SetSourcePoolSize(16, 64);    // 16-64 audio sources
+
+    // Mark frequently used audio as "hot" for optimization
+    audioEngine->MarkAudioAsHot("assets/audio/footstep.wav");
+    audioEngine->MarkAudioAsHot("assets/audio/jump.wav");
+    audioEngine->MarkAudioAsHot("assets/audio/ui_click.wav");
+
+    // Set volume levels for different audio categories
+    audioEngine->SetMasterVolume(1.0f);
+    audioEngine->SetMusicVolume(0.7f);
+    audioEngine->SetSFXVolume(0.8f);
+}
+
+// Monitor audio performance
+void MonitorAudioPerformance() {
+    float bufferHitRatio = audioEngine->GetBufferPoolHitRatio();
+    float sourceUtilization = audioEngine->GetSourcePoolUtilization();
+    size_t bufferMemory = audioEngine->GetBufferPoolMemoryUsage();
+    int calculations = audioEngine->GetAudio3DCalculationsPerSecond();
+
+    LOG_INFO("Audio Performance Metrics:");
+    LOG_INFO("  Buffer pool hit ratio: " + std::to_string(bufferHitRatio * 100) + "%");
+    LOG_INFO("  Source pool utilization: " + std::to_string(sourceUtilization * 100) + "%");
+    LOG_INFO("  Buffer memory usage: " + std::to_string(bufferMemory / 1024) + " KB");
+    LOG_INFO("  3D calculations per second: " + std::to_string(calculations));
+
+    // Optimize if performance is poor
+    if (bufferHitRatio < 0.8f) {
+        audioEngine->SetBufferPoolSize(audioEngine->GetBufferPoolSize() * 1.5f);
+        LOG_INFO("Increased buffer pool size due to low hit ratio");
+    }
+}
+```
+
+### Error Handling and Recovery
+
+```cpp
+// Comprehensive error handling
+void HandleAudioErrors() {
+    if (!audioEngine->IsAudioAvailable()) {
+        LOG_WARNING("Audio system not available, running in silent mode");
+        return;
+    }
+
+    if (!audioEngine->IsOpenALInitialized()) {
+        LOG_WARNING("OpenAL not initialized, attempting recovery...");
+
+        if (audioEngine->AttemptAudioRecovery()) {
+            LOG_INFO("Audio system recovered successfully");
+        } else {
+            LOG_ERROR("Audio recovery failed, disabling audio");
+            return;
+        }
+    }
+
+    // Handle device disconnection
+    audioEngine->HandleDeviceDisconnection();
+
+    // Check for OpenAL errors
+    if (!AudioEngine::CheckOpenALError("Audio operation")) {
+        LOG_ERROR("OpenAL error detected: " +
+                 AudioEngine::GetOpenALErrorString(alGetError()));
+    }
+}
+```
+
+### Integration with Game Systems
+
+```cpp
+// Character movement integration
+class Character {
+private:
+    uint32_t m_jumpAudioSource = 0;
+    uint32_t m_footstepAudioSource = 0;
+    std::shared_ptr<AudioClip> m_jumpSound;
+    std::shared_ptr<AudioClip> m_footstepSound;
+
+public:
+    void InitializeAudio(AudioEngine* audioEngine) {
+        m_jumpAudioSource = audioEngine->CreateAudioSource();
+        m_footstepAudioSource = audioEngine->CreateAudioSource();
+
+        m_jumpSound = audioEngine->LoadAudioClip("assets/audio/jump.wav");
+        m_footstepSound = audioEngine->LoadAudioClip("assets/audio/footstep.wav");
+    }
+
+    void Jump() {
+        // Physics jump logic...
+
+        // Play jump sound at character position
+        audioEngine->SetAudioSourcePosition(m_jumpAudioSource, GetPosition());
+        audioEngine->PlayAudioSource(m_jumpAudioSource, m_jumpSound);
+    }
+
+    void UpdateAudio(float deltaTime) {
+        // Update footstep audio based on movement
+        if (IsGrounded() && GetVelocity().length() > 0.1f) {
+            static float timer = 0.0f;
+            timer += deltaTime;
+
+            float interval = 0.6f / (GetVelocity().length() / GetMaxSpeed());
+            if (timer >= interval) {
+                audioEngine->SetAudioSourcePosition(m_footstepAudioSource, GetPosition());
+                audioEngine->PlayAudioSource(m_footstepAudioSource, m_footstepSound);
+                timer = 0.0f;
+            }
+        }
+    }
+};
+```
+
 ## Future Enhancements
 
 ### Planned Features
@@ -201,6 +430,8 @@ LOG_INFO("Sample Rate: " + std::to_string(clip->sampleRate) + "Hz");
 - [ ] Advanced 3D audio effects (reverb, occlusion)
 - [ ] Audio compression options
 - [ ] Real-time audio processing
+- [ ] Dynamic audio mixing
+- [ ] Audio scripting system
 
 ### Integration Opportunities
 
@@ -208,6 +439,8 @@ LOG_INFO("Sample Rate: " + std::to_string(clip->sampleRate) + "Hz");
 - Dynamic range compression
 - Environmental audio effects
 - Procedural audio generation
+- Audio-driven visual effects
+- Spatial audio zones
 
 ## Dependencies
 

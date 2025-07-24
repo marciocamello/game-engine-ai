@@ -57,8 +57,7 @@ namespace GameEngine {
         if (!meshData.isValid) {
             Logger::GetInstance().Log(LogLevel::Error, "Failed to load mesh from file: " + filepath + 
                                      " - " + meshData.errorMessage);
-            Logger::GetInstance().Log(LogLevel::Info, "Creating default cube mesh as fallback");
-            CreateDefault();
+            Logger::GetInstance().Log(LogLevel::Info, "Mesh loading failed, but CreateDefault() can be called to create fallback mesh");
             return false;
         }
         
@@ -71,16 +70,47 @@ namespace GameEngine {
     }
     
     void Mesh::CreateDefault() {
-        Logger::GetInstance().Log(LogLevel::Info, "Creating default cube mesh");
+        Logger::GetInstance().Log(LogLevel::Info, "Creating default fallback cube mesh");
         
-        // Use MeshLoader to create default cube
-        auto defaultMesh = MeshLoader::CreateDefaultCube();
-        
-        // Copy the data from the default mesh
-        SetVertices(defaultMesh->GetVertices());
-        SetIndices(defaultMesh->GetIndices());
-        
-        Logger::GetInstance().Log(LogLevel::Info, "Default cube mesh created successfully");
+        try {
+            // Use MeshLoader to create default cube
+            auto defaultMesh = MeshLoader::CreateDefaultCube();
+            
+            if (!defaultMesh) {
+                LOG_ERROR("MeshLoader::CreateDefaultCube() returned null");
+                throw std::runtime_error("Failed to create default cube mesh");
+            }
+            
+            // Copy the data from the default mesh
+            SetVertices(defaultMesh->GetVertices());
+            SetIndices(defaultMesh->GetIndices());
+            
+            Logger::GetInstance().Log(LogLevel::Info, "Default fallback cube mesh created successfully (" + 
+                                     std::to_string(m_vertices.size()) + " vertices, " + 
+                                     std::to_string(m_indices.size()) + " indices)");
+            
+        } catch (const std::exception& e) {
+            LOG_ERROR("Exception while creating default mesh: " + std::string(e.what()));
+            
+            // Create a minimal fallback triangle if cube creation fails
+            LOG_INFO("Creating minimal triangle fallback");
+            
+            std::vector<Vertex> triangleVertices = {
+                {{-0.5f, -0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {0.0f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f}},
+                {{ 0.5f, -0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {1.0f, 0.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f}},
+                {{ 0.0f,  0.5f, 0.0f}, {0.0f, 0.0f, 1.0f}, {0.5f, 1.0f}, {1.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f}}
+            };
+            
+            std::vector<uint32_t> triangleIndices = {0, 1, 2};
+            
+            SetVertices(triangleVertices);
+            SetIndices(triangleIndices);
+            
+            LOG_INFO("Created minimal triangle fallback mesh");
+        } catch (...) {
+            LOG_ERROR("Unknown exception while creating default mesh");
+            throw;
+        }
     }
 
     void Mesh::SetVertices(const std::vector<Vertex>& vertices) {

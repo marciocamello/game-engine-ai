@@ -375,6 +375,12 @@ add_integration_test(AudioCameraIntegrationTest tests/integration/test_audio_cam
 # Resource Statistics integration test
 add_integration_test(ResourceStatisticsTest tests/integration/test_resource_statistics.cpp)
 
+# Error Handling integration test
+add_integration_test(ErrorHandlingTest tests/integration/test_error_handling.cpp)
+
+# Final v1.0 Validation integration test
+add_integration_test(FinalV1ValidationTest tests/integration/test_final_v1_validation.cpp)
+
 # Discover and add unit tests automatically
 discover_and_add_tests("tests/unit" "unit")
 

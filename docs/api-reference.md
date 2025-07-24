@@ -232,7 +232,7 @@ enum class KeyCode {
 
 ### AudioEngine
 
-3D spatial audio system with OpenAL backend.
+Complete 3D spatial audio system with OpenAL backend, supporting multiple audio formats and advanced performance optimizations.
 
 ```cpp
 class AudioEngine {
@@ -240,37 +240,360 @@ public:
     // Lifecycle
     bool Initialize();
     void Shutdown();
-    void Update();
+    void Update(float deltaTime);
 
-    // Audio Clips
-    uint32_t LoadAudioClip(const std::string& filepath);
-    void UnloadAudioClip(uint32_t clipId);
+    // Error handling and recovery
+    bool IsAudioAvailable() const;
+    bool IsOpenALInitialized() const;
+    bool AttemptAudioRecovery();
+    void HandleDeviceDisconnection();
 
-    // Audio Sources
+    // Audio clip management
+    std::shared_ptr<AudioClip> LoadAudioClip(const std::string& path);
+    void UnloadAudioClip(const std::string& path);
+
+    // Audio source management
     uint32_t CreateAudioSource();
     void DestroyAudioSource(uint32_t sourceId);
-
-    // Playback Control
-    void PlayAudioSource(uint32_t sourceId, uint32_t clipId);
+    void PlayAudioSource(uint32_t sourceId, std::shared_ptr<AudioClip> clip);
     void StopAudioSource(uint32_t sourceId);
     void PauseAudioSource(uint32_t sourceId);
-    void ResumeAudioSource(uint32_t sourceId);
-
-    // 3D Audio Properties
     void SetAudioSourcePosition(uint32_t sourceId, const Math::Vec3& position);
-    void SetAudioSourceVelocity(uint32_t sourceId, const Math::Vec3& velocity);
     void SetAudioSourceVolume(uint32_t sourceId, float volume);
     void SetAudioSourcePitch(uint32_t sourceId, float pitch);
     void SetAudioSourceLooping(uint32_t sourceId, bool looping);
 
-    // Listener (Camera) Properties
+    // Listener management
     void SetListenerPosition(const Math::Vec3& position);
-    void SetListenerVelocity(const Math::Vec3& velocity);
     void SetListenerOrientation(const Math::Vec3& forward, const Math::Vec3& up);
+    void SetListenerVelocity(const Math::Vec3& velocity);
 
-    // Global Settings
+    // Global settings
     void SetMasterVolume(float volume);
-    float GetMasterVolume() const;
+    void SetMusicVolume(float volume);
+    void SetSFXVolume(float volume);
+
+    // Performance optimization controls
+    void EnableBufferPooling(bool enabled);
+    void EnableSourcePooling(bool enabled);
+    void EnableOptimized3DAudio(bool enabled);
+    void SetBufferPoolSize(size_t maxSize);
+    void SetSourcePoolSize(size_t minSize, size_t maxSize);
+    void MarkAudioAsHot(const std::string& filepath);
+    void UnmarkAudioAsHot(const std::string& filepath);
+
+    // Performance statistics
+    float GetBufferPoolHitRatio() const;
+    float GetSourcePoolUtilization() const;
+    size_t GetBufferPoolMemoryUsage() const;
+    int GetAudio3DCalculationsPerSecond() const;
+
+    // OpenAL error checking
+    static bool CheckOpenALError(const std::string& operation);
+    static std::string GetOpenALErrorString(ALenum error);
+};
+```
+
+### AudioClip
+
+Audio clip structure with format support and metadata.
+
+```cpp
+enum class AudioFormat {
+    WAV,    // PCM WAV files (fully supported)
+    OGG,    // Ogg Vorbis files (fully supported)
+    MP3     // MP3 files (not implemented)
+};
+
+struct AudioClip {
+    std::string path;
+    AudioFormat format;
+    float duration = 0.0f;
+    int sampleRate = 44100;
+    int channels = 2;
+    bool is3D = true;
+
+#ifdef GAMEENGINE_HAS_OPENAL
+    ALuint bufferId = 0;
+#endif
+};
+```
+
+### AudioSource
+
+Individual audio source with 3D positioning and playback control.
+
+````cpp
+class AudioSource {
+public:
+    AudioSource(uint32_t id);
+    ~AudioSource();
+
+    void Play(std::shared_ptr<AudioClip> clip);
+    void Stop();
+    void Pause();
+    void Resume();
+
+    void SetPosition(const Math::Vec3& position);
+    void SetVolume(float volume);
+    void SetPitch(float pitch);
+    void SetLooping(bool looping);
+
+    bool IsPlaying() const;
+    bool IsPaused() const;
+    bool IsStopped() const;
+
+    // Get current playback state from OpenAL
+    bool GetOpenALPlayingState() const;
+
+    // Get source ID
+    uint32_t GetId() const;
+};
+
+### AudioListener
+
+Audio listener representing the player's ears in 3D space.
+
+```cpp
+class AudioListener {
+public:
+    AudioListener();
+    ~AudioListener();
+
+    void SetPosition(const Math::Vec3& position);
+    void SetOrientation(const Math::Vec3& forward, const Math::Vec3& up);
+    void SetVelocity(const Math::Vec3& velocity);
+};
+````
+
+**Audio System Usage Examples:**
+
+```cpp
+// Initialize audio system
+auto* audioEngine = engine.GetAudio();
+if (!audioEngine->Initialize()) {
+    LOG_ERROR("Failed to initialize audio system");
+    return false;
+}
+
+// Load audio clips
+auto jumpSound = audioEngine->LoadAudioClip("assets/audio/jump.wav");
+auto backgroundMusic = audioEngine->LoadAudioClip("assets/audio/music.ogg");
+
+// Create and configure audio sources
+uint32_t jumpSourceId = audioEngine->CreateAudioSource();
+uint32_t musicSourceId = audioEngine->CreateAudioSource();
+
+// Configure 3D positioned sound effect
+audioEngine->SetAudioSourcePosition(jumpSourceId, Math::Vec3(0.0f, 1.0f, 0.0f));
+audioEngine->SetAudioSourceVolume(jumpSourceId, 0.8f);
+
+// Configure background music (non-positional)
+audioEngine->SetAudioSourceLooping(musicSourceId, true);
+audioEngine->SetAudioSourceVolume(musicSourceId, 0.3f);
+
+// Play audio
+audioEngine->PlayAudioSource(jumpSourceId, jumpSound);
+audioEngine->PlayAudioSource(musicSourceId, backgroundMusic);
+
+// Update listener position (typically in game loop)
+Math::Vec3 playerPosition = character->GetPosition();
+Math::Vec3 cameraForward = camera->GetForward();
+Math::Vec3 cameraUp = camera->GetUp();
+
+audioEngine->SetListenerPosition(playerPosition);
+audioEngine->SetListenerOrientation(cameraForward, cameraUp);
+
+// Performance optimization
+audioEngine->EnableBufferPooling(true);
+audioEngine->EnableSourcePooling(true);
+audioEngine->SetBufferPoolSize(64);
+audioEngine->SetSourcePoolSize(8, 32);
+
+// Mark frequently used audio as "hot" for optimization
+audioEngine->MarkAudioAsHot("assets/audio/footstep.wav");
+audioEngine->MarkAudioAsHot("assets/audio/jump.wav");
+
+// Error handling and recovery
+if (!audioEngine->IsAudioAvailable()) {
+    LOG_WARNING("Audio system not available, continuing in silent mode");
+} else if (!audioEngine->IsOpenALInitialized()) {
+    if (audioEngine->AttemptAudioRecovery()) {
+        LOG_INFO("Audio system recovered successfully");
+    }
+}
+
+// Performance monitoring
+float bufferHitRatio = audioEngine->GetBufferPoolHitRatio();
+float sourceUtilization = audioEngine->GetSourcePoolUtilization();
+size_t bufferMemory = audioEngine->GetBufferPoolMemoryUsage();
+int calculations = audioEngine->GetAudio3DCalculationsPerSecond();
+
+LOG_INFO("Audio Performance:");
+LOG_INFO("  Buffer hit ratio: " + std::to_string(bufferHitRatio * 100) + "%");
+LOG_INFO("  Source utilization: " + std::to_string(sourceUtilization * 100) + "%");
+LOG_INFO("  Buffer memory: " + std::to_string(bufferMemory / 1024) + " KB");
+LOG_INFO("  3D calculations/sec: " + std::to_string(calculations));
+
+// Cleanup
+audioEngine->DestroyAudioSource(jumpSourceId);
+audioEngine->DestroyAudioSource(musicSourceId);
+audioEngine->UnloadAudioClip("assets/audio/jump.wav");
+audioEngine->UnloadAudioClip("assets/audio/music.ogg");
+```
+
+};
+
+````
+
+### AudioListener
+
+3D audio listener (typically follows the camera/player).
+
+```cpp
+class AudioListener {
+public:
+    AudioListener();
+    ~AudioListener();
+
+    void SetPosition(const Math::Vec3& position);
+    void SetOrientation(const Math::Vec3& forward, const Math::Vec3& up);
+    void SetVelocity(const Math::Vec3& velocity);
+};
+````
+
+**Supported Audio Formats:**
+
+- **WAV**: Full PCM support with custom parser
+- **OGG**: Ogg Vorbis support via STB Vorbis integration
+- **MP3**: Not implemented (patent concerns)
+
+**Performance Features:**
+
+- **Buffer Pooling**: Automatic caching of frequently used audio clips
+- **Source Pooling**: Reusable audio sources to reduce allocation overhead
+- **3D Audio Optimization**: Efficient spatial audio calculations
+- **Hot Audio Marking**: Priority loading for critical audio files
+- **Memory Management**: Automatic cleanup of unused audio resources
+
+**Usage Examples:**
+
+```cpp
+// Basic audio setup
+auto* audioEngine = engine.GetAudio();
+if (!audioEngine->Initialize()) {
+    LOG_ERROR("Failed to initialize audio system");
+    return false;
+}
+
+// Load audio clips (supports WAV and OGG)
+auto jumpSound = audioEngine->LoadAudioClip("assets/audio/jump.wav");
+auto backgroundMusic = audioEngine->LoadAudioClip("assets/audio/music.ogg");
+
+// Create and configure audio source
+uint32_t sourceId = audioEngine->CreateAudioSource();
+audioEngine->SetAudioSourcePosition(sourceId, Math::Vec3(10.0f, 1.0f, 0.0f));
+audioEngine->SetAudioSourceVolume(sourceId, 0.8f);
+audioEngine->SetAudioSourceLooping(sourceId, false);
+
+// Play audio
+audioEngine->PlayAudioSource(sourceId, jumpSound);
+
+// Background music with looping
+uint32_t musicSourceId = audioEngine->CreateAudioSource();
+audioEngine->SetAudioSourceLooping(musicSourceId, true);
+audioEngine->SetAudioSourceVolume(musicSourceId, 0.3f);
+audioEngine->PlayAudioSource(musicSourceId, backgroundMusic);
+
+// Update listener position (typically in game loop)
+Math::Vec3 playerPos = character->GetPosition();
+Math::Vec3 cameraForward = camera->GetForward();
+Math::Vec3 cameraUp = camera->GetUp();
+
+audioEngine->SetListenerPosition(playerPos);
+audioEngine->SetListenerOrientation(cameraForward, cameraUp);
+
+// Performance optimization
+audioEngine->EnableBufferPooling(true);
+audioEngine->EnableSourcePooling(true);
+audioEngine->SetSourcePoolSize(8, 32); // Min 8, Max 32 sources
+audioEngine->MarkAudioAsHot("assets/audio/footstep.wav"); // Priority loading
+
+// Error handling and recovery
+if (!audioEngine->IsAudioAvailable()) {
+    LOG_WARNING("Audio system not available, continuing in silent mode");
+} else if (!audioEngine->IsOpenALInitialized()) {
+    if (audioEngine->AttemptAudioRecovery()) {
+        LOG_INFO("Audio system recovered successfully");
+    }
+}
+
+// Performance monitoring
+float bufferHitRatio = audioEngine->GetBufferPoolHitRatio();
+float sourceUtilization = audioEngine->GetSourcePoolUtilization();
+size_t audioMemoryUsage = audioEngine->GetBufferPoolMemoryUsage();
+
+LOG_INFO("Audio Performance:");
+LOG_INFO("  Buffer hit ratio: " + std::to_string(bufferHitRatio * 100) + "%");
+LOG_INFO("  Source utilization: " + std::to_string(sourceUtilization * 100) + "%");
+LOG_INFO("  Memory usage: " + std::to_string(audioMemoryUsage / 1024) + " KB");
+
+// Cleanup
+audioEngine->DestroyAudioSource(sourceId);
+audioEngine->DestroyAudioSource(musicSourceId);
+audioEngine->Shutdown();
+```
+
+**Integration with Character System:**
+
+```cpp
+// Character audio integration example
+class Character {
+private:
+    uint32_t m_jumpSoundSource = 0;
+    uint32_t m_footstepSoundSource = 0;
+    std::shared_ptr<AudioClip> m_jumpSound;
+    std::shared_ptr<AudioClip> m_footstepSound;
+
+public:
+    bool Initialize(PhysicsEngine* physics, AudioEngine* audio) {
+        if (audio && audio->IsAudioAvailable()) {
+            // Load character sounds
+            m_jumpSound = audio->LoadAudioClip("assets/audio/jump.wav");
+            m_footstepSound = audio->LoadAudioClip("assets/audio/footstep.wav");
+
+            // Create audio sources
+            m_jumpSoundSource = audio->CreateAudioSource();
+            m_footstepSoundSource = audio->CreateAudioSource();
+
+            // Configure sources
+            audio->SetAudioSourceVolume(m_jumpSoundSource, 0.7f);
+            audio->SetAudioSourceVolume(m_footstepSoundSource, 0.5f);
+        }
+        return true;
+    }
+
+    void Jump() {
+        // Physics jump logic...
+
+        // Play jump sound at character position
+        if (m_jumpSoundSource != 0 && m_jumpSound) {
+            auto* audio = Engine::GetInstance().GetAudio();
+            audio->SetAudioSourcePosition(m_jumpSoundSource, GetPosition());
+            audio->PlayAudioSource(m_jumpSoundSource, m_jumpSound);
+        }
+    }
+
+    void Update(float deltaTime) {
+        // Update character logic...
+
+        // Update audio source positions
+        if (m_jumpSoundSource != 0) {
+            auto* audio = Engine::GetInstance().GetAudio();
+            audio->SetAudioSourcePosition(m_jumpSoundSource, GetPosition());
+            audio->SetAudioSourcePosition(m_footstepSoundSource, GetPosition());
+        }
+    }
 };
 ```
 
@@ -663,6 +986,20 @@ public:
 
 Comprehensive resource management system with automatic caching, memory management, and debugging capabilities. Enhanced with new statistics tracking and memory management features for improved testing and debugging.
 
+**Supported Resource Types:**
+
+- **Texture**: PNG, JPG, TGA image formats with STB integration
+- **Mesh**: OBJ 3D model format with vertex/normal/texture coordinate support
+- **AudioClip**: WAV and OGG audio formats (integrated with AudioEngine)
+
+**Key Features:**
+
+- **Automatic Caching**: Weak pointer-based caching prevents memory leaks
+- **Fallback Resources**: Default resources when loading fails (pink textures, cube meshes)
+- **Memory Management**: Automatic cleanup and memory pressure handling
+- **Performance Optimization**: GPU upload optimization and memory pooling
+- **Path Handling**: Smart path resolution to avoid asset directory duplication
+
 ```cpp
 class ResourceManager {
 public:
@@ -741,27 +1078,217 @@ public:
 };
 ```
 
+### Texture Resource
+
+Image texture resource with multiple format support.
+
+```cpp
+class Texture : public Resource {
+public:
+    Texture(const std::string& path);
+    ~Texture();
+
+    // Loading
+    bool LoadFromFile(const std::string& filepath);
+    void CreateDefault(); // Creates pink/magenta fallback texture
+
+    // Properties
+    int GetWidth() const;
+    int GetHeight() const;
+    int GetChannels() const;
+    GLuint GetTextureId() const;
+    bool IsValid() const;
+
+    // Memory Management
+    size_t GetMemoryUsage() const override;
+};
+```
+
+**Supported Texture Formats:**
+
+- **PNG**: Full RGBA support with transparency
+- **JPG**: RGB support, good for photographs
+- **TGA**: RGB/RGBA support, good for game assets
+
+### Mesh Resource
+
+3D mesh resource with OBJ format support.
+
+```cpp
+class Mesh : public Resource {
+public:
+    Mesh(const std::string& path);
+    ~Mesh();
+
+    // Loading
+    bool LoadFromFile(const std::string& filepath);
+    void CreateDefault(); // Creates default cube mesh
+
+    // Rendering
+    void Render() const;
+    GLuint GetVAO() const;
+
+    // Properties
+    const std::vector<float>& GetVertices() const;
+    const std::vector<unsigned int>& GetIndices() const;
+    size_t GetVertexCount() const;
+    size_t GetIndexCount() const;
+
+    // Memory Management
+    size_t GetMemoryUsage() const override;
+};
+```
+
+**Supported Mesh Features:**
+
+- **Vertices**: Position, normal, and texture coordinates
+- **Indices**: Triangle-based indexing for efficiency
+- **Materials**: Basic material support (future enhancement)
+
+### AudioClip Resource
+
+Audio clip resource integrated with AudioEngine.
+
+```cpp
+class AudioClip : public Resource {
+public:
+    AudioClip(const std::string& path);
+    ~AudioClip();
+
+    // Properties (from AudioEngine integration)
+    AudioFormat format;
+    float duration = 0.0f;
+    int sampleRate = 44100;
+    int channels = 2;
+    bool is3D = true;
+
+#ifdef GAMEENGINE_HAS_OPENAL
+    ALuint bufferId = 0;
+#endif
+
+    // Memory Management
+    size_t GetMemoryUsage() const override;
+};
+```
+
+**Supported Audio Formats:**
+
+- **WAV**: PCM audio with custom parser
+- **OGG**: Ogg Vorbis with STB integration
+- **MP3**: Not supported (patent concerns)
+
 **Usage Examples:**
 
 ```cpp
-// Basic resource loading
+// Basic resource loading with automatic fallbacks
 auto* resourceManager = engine.GetResourceManager();
-auto texture = resourceManager->Load<Texture>("textures/player.png");
-auto mesh = resourceManager->Load<Mesh>("models/character.obj");
 
-// Memory management
+// Load textures (supports PNG, JPG, TGA)
+auto wallTexture = resourceManager->Load<Texture>("assets/textures/wall.png");
+auto playerTexture = resourceManager->Load<Texture>("assets/textures/player.jpg");
+auto earthTexture = resourceManager->Load<Texture>("assets/textures/earth.tga");
+auto cowTexture = resourceManager->Load<Texture>("assets/textures/cow.png")
+
+// Load meshes (supports OBJ format)
+auto cubeMesh = resourceManager->Load<Mesh>("assets/meshes/cube.obj");
+auto characterMesh = resourceManager->Load<Mesh>("assets/meshes/character.obj");
+
+// Resource validation and fallback handling
+if (wallTexture && wallTexture->IsValid()) {
+    LOG_INFO("Texture loaded: " + std::to_string(wallTexture->GetWidth()) + "x" +
+             std::to_string(wallTexture->GetHeight()));
+} else {
+    LOG_INFO("Using fallback texture (pink/magenta)");
+}
+
+// Memory management and optimization
 resourceManager->SetMemoryPressureThreshold(256 * 1024 * 1024); // 256 MB
 resourceManager->CheckMemoryPressure(); // Manual check
 resourceManager->UnloadLeastRecentlyUsed(50 * 1024 * 1024); // Free 50 MB
+
+// Resource caching demonstration
+auto texture1 = resourceManager->Load<Texture>("assets/textures/wall.png");
+auto texture2 = resourceManager->Load<Texture>("assets/textures/wall.png");
+// texture1.get() == texture2.get() (same instance due to caching)
 
 // Statistics and debugging
 size_t totalMemory = resourceManager->GetMemoryUsage();
 size_t resourceCount = resourceManager->GetResourceCount();
 ResourceStats stats = resourceManager->GetResourceStats();
 
+LOG_INFO("Resource Statistics:");
+LOG_INFO("  Total resources: " + std::to_string(stats.totalResources));
+LOG_INFO("  Total memory: " + std::to_string(stats.totalMemoryUsage / 1024) + " KB");
+LOG_INFO("  Cache hit ratio: " + std::to_string(
+    (float)stats.cacheHits / (stats.cacheHits + stats.cacheMisses) * 100) + "%");
+
 // Detailed logging
 resourceManager->LogResourceUsage();
 resourceManager->LogDetailedResourceInfo();
+
+// Resource type breakdown
+for (const auto& pair : stats.resourcesByType) {
+    LOG_INFO("  " + pair.first + ": " + std::to_string(pair.second) + " resources");
+}
+
+for (const auto& pair : stats.memoryByType) {
+    LOG_INFO("  " + pair.first + ": " + std::to_string(pair.second / 1024) + " KB");
+}
+
+// Advanced usage examples
+// Load multiple texture formats
+auto wallPng = resourceManager->Load<Texture>("assets/textures/wall.png");
+auto wallJpg = resourceManager->Load<Texture>("assets/textures/wall.jpg");
+auto earthTga = resourceManager->Load<Texture>("assets/textures/earth.tga");
+
+// Load various mesh complexities
+auto cubeMesh = resourceManager->Load<Mesh>("assets/meshes/cube.obj");
+auto teapotMesh = resourceManager->Load<Mesh>("assets/meshes/teapot.obj");
+auto characterMesh = resourceManager->Load<Mesh>("assets/meshes/character.obj");
+
+// Resource caching demonstration
+auto texture1 = resourceManager->Load<Texture>("assets/textures/wall.png");
+auto texture2 = resourceManager->Load<Texture>("assets/textures/wall.png");
+// texture1.get() == texture2.get() (same instance due to caching)
+
+// Error handling with fallback resources
+auto missingTexture = resourceManager->Load<Texture>("nonexistent.png");
+// Returns pink/magenta fallback texture instead of nullptr
+
+// Performance optimization
+resourceManager->EnableMemoryPooling(true);
+resourceManager->EnableLRUCache(true);
+resourceManager->EnableGPUUploadOptimization(true);
+resourceManager->SetMemoryPoolSize(64 * 1024 * 1024); // 64 MB pool
+resourceManager->SetLRUCacheSize(1000, 128 * 1024 * 1024); // 1000 items, 128 MB max
+
+// Performance monitoring
+float cacheHitRatio = resourceManager->GetLRUCacheHitRatio();
+float poolUtilization = resourceManager->GetMemoryPoolUtilization();
+size_t uploadQueueSize = resourceManager->GetGPUUploadQueueSize();
+
+LOG_INFO("Resource Performance:");
+LOG_INFO("  Cache hit ratio: " + std::to_string(cacheHitRatio * 100) + "%");
+LOG_INFO("  Memory pool utilization: " + std::to_string(poolUtilization * 100) + "%");
+LOG_INFO("  GPU upload queue: " + std::to_string(uploadQueueSize) + " items");
+
+// Resource statistics analysis
+ResourceStats stats = resourceManager->GetResourceStats();
+LOG_INFO("Resource Statistics:");
+LOG_INFO("  Total resources: " + std::to_string(stats.totalResources));
+LOG_INFO("  Total memory: " + std::to_string(stats.totalMemoryUsage / 1024 / 1024) + " MB");
+LOG_INFO("  Cache hits: " + std::to_string(stats.cacheHits));
+LOG_INFO("  Cache misses: " + std::to_string(stats.cacheMisses));
+
+// Memory management strategies
+if (stats.totalMemoryUsage > 256 * 1024 * 1024) { // Over 256 MB
+    resourceManager->UnloadUnused(); // Remove unused resources first
+    resourceManager->UnloadLeastRecentlyUsed(64 * 1024 * 1024); // Free 64 MB
+}
+
+// Cleanup
+resourceManager->UnloadUnused(); // Remove unused resources
+resourceManager->UnloadAll();    // Remove all resources
 
 // Cleanup
 resourceManager->UnloadUnused(); // Remove unused resources
@@ -967,6 +1494,153 @@ uint32_t boxId = physics->CreateRigidBody(boxDesc);
 
 // Apply force
 physics->ApplyForce(boxId, Math::Vec3(100.0f, 0.0f, 0.0f));
+```
+
+### Complete Audio and Resource Integration
+
+```cpp
+#include "Core/Engine.h"
+#include "Game/Character.h"
+#include "Game/ThirdPersonCameraSystem.h"
+#include "Graphics/PrimitiveRenderer.h"
+
+class GameApplication {
+private:
+    Engine m_engine;
+    std::unique_ptr<Character> m_character;
+    std::unique_ptr<ThirdPersonCameraSystem> m_camera;
+    std::unique_ptr<PrimitiveRenderer> m_primitiveRenderer;
+
+    // Audio resources
+    std::shared_ptr<AudioClip> m_jumpSound;
+    std::shared_ptr<AudioClip> m_backgroundMusic;
+    uint32_t m_musicSourceId = 0;
+
+    // Visual resources
+    std::shared_ptr<Texture> m_wallTexture;
+    std::shared_ptr<Mesh> m_characterMesh;
+
+public:
+    bool Initialize() {
+        // Initialize engine
+        if (!m_engine.Initialize()) {
+            return false;
+        }
+
+        // Initialize systems
+        m_primitiveRenderer = std::make_unique<PrimitiveRenderer>();
+        m_primitiveRenderer->Initialize();
+
+        // Load resources
+        auto* resourceManager = m_engine.GetResourceManager();
+        m_jumpSound = resourceManager->Load<AudioClip>("assets/audio/jump.wav");
+        m_backgroundMusic = resourceManager->Load<AudioClip>("assets/audio/music.ogg");
+        m_wallTexture = resourceManager->Load<Texture>("assets/textures/wall.png");
+        m_characterMesh = resourceManager->Load<Mesh>("assets/meshes/character.obj");
+
+        // Setup audio
+        auto* audioEngine = m_engine.GetAudio();
+        if (audioEngine && audioEngine->IsAudioAvailable()) {
+            // Create background music source
+            m_musicSourceId = audioEngine->CreateAudioSource();
+            audioEngine->SetAudioSourceLooping(m_musicSourceId, true);
+            audioEngine->SetAudioSourceVolume(m_musicSourceId, 0.3f);
+            audioEngine->PlayAudioSource(m_musicSourceId, m_backgroundMusic);
+
+            LOG_INFO("Audio system initialized with background music");
+        }
+
+        // Setup character with audio integration
+        m_character = std::make_unique<Character>();
+        m_character->Initialize(m_engine.GetPhysics(), m_engine.GetAudio());
+
+        // Setup camera
+        m_camera = std::make_unique<ThirdPersonCameraSystem>();
+        m_camera->SetTarget(m_character.get());
+        m_engine.GetRenderer()->SetCamera(m_camera.get());
+
+        return true;
+    }
+
+    void Update(float deltaTime) {
+        // Update game objects
+        m_character->Update(deltaTime, m_engine.GetInput(), m_camera.get());
+        m_camera->Update(deltaTime, m_engine.GetInput());
+
+        // Update 3D audio listener
+        auto* audioEngine = m_engine.GetAudio();
+        if (audioEngine && audioEngine->IsAudioAvailable()) {
+            Math::Vec3 characterPos = m_character->GetPosition();
+            Math::Vec3 cameraForward = m_camera->GetForward();
+            Math::Vec3 cameraUp = m_camera->GetUp();
+
+            audioEngine->SetListenerPosition(characterPos);
+            audioEngine->SetListenerOrientation(cameraForward, cameraUp);
+        }
+
+        // Handle input for audio testing
+        auto* input = m_engine.GetInput();
+        if (input->IsKeyPressed(KeyCode::F3) && m_jumpSound) {
+            // Play jump sound at character position
+            uint32_t sourceId = audioEngine->CreateAudioSource();
+            audioEngine->SetAudioSourcePosition(sourceId, m_character->GetPosition());
+            audioEngine->PlayAudioSource(sourceId, m_jumpSound);
+        }
+    }
+
+    void Render() {
+        // Set view-projection matrix
+        Math::Mat4 viewProjection = m_camera->GetViewProjectionMatrix();
+        m_primitiveRenderer->SetViewProjectionMatrix(viewProjection);
+
+        // Render character with loaded mesh and texture
+        if (m_characterMesh && m_wallTexture) {
+            m_primitiveRenderer->DrawMesh(
+                m_characterMesh,
+                m_character->GetPosition(),
+                Math::Vec3(1.0f, 1.0f, 1.0f),
+                m_wallTexture
+            );
+        } else {
+            // Fallback to primitive rendering
+            m_character->Render(m_primitiveRenderer.get());
+        }
+
+        // Render environment with loaded textures
+        if (m_wallTexture && m_wallTexture->IsValid()) {
+            m_primitiveRenderer->DrawCube(
+                Math::Vec3(5.0f, 1.0f, 0.0f),
+                Math::Vec3(2.0f, 2.0f, 2.0f),
+                m_wallTexture
+            );
+        }
+    }
+
+    void Run() {
+        m_engine.SetUpdateCallback([this](float deltaTime) { Update(deltaTime); });
+        m_engine.SetRenderCallback([this]() { Render(); });
+        m_engine.Run();
+    }
+
+    ~GameApplication() {
+        // Cleanup audio sources
+        auto* audioEngine = m_engine.GetAudio();
+        if (audioEngine && m_musicSourceId != 0) {
+            audioEngine->DestroyAudioSource(m_musicSourceId);
+        }
+    }
+};
+
+int main() {
+    GameApplication app;
+    if (!app.Initialize()) {
+        LOG_CRITICAL("Failed to initialize application");
+        return -1;
+    }
+
+    app.Run();
+    return 0;
+}
 ```
 
 ### Audio Setup

@@ -153,6 +153,114 @@ bool TestImageDataStructure() {
     return true;
 }
 
+/**
+ * Test Texture fallback resource creation
+ * Requirements: 2.5, 4.3 (Fallback resources for missing files)
+ */
+bool TestTextureFallbackResource() {
+    TestOutput::PrintTestStart("texture fallback resource");
+
+    Texture texture;
+    
+    // Test creating default/fallback texture
+    texture.CreateDefault();
+    
+    // After creating default, texture should be valid
+    EXPECT_TRUE(texture.IsValid());
+    EXPECT_TRUE(texture.GetWidth() > 0);
+    EXPECT_TRUE(texture.GetHeight() > 0);
+    EXPECT_TRUE(texture.GetChannels() > 0);
+
+    TestOutput::PrintTestPass("texture fallback resource");
+    return true;
+}
+
+/**
+ * Test Texture memory usage calculation
+ * Requirements: 2.4, 5.3 (Memory usage tracking)
+ */
+bool TestTextureMemoryUsage() {
+    TestOutput::PrintTestStart("texture memory usage");
+
+    Texture texture;
+    
+    // Initial memory usage should be minimal
+    size_t initialMemory = texture.GetMemoryUsage();
+    EXPECT_TRUE(initialMemory >= sizeof(Texture));
+    
+    // Create a texture with known dimensions
+    bool created = texture.CreateEmpty(256, 256, TextureFormat::RGBA);
+    if (created) {
+        size_t afterCreation = texture.GetMemoryUsage();
+        EXPECT_TRUE(afterCreation >= initialMemory);
+        
+        // Memory usage should account for pixel data
+        // 256x256x4 bytes = 262,144 bytes minimum
+        EXPECT_TRUE(afterCreation >= 262144);
+    }
+
+    TestOutput::PrintTestPass("texture memory usage");
+    return true;
+}
+
+/**
+ * Test Texture format handling
+ * Requirements: 2.1, 4.3 (Texture format support)
+ */
+bool TestTextureFormats() {
+    TestOutput::PrintTestStart("texture formats");
+
+    Texture texture;
+    
+    // Test different texture formats
+    TextureFormat formats[] = {
+        TextureFormat::RGB,
+        TextureFormat::RGBA,
+        TextureFormat::Depth,
+        TextureFormat::DepthStencil
+    };
+    
+    for (auto format : formats) {
+        bool created = texture.CreateEmpty(64, 64, format);
+        // Creation success depends on OpenGL context availability
+        // But should not crash
+        
+        if (created) {
+            EXPECT_EQUAL(static_cast<int>(texture.GetFormat()), static_cast<int>(format));
+        }
+    }
+
+    TestOutput::PrintTestPass("texture formats");
+    return true;
+}
+
+/**
+ * Test Texture filter and wrap settings
+ * Requirements: 2.1 (Texture parameter configuration)
+ */
+bool TestTextureParameters() {
+    TestOutput::PrintTestStart("texture parameters");
+
+    Texture texture;
+    texture.CreateDefault(); // Create a valid texture
+    
+    // Test filter settings (should not crash)
+    texture.SetFilter(TextureFilter::Nearest, TextureFilter::Nearest);
+    texture.SetFilter(TextureFilter::Linear, TextureFilter::Linear);
+    texture.SetFilter(TextureFilter::LinearMipmapLinear, TextureFilter::Linear);
+    
+    // Test wrap settings (should not crash)
+    texture.SetWrap(TextureWrap::Repeat, TextureWrap::Repeat);
+    texture.SetWrap(TextureWrap::ClampToEdge, TextureWrap::ClampToEdge);
+    texture.SetWrap(TextureWrap::MirroredRepeat, TextureWrap::MirroredRepeat);
+    
+    // Test mipmap generation (should not crash)
+    texture.GenerateMipmaps();
+
+    TestOutput::PrintTestPass("texture parameters");
+    return true;
+}
+
 int main() {
     TestOutput::PrintHeader("Texture Loader");
 
@@ -172,6 +280,10 @@ int main() {
         allPassed &= suite.RunTest("Methods Without Context", TestTextureMethodsWithoutContext);
         allPassed &= suite.RunTest("Basic Functionality", TestTextureLoaderBasicFunctionality);
         allPassed &= suite.RunTest("ImageData Structure", TestImageDataStructure);
+        allPassed &= suite.RunTest("Texture Fallback Resource", TestTextureFallbackResource);
+        allPassed &= suite.RunTest("Texture Memory Usage", TestTextureMemoryUsage);
+        allPassed &= suite.RunTest("Texture Formats", TestTextureFormats);
+        allPassed &= suite.RunTest("Texture Parameters", TestTextureParameters);
 
         // Print detailed summary
         suite.PrintSummary();

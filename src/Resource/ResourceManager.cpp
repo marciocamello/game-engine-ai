@@ -1,10 +1,19 @@
 #include "Resource/ResourceManager.h"
+#include "Resource/ResourceMemoryPool.h"
+#include "Resource/LRUResourceCache.h"
+#include "Resource/GPUUploadOptimizer.h"
 #include "Core/Logger.h"
 #include <filesystem>
 #include <sstream>
 
 namespace GameEngine {
-    ResourceManager::ResourceManager() {
+    ResourceManager::ResourceManager() : m_lastMemoryPressureCheck(std::chrono::steady_clock::now()) {
+        // Initialize performance optimization components
+        m_memoryPool = std::make_unique<ResourceMemoryPool>();
+        m_lruCache = std::make_unique<LRUResourceCache<Resource>>();
+        m_gpuUploadOptimizer = std::make_unique<GPUUploadOptimizer>();
+        
+        LOG_DEBUG("ResourceManager created with performance optimizations");
     }
 
     ResourceManager::~ResourceManager() {
@@ -12,21 +21,111 @@ namespace GameEngine {
     }
 
     bool ResourceManager::Initialize() {
-        // Create assets directory if it doesn't exist
-        if (!std::filesystem::exists(m_assetDirectory)) {
-            std::filesystem::create_directories(m_assetDirectory);
-            LOG_INFO("Created assets directory: " + m_assetDirectory);
+        LOG_INFO("Initializing Resource Manager...");
+        
+        try {
+            // Create assets directory if it doesn't exist
+            if (!std::filesystem::exists(m_assetDirectory)) {
+                std::filesystem::create_directories(m_assetDirectory);
+                LOG_INFO("Created assets directory: " + m_assetDirectory);
+            } else {
+                LOG_INFO("Assets directory exists: " + m_assetDirectory);
+            }
+            
+            // Verify directory is writable
+            std::string testFile = m_assetDirectory + ".resource_manager_test";
+            try {
+                std::ofstream test(testFile);
+                if (test.is_open()) {
+                    test << "test";
+                    test.close();
+                    std::filesystem::remove(testFile);
+                    LOG_DEBUG("Assets directory is writable");
+                } else {
+                    LOG_WARNING("Assets directory may not be writable: " + m_assetDirectory);
+                }
+            } catch (const std::exception& e) {
+                LOG_WARNING("Could not verify assets directory writability: " + std::string(e.what()));
+            }
+            
+            // Initialize performance optimization components
+            if (m_memoryPoolingEnabled && m_memoryPool) {
+                m_memoryPool->PreallocatePool();
+            }
+            
+            if (m_gpuUploadOptimizationEnabled && m_gpuUploadOptimizer) {
+                m_gpuUploadOptimizer->Initialize();
+            }
+            
+            // Initialize error handling state
+            m_loadFailureCount = 0;
+            m_memoryPressureEvents = 0;
+            m_fallbackResourcesCreated = 0;
+            m_lastMemoryPressureCheck = std::chrono::steady_clock::now();
+            
+            LOG_INFO("Resource Manager initialized successfully");
+            LOG_INFO("  Assets directory: " + m_assetDirectory);
+            LOG_INFO("  Memory pressure threshold: " + std::to_string(m_memoryPressureThreshold / 1024 / 1024) + " MB");
+            LOG_INFO("  Auto memory management: " + std::string(m_autoMemoryManagement ? "enabled" : "disabled"));
+            LOG_INFO("  Fallback resources: " + std::string(m_fallbackResourcesEnabled ? "enabled" : "disabled"));
+            LOG_INFO("  Memory pooling: " + std::string(m_memoryPoolingEnabled ? "enabled" : "disabled"));
+            LOG_INFO("  LRU caching: " + std::string(m_lruCacheEnabled ? "enabled" : "disabled"));
+            LOG_INFO("  GPU upload optimization: " + std::string(m_gpuUploadOptimizationEnabled ? "enabled" : "disabled"));
+            
+            return true;
+            
+        } catch (const std::exception& e) {
+            LOG_ERROR("Failed to initialize Resource Manager: " + std::string(e.what()));
+            return false;
+        } catch (...) {
+            LOG_ERROR("Unknown exception while initializing Resource Manager");
+            return false;
         }
-
-        LOG_INFO("Resource Manager initialized");
-        return true;
     }
 
     void ResourceManager::Shutdown() {
-        UnloadAll();
-        LOG_INFO("Resource Manager shutdown - Total loads: " + std::to_string(m_totalLoads) + 
-                 ", Cache hits: " + std::to_string(m_cacheHits) + 
-                 ", Cache misses: " + std::to_string(m_cacheMisses));
+        LOG_INFO("Shutting down Resource Manager...");
+        
+        try {
+            // Shutdown performance optimization components
+            if (m_gpuUploadOptimizer) {
+                m_gpuUploadOptimizer->Shutdown();
+            }
+            
+            if (m_memoryPool) {
+                m_memoryPool->Clear();
+            }
+            
+            if (m_lruCache) {
+                m_lruCache->Clear();
+            }
+            
+            UnloadAll();
+            
+            // Reset performance components
+            m_memoryPool.reset();
+            m_lruCache.reset();
+            m_gpuUploadOptimizer.reset();
+            
+            // Log comprehensive statistics
+            std::stringstream ss;
+            ss << "Resource Manager shutdown statistics:\n";
+            ss << "  Total loads: " << m_totalLoads << "\n";
+            ss << "  Cache hits: " << m_cacheHits << " (" << (m_totalLoads > 0 ? (m_cacheHits * 100.0 / m_totalLoads) : 0.0) << "%)\n";
+            ss << "  Cache misses: " << m_cacheMisses << "\n";
+            ss << "  Load failures: " << m_loadFailureCount << "\n";
+            ss << "  Fallback resources created: " << m_fallbackResourcesCreated << "\n";
+            ss << "  LRU cleanups: " << m_lruCleanups << "\n";
+            ss << "  Memory pressure events: " << m_memoryPressureEvents;
+            
+            LOG_INFO(ss.str());
+            LOG_INFO("Resource Manager shutdown completed");
+            
+        } catch (const std::exception& e) {
+            LOG_ERROR("Exception during Resource Manager shutdown: " + std::string(e.what()));
+        } catch (...) {
+            LOG_ERROR("Unknown exception during Resource Manager shutdown");
+        }
     }
 
     void ResourceManager::UnloadAll() {
@@ -171,15 +270,141 @@ namespace GameEngine {
             return;
         }
         
-        size_t currentMemoryUsage = GetMemoryUsage();
+        // Throttle memory pressure checks to avoid excessive overhead
+        auto now = std::chrono::steady_clock::now();
+        auto timeSinceLastCheck = std::chrono::duration_cast<std::chrono::seconds>(now - m_lastMemoryPressureCheck);
+        if (timeSinceLastCheck.count() < 5) { // Check at most every 5 seconds
+            return;
+        }
+        m_lastMemoryPressureCheck = now;
         
-        if (currentMemoryUsage > m_memoryPressureThreshold) {
-            LOG_WARNING("Memory pressure detected: " + std::to_string(currentMemoryUsage / 1024 / 1024) + 
-                       " MB > " + std::to_string(m_memoryPressureThreshold / 1024 / 1024) + " MB threshold");
+        try {
+            size_t currentMemoryUsage = GetMemoryUsage();
             
-            // Try to free 25% of current memory usage
-            size_t targetReduction = currentMemoryUsage / 4;
-            UnloadLeastRecentlyUsed(targetReduction);
+            if (currentMemoryUsage > m_memoryPressureThreshold) {
+                LOG_WARNING("Memory pressure detected: " + std::to_string(currentMemoryUsage / 1024 / 1024) + 
+                           " MB > " + std::to_string(m_memoryPressureThreshold / 1024 / 1024) + " MB threshold");
+                
+                HandleMemoryPressure();
+            } else {
+                LOG_DEBUG("Memory usage within limits: " + std::to_string(currentMemoryUsage / 1024 / 1024) + " MB");
+            }
+        } catch (const std::exception& e) {
+            LOG_ERROR("Exception while checking memory pressure: " + std::string(e.what()));
+        } catch (...) {
+            LOG_ERROR("Unknown exception while checking memory pressure");
+        }
+    }
+
+    void ResourceManager::HandleMemoryPressure() {
+        ++m_memoryPressureEvents;
+        LOG_WARNING("Handling memory pressure event #" + std::to_string(m_memoryPressureEvents));
+        
+        try {
+            size_t currentMemoryUsage = GetMemoryUsage();
+            
+            // First, clean up expired references
+            UnloadUnused();
+            
+            size_t memoryAfterCleanup = GetMemoryUsage();
+            size_t freedByCleanup = currentMemoryUsage - memoryAfterCleanup;
+            
+            if (freedByCleanup > 0) {
+                LOG_INFO("Freed " + std::to_string(freedByCleanup / 1024 / 1024) + " MB by cleaning up expired references");
+            }
+            
+            // If still over threshold, use LRU cleanup
+            if (memoryAfterCleanup > m_memoryPressureThreshold) {
+                LOG_INFO("Still over threshold after cleanup, initiating LRU cleanup");
+                
+                // Try to free 30% of current memory usage
+                size_t targetReduction = memoryAfterCleanup * 30 / 100;
+                UnloadLeastRecentlyUsed(targetReduction);
+                
+                size_t finalMemoryUsage = GetMemoryUsage();
+                size_t totalFreed = currentMemoryUsage - finalMemoryUsage;
+                
+                LOG_INFO("Memory pressure handling completed. Freed " + 
+                        std::to_string(totalFreed / 1024 / 1024) + " MB total");
+                
+                if (finalMemoryUsage > m_memoryPressureThreshold) {
+                    LOG_WARNING("Memory usage still above threshold after cleanup: " + 
+                               std::to_string(finalMemoryUsage / 1024 / 1024) + " MB");
+                    
+                    // Consider more aggressive measures if this happens frequently
+                    if (m_memoryPressureEvents > 10) {
+                        LOG_WARNING("Frequent memory pressure events detected. Consider increasing threshold or reducing resource usage.");
+                    }
+                }
+            }
+            
+        } catch (const std::exception& e) {
+            LOG_ERROR("Exception while handling memory pressure: " + std::string(e.what()));
+        } catch (...) {
+            LOG_ERROR("Unknown exception while handling memory pressure");
+        }
+    }
+
+    void ResourceManager::HandleResourceLoadFailure(const std::string& path, const std::string& error) {
+        ++m_loadFailureCount;
+        
+        LOG_ERROR("Resource load failure #" + std::to_string(m_loadFailureCount) + 
+                 " for '" + path + "': " + error);
+        
+        // Log additional context for debugging
+        LOG_DEBUG("Resource load failure context:");
+        LOG_DEBUG("  Full path attempted: " + m_assetDirectory + path);
+        LOG_DEBUG("  Assets directory exists: " + std::string(std::filesystem::exists(m_assetDirectory) ? "yes" : "no"));
+        LOG_DEBUG("  Current memory usage: " + std::to_string(GetMemoryUsage() / 1024 / 1024) + " MB");
+        LOG_DEBUG("  Total resources loaded: " + std::to_string(GetResourceCount()));
+        
+        // Check if file exists and provide helpful error messages
+        std::string fullPath = m_assetDirectory + path;
+        if (!std::filesystem::exists(fullPath)) {
+            LOG_ERROR("File does not exist: " + fullPath);
+            
+            // Suggest similar files if any exist
+            try {
+                std::string directory = std::filesystem::path(fullPath).parent_path().string();
+                std::string filename = std::filesystem::path(fullPath).filename().string();
+                
+                if (std::filesystem::exists(directory)) {
+                    LOG_INFO("Files in directory " + directory + ":");
+                    for (const auto& entry : std::filesystem::directory_iterator(directory)) {
+                        if (entry.is_regular_file()) {
+                            LOG_INFO("  - " + entry.path().filename().string());
+                        }
+                    }
+                }
+            } catch (const std::exception& e) {
+                LOG_DEBUG("Could not list directory contents: " + std::string(e.what()));
+            }
+        } else {
+            LOG_ERROR("File exists but could not be loaded: " + fullPath);
+            
+            // Check file permissions and size
+            try {
+                auto fileSize = std::filesystem::file_size(fullPath);
+                LOG_DEBUG("File size: " + std::to_string(fileSize) + " bytes");
+                
+                if (fileSize == 0) {
+                    LOG_ERROR("File is empty: " + fullPath);
+                } else if (fileSize > 100 * 1024 * 1024) { // 100MB
+                    LOG_WARNING("File is very large: " + std::to_string(fileSize / 1024 / 1024) + " MB");
+                }
+            } catch (const std::exception& e) {
+                LOG_DEBUG("Could not get file information: " + std::string(e.what()));
+            }
+        }
+        
+        // If we have too many failures, suggest checking the asset directory
+        if (m_loadFailureCount > 5 && m_loadFailureCount % 5 == 0) {
+            LOG_WARNING("Multiple resource load failures detected (" + std::to_string(m_loadFailureCount) + 
+                       " total). Please verify:");
+            LOG_WARNING("  1. Asset files exist in: " + m_assetDirectory);
+            LOG_WARNING("  2. File paths are correct and case-sensitive");
+            LOG_WARNING("  3. File formats are supported");
+            LOG_WARNING("  4. Sufficient disk space and memory available");
         }
     }
 
@@ -272,5 +497,82 @@ namespace GameEngine {
             LOG_ERROR("Failed to export asset: " + std::string(e.what()));
             return false;
         }
+    }
+
+    // Performance optimization methods
+    void ResourceManager::EnableMemoryPooling(bool enabled) {
+        m_memoryPoolingEnabled = enabled;
+        LOG_INFO("ResourceManager memory pooling " + std::string(enabled ? "enabled" : "disabled"));
+        
+        if (enabled && m_memoryPool) {
+            m_memoryPool->EnablePooling(true);
+        } else if (m_memoryPool) {
+            m_memoryPool->EnablePooling(false);
+        }
+    }
+
+    void ResourceManager::EnableLRUCache(bool enabled) {
+        m_lruCacheEnabled = enabled;
+        LOG_INFO("ResourceManager LRU caching " + std::string(enabled ? "enabled" : "disabled"));
+        
+        if (!enabled && m_lruCache) {
+            m_lruCache->Clear();
+        }
+    }
+
+    void ResourceManager::EnableGPUUploadOptimization(bool enabled) {
+        m_gpuUploadOptimizationEnabled = enabled;
+        LOG_INFO("ResourceManager GPU upload optimization " + std::string(enabled ? "enabled" : "disabled"));
+        
+        if (enabled && m_gpuUploadOptimizer) {
+            m_gpuUploadOptimizer->EnableAsyncUploads(true);
+        } else if (m_gpuUploadOptimizer) {
+            m_gpuUploadOptimizer->EnableAsyncUploads(false);
+        }
+    }
+
+    void ResourceManager::SetMemoryPoolSize(size_t poolSize) {
+        if (m_memoryPool) {
+            m_memoryPool->SetPoolSize(poolSize);
+            LOG_INFO("ResourceManager memory pool size set to " + std::to_string(poolSize / 1024 / 1024) + " MB");
+        }
+    }
+
+    void ResourceManager::SetLRUCacheSize(size_t maxSize, size_t maxMemory) {
+        if (m_lruCache) {
+            m_lruCache->SetMaxSize(maxSize);
+            m_lruCache->SetMaxMemory(maxMemory);
+            LOG_INFO("ResourceManager LRU cache size set to " + std::to_string(maxSize) + 
+                    " resources, " + std::to_string(maxMemory / 1024 / 1024) + " MB");
+        }
+    }
+
+    void ResourceManager::SetGPUUploadBandwidth(size_t bytesPerSecond) {
+        if (m_gpuUploadOptimizer) {
+            m_gpuUploadOptimizer->SetMaxUploadBandwidth(bytesPerSecond);
+            LOG_INFO("ResourceManager GPU upload bandwidth set to " + 
+                    std::to_string(bytesPerSecond / 1024 / 1024) + " MB/s");
+        }
+    }
+
+    float ResourceManager::GetLRUCacheHitRatio() const {
+        if (m_lruCache) {
+            return m_lruCache->GetHitRatio();
+        }
+        return 0.0f;
+    }
+
+    float ResourceManager::GetMemoryPoolUtilization() const {
+        if (m_memoryPool) {
+            return m_memoryPool->GetUtilization();
+        }
+        return 0.0f;
+    }
+
+    size_t ResourceManager::GetGPUUploadQueueSize() const {
+        if (m_gpuUploadOptimizer) {
+            return m_gpuUploadOptimizer->GetPendingUploadCount();
+        }
+        return 0;
     }
 }

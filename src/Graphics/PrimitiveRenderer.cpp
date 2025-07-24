@@ -1,6 +1,7 @@
 #include "Graphics/PrimitiveRenderer.h"
 #include "Graphics/Mesh.h"
 #include "Graphics/Shader.h"
+#include "Graphics/Texture.h"
 #include "Core/Logger.h"
 #include <cmath>
 
@@ -21,7 +22,8 @@ namespace GameEngine {
     }
 
     void PrimitiveRenderer::Shutdown() {
-        m_shader.reset();
+        m_colorShader.reset();
+        m_texturedShader.reset();
         m_cubeMesh.reset();
         m_sphereMesh.reset();
         m_capsuleMesh.reset();
@@ -30,10 +32,12 @@ namespace GameEngine {
     }
 
     void PrimitiveRenderer::CreateShaders() {
-        std::string vertexShader = R"(
+        // Color-only shader
+        std::string colorVertexShader = R"(
             #version 330 core
             layout (location = 0) in vec3 aPos;
             layout (location = 1) in vec3 aNormal;
+            layout (location = 2) in vec2 aTexCoords;
             
             uniform mat4 u_mvp;
             uniform mat4 u_model;
@@ -41,18 +45,21 @@ namespace GameEngine {
             
             out vec3 FragPos;
             out vec3 Normal;
+            out vec2 TexCoords;
             
             void main() {
                 FragPos = vec3(u_model * vec4(aPos, 1.0));
                 Normal = u_normalMatrix * aNormal;
+                TexCoords = aTexCoords;
                 gl_Position = u_mvp * vec4(aPos, 1.0);
             }
         )";
 
-        std::string fragmentShader = R"(
+        std::string colorFragmentShader = R"(
             #version 330 core
             in vec3 FragPos;
             in vec3 Normal;
+            in vec2 TexCoords;
             
             out vec4 FragColor;
             
@@ -84,8 +91,73 @@ namespace GameEngine {
             }
         )";
 
-        m_shader = std::make_shared<Shader>();
-        m_shader->LoadFromSource(vertexShader, fragmentShader);
+        // Textured shader
+        std::string texturedVertexShader = R"(
+            #version 330 core
+            layout (location = 0) in vec3 aPos;
+            layout (location = 1) in vec3 aNormal;
+            layout (location = 2) in vec2 aTexCoords;
+            
+            uniform mat4 u_mvp;
+            uniform mat4 u_model;
+            uniform mat3 u_normalMatrix;
+            
+            out vec3 FragPos;
+            out vec3 Normal;
+            out vec2 TexCoords;
+            
+            void main() {
+                FragPos = vec3(u_model * vec4(aPos, 1.0));
+                Normal = u_normalMatrix * aNormal;
+                TexCoords = aTexCoords;
+                gl_Position = u_mvp * vec4(aPos, 1.0);
+            }
+        )";
+
+        std::string texturedFragmentShader = R"(
+            #version 330 core
+            in vec3 FragPos;
+            in vec3 Normal;
+            in vec2 TexCoords;
+            
+            out vec4 FragColor;
+            
+            uniform sampler2D u_texture;
+            uniform vec3 u_lightPos;
+            uniform vec3 u_lightColor;
+            uniform vec3 u_viewPos;
+            
+            void main() {
+                // Sample texture
+                vec4 texColor = texture(u_texture, TexCoords);
+                
+                // Ambient
+                float ambientStrength = 0.3;
+                vec3 ambient = ambientStrength * u_lightColor;
+                
+                // Diffuse
+                vec3 norm = normalize(Normal);
+                vec3 lightDir = normalize(u_lightPos - FragPos);
+                float diff = max(dot(norm, lightDir), 0.0);
+                vec3 diffuse = diff * u_lightColor;
+                
+                // Specular
+                float specularStrength = 0.5;
+                vec3 viewDir = normalize(u_viewPos - FragPos);
+                vec3 reflectDir = reflect(-lightDir, norm);
+                float spec = pow(max(dot(viewDir, reflectDir), 0.0), 32);
+                vec3 specular = specularStrength * spec * u_lightColor;
+                
+                vec3 result = (ambient + diffuse + specular) * texColor.rgb;
+                FragColor = vec4(result, texColor.a);
+            }
+        )";
+
+        m_colorShader = std::make_shared<Shader>();
+        m_colorShader->LoadFromSource(colorVertexShader, colorFragmentShader);
+
+        m_texturedShader = std::make_shared<Shader>();
+        m_texturedShader->LoadFromSource(texturedVertexShader, texturedFragmentShader);
     }
 
     void PrimitiveRenderer::CreatePrimitiveMeshes() {
@@ -252,75 +324,90 @@ namespace GameEngine {
         m_viewProjectionMatrix = viewProjection;
     }
 
-    void PrimitiveRenderer::DrawCapsule(const Math::Vec3& position, float radius, float height, const Math::Vec4& color) {
-        if (!m_shader || !m_capsuleMesh) return;
+    void PrimitiveRenderer::DrawPrimitive(std::shared_ptr<Mesh> mesh, const Math::Vec3& position, const Math::Vec3& scale, const Math::Vec4& color, std::shared_ptr<Texture> texture) {
+        if (!mesh) return;
 
-        m_shader->Use();
+        std::shared_ptr<Shader> shader = texture ? m_texturedShader : m_colorShader;
+        if (!shader) return;
+
+        shader->Use();
         
         // Create model matrix
-        Math::Mat4 model = Math::CreateTransform(position, Math::Quat(1,0,0,0), Math::Vec3(radius, height, radius));
-        Math::Mat4 mvp = m_viewProjectionMatrix * model;
-        Math::Mat3 normalMatrix = Math::Mat3(glm::transpose(glm::inverse(model)));
-        
-        // Set uniforms
-        m_shader->SetMat4("u_mvp", mvp);
-        m_shader->SetMat4("u_model", model);
-        m_shader->SetMat3("u_normalMatrix", normalMatrix);
-        m_shader->SetVec4("u_color", color);
-        m_shader->SetVec3("u_lightPos", Math::Vec3(5.0f, 10.0f, 5.0f));
-        m_shader->SetVec3("u_lightColor", Math::Vec3(1.0f, 1.0f, 1.0f));
-        m_shader->SetVec3("u_viewPos", Math::Vec3(0.0f, 5.0f, 10.0f));
-        
-        m_capsuleMesh->Draw();
-    }
-
-    void PrimitiveRenderer::DrawCube(const Math::Vec3& position, const Math::Vec3& scale, const Math::Vec4& color) {
-        if (!m_shader || !m_cubeMesh) return;
-
-        m_shader->Use();
-        
         Math::Mat4 model = Math::CreateTransform(position, Math::Quat(1,0,0,0), scale);
         Math::Mat4 mvp = m_viewProjectionMatrix * model;
         Math::Mat3 normalMatrix = Math::Mat3(glm::transpose(glm::inverse(model)));
         
-        m_shader->SetMat4("u_mvp", mvp);
-        m_shader->SetMat4("u_model", model);
-        m_shader->SetMat3("u_normalMatrix", normalMatrix);
-        m_shader->SetVec4("u_color", color);
-        m_shader->SetVec3("u_lightPos", Math::Vec3(5.0f, 10.0f, 5.0f));
-        m_shader->SetVec3("u_lightColor", Math::Vec3(1.0f, 1.0f, 1.0f));
-        m_shader->SetVec3("u_viewPos", Math::Vec3(0.0f, 5.0f, 10.0f));
+        // Set common uniforms
+        shader->SetMat4("u_mvp", mvp);
+        shader->SetMat4("u_model", model);
+        shader->SetMat3("u_normalMatrix", normalMatrix);
+        shader->SetVec3("u_lightPos", Math::Vec3(5.0f, 10.0f, 5.0f));
+        shader->SetVec3("u_lightColor", Math::Vec3(1.0f, 1.0f, 1.0f));
+        shader->SetVec3("u_viewPos", Math::Vec3(0.0f, 5.0f, 10.0f));
         
-        m_cubeMesh->Draw();
+        // Set texture or color
+        if (texture) {
+            texture->Bind(0);
+            shader->SetInt("u_texture", 0);
+        } else {
+            shader->SetVec4("u_color", color);
+        }
+        
+        mesh->Draw();
+        
+        if (texture) {
+            texture->Unbind();
+        }
+    }
+
+    // Color-based primitive drawing methods
+    void PrimitiveRenderer::DrawCube(const Math::Vec3& position, const Math::Vec3& scale, const Math::Vec4& color) {
+        DrawPrimitive(m_cubeMesh, position, scale, color);
     }
 
     void PrimitiveRenderer::DrawSphere(const Math::Vec3& position, float radius, const Math::Vec4& color) {
-        // Use cube for now
-        DrawCube(position, Math::Vec3(radius), color);
+        DrawPrimitive(m_sphereMesh, position, Math::Vec3(radius), color);
+    }
+
+    void PrimitiveRenderer::DrawCapsule(const Math::Vec3& position, float radius, float height, const Math::Vec4& color) {
+        DrawPrimitive(m_capsuleMesh, position, Math::Vec3(radius, height, radius), color);
     }
 
     void PrimitiveRenderer::DrawCylinder(const Math::Vec3& position, float radius, float height, const Math::Vec4& color) {
-        // Use cube for now
-        DrawCube(position, Math::Vec3(radius, height, radius), color);
+        DrawPrimitive(m_cylinderMesh, position, Math::Vec3(radius, height, radius), color);
     }
 
     void PrimitiveRenderer::DrawPlane(const Math::Vec3& position, const Math::Vec2& size, const Math::Vec4& color) {
-        if (!m_shader || !m_planeMesh) return;
+        DrawPrimitive(m_planeMesh, position, Math::Vec3(size.x, 1.0f, size.y), color);
+    }
 
-        m_shader->Use();
-        
-        Math::Mat4 model = Math::CreateTransform(position, Math::Quat(1,0,0,0), Math::Vec3(size.x, 1.0f, size.y));
-        Math::Mat4 mvp = m_viewProjectionMatrix * model;
-        Math::Mat3 normalMatrix = Math::Mat3(glm::transpose(glm::inverse(model)));
-        
-        m_shader->SetMat4("u_mvp", mvp);
-        m_shader->SetMat4("u_model", model);
-        m_shader->SetMat3("u_normalMatrix", normalMatrix);
-        m_shader->SetVec4("u_color", color);
-        m_shader->SetVec3("u_lightPos", Math::Vec3(5.0f, 10.0f, 5.0f));
-        m_shader->SetVec3("u_lightColor", Math::Vec3(1.0f, 1.0f, 1.0f));
-        m_shader->SetVec3("u_viewPos", Math::Vec3(0.0f, 5.0f, 10.0f));
-        
-        m_planeMesh->Draw();
+    // Texture-based primitive drawing methods
+    void PrimitiveRenderer::DrawCube(const Math::Vec3& position, const Math::Vec3& scale, std::shared_ptr<Texture> texture) {
+        DrawPrimitive(m_cubeMesh, position, scale, Math::Vec4(1.0f), texture);
+    }
+
+    void PrimitiveRenderer::DrawSphere(const Math::Vec3& position, float radius, std::shared_ptr<Texture> texture) {
+        DrawPrimitive(m_sphereMesh, position, Math::Vec3(radius), Math::Vec4(1.0f), texture);
+    }
+
+    void PrimitiveRenderer::DrawCapsule(const Math::Vec3& position, float radius, float height, std::shared_ptr<Texture> texture) {
+        DrawPrimitive(m_capsuleMesh, position, Math::Vec3(radius, height, radius), Math::Vec4(1.0f), texture);
+    }
+
+    void PrimitiveRenderer::DrawCylinder(const Math::Vec3& position, float radius, float height, std::shared_ptr<Texture> texture) {
+        DrawPrimitive(m_cylinderMesh, position, Math::Vec3(radius, height, radius), Math::Vec4(1.0f), texture);
+    }
+
+    void PrimitiveRenderer::DrawPlane(const Math::Vec3& position, const Math::Vec2& size, std::shared_ptr<Texture> texture) {
+        DrawPrimitive(m_planeMesh, position, Math::Vec3(size.x, 1.0f, size.y), Math::Vec4(1.0f), texture);
+    }
+
+    // Mesh drawing methods
+    void PrimitiveRenderer::DrawMesh(std::shared_ptr<Mesh> mesh, const Math::Vec3& position, const Math::Vec3& scale, const Math::Vec4& color) {
+        DrawPrimitive(mesh, position, scale, color);
+    }
+
+    void PrimitiveRenderer::DrawMesh(std::shared_ptr<Mesh> mesh, const Math::Vec3& position, const Math::Vec3& scale, std::shared_ptr<Texture> texture) {
+        DrawPrimitive(mesh, position, scale, Math::Vec4(1.0f), texture);
     }
 }

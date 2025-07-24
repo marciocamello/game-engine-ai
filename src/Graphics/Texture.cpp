@@ -32,20 +32,7 @@ namespace GameEngine {
 
         if (!imageData.isValid) {
             LOG_ERROR("Failed to load texture from file: " + filepath);
-            // Set default properties for fallback
-            m_width = 2;
-            m_height = 2;
-            m_channels = 4;
-            m_format = TextureFormat::RGBA;
-            m_filepath = "[DEFAULT_TEXTURE]";
-            
-            // Create default image data (pink/magenta checkerboard)
-            m_imageData = {
-                255, 0, 255, 255,  // Magenta
-                0, 0, 0, 255,      // Black
-                0, 0, 0, 255,      // Black  
-                255, 0, 255, 255   // Magenta
-            };
+            LOG_INFO("Texture loading failed, but CreateDefault() can be called to create fallback texture");
             return false;
         }
 
@@ -165,41 +152,49 @@ namespace GameEngine {
         glBindTexture(GL_TEXTURE_2D, 0);
     }
 
-    void Texture::CreateDefaultTexture() {
-        // Create a 2x2 pink/magenta texture for missing files
-        const int width = 2;
-        const int height = 2;
+    void Texture::CreateDefault() {
+        LOG_INFO("Creating default fallback texture");
         
-        // Pink/magenta checkerboard pattern (RGBA)
-        unsigned char defaultData[] = {
-            255, 0, 255, 255,  // Magenta
-            0, 0, 0, 255,      // Black
-            0, 0, 0, 255,      // Black  
-            255, 0, 255, 255   // Magenta
-        };
+        try {
+            // Set default properties for fallback
+            m_width = 2;
+            m_height = 2;
+            m_channels = 4;
+            m_format = TextureFormat::RGBA;
+            m_filepath = "[DEFAULT_TEXTURE]";
+            
+            // Create default image data (pink/magenta checkerboard)
+            m_imageData = {
+                255, 0, 255, 255,  // Magenta
+                0, 0, 0, 255,      // Black
+                0, 0, 0, 255,      // Black  
+                255, 0, 255, 255   // Magenta
+            };
+            
+            // Reset GPU resources flag so they get recreated with new data
+            m_gpuResourcesCreated = false;
+            if (m_textureID != 0 && OpenGLContext::HasActiveContext()) {
+                glDeleteTextures(1, &m_textureID);
+                m_textureID = 0;
+            }
+            
+            LOG_INFO("Successfully created default fallback texture (2x2 pink/magenta checkerboard)");
+            
+        } catch (const std::exception& e) {
+            LOG_ERROR("Exception while creating default texture: " + std::string(e.what()));
+            throw;
+        } catch (...) {
+            LOG_ERROR("Unknown exception while creating default texture");
+            throw;
+        }
+    }
 
-        glGenTextures(1, &m_textureID);
-        glBindTexture(GL_TEXTURE_2D, m_textureID);
-
-        // Set texture parameters for pixel art (no filtering)
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-
-        // Upload texture data
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, defaultData);
-
-        glBindTexture(GL_TEXTURE_2D, 0);
-
-        // Store texture properties
-        m_width = width;
-        m_height = height;
-        m_channels = 4;
-        m_format = TextureFormat::RGBA;
-        m_filepath = "[DEFAULT_TEXTURE]";
-
-        LOG_INFO("Created default pink/magenta texture (ID: " + std::to_string(m_textureID) + ")");
+    void Texture::CreateDefaultTexture() {
+        // Legacy method - redirect to CreateDefault for consistency
+        CreateDefault();
+        
+        // Ensure GPU resources are created immediately for this legacy path
+        EnsureGPUResourcesCreated();
     }
 
     uint32_t Texture::GetGLFormat(TextureFormat format) const {

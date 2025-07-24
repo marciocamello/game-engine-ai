@@ -70,9 +70,9 @@
     - Create texture format conversion and validation
     - _Requirements: 2.4, 2.6, 9.2_
 
-- [ ] 5. Implement GLTF 2.0 format support
+- [-] 5. Implement GLTF 2.0 format support
 
-  - [ ] 5.1 Create GLTF scene parsing
+  - [-] 5.1 Create GLTF scene parsing
 
     - Implement GLTF JSON parsing with scene, node, and mesh extraction
     - Add GLTF binary (.glb) format support with embedded resources

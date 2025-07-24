@@ -423,4 +423,51 @@ namespace GameEngine {
         // Materials don't have names in the current implementation
         // This would be implemented when materials get name support
     }
+
+    void Model::AddMesh(std::shared_ptr<Mesh> mesh) {
+        if (mesh) {
+            m_meshes.push_back(mesh);
+            BuildMeshMap();
+            
+            // Update stats
+            m_stats.meshCount = static_cast<uint32_t>(m_meshes.size());
+            m_stats.totalVertices += mesh->GetVertexCount();
+            m_stats.totalTriangles += mesh->GetTriangleCount();
+        }
+    }
+
+    void Model::AddMaterial(std::shared_ptr<Material> material) {
+        if (material) {
+            m_materials.push_back(material);
+            BuildMaterialMap();
+            
+            // Update stats
+            m_stats.materialCount = static_cast<uint32_t>(m_materials.size());
+        }
+    }
+
+    void Model::SetMeshes(const std::vector<std::shared_ptr<Mesh>>& meshes) {
+        m_meshes = meshes;
+        BuildMeshMap();
+        
+        // Update stats
+        m_stats.meshCount = static_cast<uint32_t>(m_meshes.size());
+        m_stats.totalVertices = 0;
+        m_stats.totalTriangles = 0;
+        
+        for (const auto& mesh : m_meshes) {
+            if (mesh) {
+                m_stats.totalVertices += mesh->GetVertexCount();
+                m_stats.totalTriangles += mesh->GetTriangleCount();
+            }
+        }
+    }
+
+    void Model::SetMaterials(const std::vector<std::shared_ptr<Material>>& materials) {
+        m_materials = materials;
+        BuildMaterialMap();
+        
+        // Update stats
+        m_stats.materialCount = static_cast<uint32_t>(m_materials.size());
+    }
 }

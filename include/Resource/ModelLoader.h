@@ -14,6 +14,11 @@
 #include <assimp/postprocess.h>
 #endif
 
+// Forward declarations
+namespace GameEngine {
+    class GLTFLoader;
+}
+
 namespace GameEngine {
 
     /**
@@ -123,6 +128,9 @@ namespace GameEngine {
         uint32_t GetAssimpPostProcessFlags() const;
         void ValidateScene(const aiScene* scene) const;
 #endif
+
+        // GLTF loader
+        std::unique_ptr<GLTFLoader> m_gltfLoader;
 
         // Configuration
         LoadingFlags m_loadingFlags = LoadingFlags::None;

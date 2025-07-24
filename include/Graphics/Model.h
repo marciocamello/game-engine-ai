@@ -97,6 +97,12 @@ namespace GameEngine {
         void SetName(const std::string& name) { m_name = name; }
         const std::string& GetName() const { return m_name; }
 
+        // Model building methods (for loaders)
+        void AddMesh(std::shared_ptr<Mesh> mesh);
+        void AddMaterial(std::shared_ptr<Material> material);
+        void SetMeshes(const std::vector<std::shared_ptr<Mesh>>& meshes);
+        void SetMaterials(const std::vector<std::shared_ptr<Material>>& materials);
+
     private:
         std::string m_name;
         std::shared_ptr<ModelNode> m_rootNode;

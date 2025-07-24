@@ -776,31 +776,31 @@ private:
       LOG_INFO("    Channels: " + std::to_string(wallTexture->GetChannels()));
       LOG_INFO("    Memory Usage: " + std::to_string(wallTexture->GetMemoryUsage() / 1024) + " KB");
     } else {
-      LOG_INFO("  [INFO] PNG texture loading failed (using default pink texture)");
+      LOG_INFO("  [INFO] PNG texture not found or invalid (will use default pink texture when rendered)");
     }
     
     if (wallJpgTexture && wallJpgTexture->IsValid()) {
       LOG_INFO("  [PASS] JPG texture loaded successfully");
       LOG_INFO("    Dimensions: " + std::to_string(wallJpgTexture->GetWidth()) + "x" + std::to_string(wallJpgTexture->GetHeight()));
     } else {
-      LOG_INFO("  [INFO] JPG texture loading failed (using default)");
+      LOG_INFO("  [INFO] JPG texture not found or invalid (will use default when rendered)");
     }
     
     if (earthTexture && earthTexture->IsValid()) {
       LOG_INFO("  [PASS] TGA texture loaded successfully");
       LOG_INFO("    Dimensions: " + std::to_string(earthTexture->GetWidth()) + "x" + std::to_string(earthTexture->GetHeight()));
     } else {
-      LOG_INFO("  [INFO] TGA texture loading failed (using default)");
+      LOG_INFO("  [INFO] TGA texture not found or invalid (will use default when rendered)");
     }
     
     if (cowTexture && cowTexture->IsValid()) {
-      LOG_INFO("  [PASS] PNG texture loaded successfully");
+      LOG_INFO("  [PASS] Cow PNG texture loaded successfully");
       LOG_INFO("    Path: " + cowTexture->GetPath());
       LOG_INFO("    Dimensions: " + std::to_string(cowTexture->GetWidth()) + "x" + std::to_string(cowTexture->GetHeight()));
       LOG_INFO("    Channels: " + std::to_string(cowTexture->GetChannels()));
       LOG_INFO("    Memory Usage: " + std::to_string(cowTexture->GetMemoryUsage() / 1024) + " KB");
     } else {
-      LOG_INFO("  [INFO] PNG texture loading failed (using default)");
+      LOG_INFO("  [INFO] Cow PNG texture not found or invalid (will use default when rendered)");
     }
     
     // Test 2: Comprehensive mesh loading

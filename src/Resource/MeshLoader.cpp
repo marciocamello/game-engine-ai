@@ -161,6 +161,39 @@ namespace GameEngine {
             return meshData;
         }
         
+        // Validate and fix UV coordinates
+        bool hasValidUVs = false;
+        for (const auto& vertex : meshData.vertices) {
+            if (vertex.texCoords.x != 0.0f || vertex.texCoords.y != 0.0f) {
+                hasValidUVs = true;
+                break;
+            }
+        }
+        
+        if (!hasValidUVs) {
+            Logger::GetInstance().Log(LogLevel::Warning, "OBJ file has no valid UV coordinates, generating fallback UVs");
+            // Generate simple planar UV coordinates
+            if (!meshData.vertices.empty()) {
+                Math::Vec3 minPos(FLT_MAX), maxPos(-FLT_MAX);
+                for (const auto& vertex : meshData.vertices) {
+                    minPos = glm::min(minPos, vertex.position);
+                    maxPos = glm::max(maxPos, vertex.position);
+                }
+                
+                Math::Vec3 size = maxPos - minPos;
+                float maxDimension = std::max({size.x, size.y, size.z});
+                
+                if (maxDimension > 0.0f) {
+                    for (auto& vertex : meshData.vertices) {
+                        vertex.texCoords.x = (vertex.position.x - minPos.x) / maxDimension;
+                        vertex.texCoords.y = (vertex.position.z - minPos.z) / maxDimension;
+                        vertex.texCoords.x = std::max(0.0f, std::min(1.0f, vertex.texCoords.x));
+                        vertex.texCoords.y = std::max(0.0f, std::min(1.0f, vertex.texCoords.y));
+                    }
+                }
+            }
+        }
+        
         // Calculate tangents if we have texture coordinates
         if (!meshData.indices.empty()) {
             CalculateTangents(meshData.vertices, meshData.indices);
@@ -169,7 +202,8 @@ namespace GameEngine {
         meshData.isValid = true;
         Logger::GetInstance().Log(LogLevel::Info, "Successfully loaded OBJ file: " + filepath + 
                                  " (" + std::to_string(meshData.vertices.size()) + " vertices, " +
-                                 std::to_string(meshData.indices.size()) + " indices)");
+                                 std::to_string(meshData.indices.size()) + " indices)" +
+                                 (hasValidUVs ? " with UV coordinates" : " with generated UV coordinates"));
         
         return meshData;
     }    
@@ -224,7 +258,18 @@ namespace GameEngine {
     
     bool MeshLoader::ParseTexCoord(const std::string& line, Math::Vec2& texCoord) {
         std::istringstream iss(line.substr(3)); // Skip "vt "
-        return !!(iss >> texCoord.x >> texCoord.y);
+        bool success = !!(iss >> texCoord.x >> texCoord.y);
+        
+        if (success) {
+            // Flip V coordinate for OpenGL (OBJ uses bottom-left origin, OpenGL uses top-left)
+            texCoord.y = 1.0f - texCoord.y;
+            
+            // Clamp to valid range
+            texCoord.x = std::max(0.0f, std::min(1.0f, texCoord.x));
+            texCoord.y = std::max(0.0f, std::min(1.0f, texCoord.y));
+        }
+        
+        return success;
     }
     
     bool MeshLoader::ParseFace(const std::string& line, MeshData& meshData,

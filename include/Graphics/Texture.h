@@ -50,7 +50,9 @@ namespace GameEngine {
         int GetChannels() const { return m_channels; }
         TextureFormat GetFormat() const { return m_format; }
         
-        bool IsValid() const { return m_textureID != 0; }
+        bool IsValid() const { return !m_imageData.empty() || m_textureID != 0; }
+        bool HasImageData() const { return !m_imageData.empty(); }
+        bool HasGPUResources() const { return m_textureID != 0; }
         
         // Resource interface implementation
         size_t GetMemoryUsage() const override;

@@ -1,4 +1,7 @@
 #include "Graphics/Model.h"
+#include "Graphics/ModelNode.h"
+#include "Graphics/Mesh.h"
+#include "Graphics/Material.h"
 #include "Graphics/Shader.h"
 #include "Core/Logger.h"
 #include <algorithm>

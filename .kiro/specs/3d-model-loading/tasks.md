@@ -31,11 +31,26 @@
     - Create vertex validation and integrity checking
     - _Requirements: 4.3, 4.4, 9.3_
 
+  - [ ] 3.1.1 Implement UV coordinate support for existing OBJ loader (v1.0 compatibility fix)
+
+    - Enhance current MeshLoader to parse UV coordinates from OBJ files
+    - Update Mesh class to store and bind UV coordinates to shaders
+    - Fix texture mapping for complex meshes (cow, teapot, teddy models)
+    - Add UV coordinate validation and fallback generation
+    - _Requirements: 4.3, 4.4_ (Addresses v1.0 texture mapping limitation)
+
   - [ ] 3.2 Implement mesh optimization algorithms
     - Add vertex cache optimization using Tom Forsyth's algorithm
     - Implement vertex fetch optimization and index reordering
     - Create overdraw optimization with configurable thresholds
     - _Requirements: 4.1, 4.2, 10.5_
+
+- [ ] 3.3 Fix v1.0 resource loading validation messages (cleanup task)
+
+  - Correct texture validation logic in examples/main.cpp to check after GPU binding
+  - Remove confusing "texture loading failed" messages when textures load successfully
+  - Update resource validation tests to use proper IsValid() timing
+  - _Requirements: 2.4_ (Addresses v1.0 confusing log messages)
 
 - [ ] 4. Create comprehensive material import system
 

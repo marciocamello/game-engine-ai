@@ -3,6 +3,7 @@
 #include "Core/Logger.h"
 #include <filesystem>
 #include <algorithm>
+#include <cmath>
 
 #ifdef GAMEENGINE_HAS_ASSIMP
 #include <assimp/scene.h>
@@ -682,72 +683,112 @@ bool MaterialImporter::GetMaterialProperty(const aiMaterial* material, const cha
 #endif // GAMEENGINE_HAS_ASSIMP
 
 void MaterialImporter::CreateDefaultTextures() {
-    // Create basic default textures
-    m_defaultTextures.white = CreateSolidColorTexture(Math::Vec4(1.0f, 1.0f, 1.0f, 1.0f));
-    m_defaultTextures.black = CreateSolidColorTexture(Math::Vec4(0.0f, 0.0f, 0.0f, 1.0f));
-    m_defaultTextures.normal = CreateNormalMapTexture();
-    m_defaultTextures.defaultDiffuse = CreateSolidColorTexture(Math::Vec4(0.8f, 0.8f, 0.8f, 1.0f));
-    m_defaultTextures.defaultSpecular = CreateSolidColorTexture(Math::Vec4(0.04f, 0.04f, 0.04f, 1.0f));
-    m_defaultTextures.defaultMetallic = CreateSolidColorTexture(Math::Vec4(0.0f, 0.0f, 0.0f, 1.0f));
-    m_defaultTextures.defaultRoughness = CreateSolidColorTexture(Math::Vec4(0.5f, 0.5f, 0.5f, 1.0f));
-    m_defaultTextures.defaultAO = CreateSolidColorTexture(Math::Vec4(1.0f, 1.0f, 1.0f, 1.0f));
+    try {
+        LOG_DEBUG("Creating default textures...");
+        
+        // Create basic default textures
+        m_defaultTextures.white = CreateSolidColorTexture(Math::Vec4(1.0f, 1.0f, 1.0f, 1.0f));
+        m_defaultTextures.black = CreateSolidColorTexture(Math::Vec4(0.0f, 0.0f, 0.0f, 1.0f));
+        m_defaultTextures.normal = CreateNormalMapTexture();
+        m_defaultTextures.defaultDiffuse = CreateSolidColorTexture(Math::Vec4(0.8f, 0.8f, 0.8f, 1.0f));
+        m_defaultTextures.defaultSpecular = CreateSolidColorTexture(Math::Vec4(0.04f, 0.04f, 0.04f, 1.0f));
+        m_defaultTextures.defaultMetallic = CreateSolidColorTexture(Math::Vec4(0.0f, 0.0f, 0.0f, 1.0f));
+        m_defaultTextures.defaultRoughness = CreateSolidColorTexture(Math::Vec4(0.5f, 0.5f, 0.5f, 1.0f));
+        m_defaultTextures.defaultAO = CreateSolidColorTexture(Math::Vec4(1.0f, 1.0f, 1.0f, 1.0f));
 
-    LOG_INFO("Default textures created");
+        LOG_INFO("Default textures created successfully");
+    } catch (const std::exception& e) {
+        LOG_ERROR("Exception while creating default textures: " + std::string(e.what()));
+        // Continue without default textures - they will be created on demand
+    } catch (...) {
+        LOG_ERROR("Unknown exception while creating default textures");
+        // Continue without default textures - they will be created on demand
+    }
 }
 
 std::shared_ptr<Texture> MaterialImporter::CreateSolidColorTexture(const Math::Vec4& color, int width, int height) {
-    auto texture = std::make_shared<Texture>("solid_color_texture");
-    
-    // Create texture data with solid color
-    std::vector<unsigned char> textureData(width * height * 4);
-    unsigned char r = static_cast<unsigned char>(color.x * 255.0f);
-    unsigned char g = static_cast<unsigned char>(color.y * 255.0f);
-    unsigned char b = static_cast<unsigned char>(color.z * 255.0f);
-    unsigned char a = static_cast<unsigned char>(color.w * 255.0f);
-    
-    for (int i = 0; i < width * height; ++i) {
-        textureData[i * 4 + 0] = r;
-        textureData[i * 4 + 1] = g;
-        textureData[i * 4 + 2] = b;
-        textureData[i * 4 + 3] = a;
+    try {
+        auto texture = std::make_shared<Texture>("solid_color_texture");
+        
+        // Validate parameters
+        if (width <= 0 || height <= 0) {
+            LOG_WARNING("Invalid texture dimensions, using 1x1");
+            width = 1;
+            height = 1;
+        }
+        
+        // Create texture data with solid color
+        std::vector<unsigned char> textureData(width * height * 4);
+        unsigned char r = static_cast<unsigned char>(std::clamp(color.x, 0.0f, 1.0f) * 255.0f);
+        unsigned char g = static_cast<unsigned char>(std::clamp(color.y, 0.0f, 1.0f) * 255.0f);
+        unsigned char b = static_cast<unsigned char>(std::clamp(color.z, 0.0f, 1.0f) * 255.0f);
+        unsigned char a = static_cast<unsigned char>(std::clamp(color.w, 0.0f, 1.0f) * 255.0f);
+        
+        for (int i = 0; i < width * height; ++i) {
+            textureData[i * 4 + 0] = r;
+            textureData[i * 4 + 1] = g;
+            textureData[i * 4 + 2] = b;
+            textureData[i * 4 + 3] = a;
+        }
+        
+        // Set texture properties and data
+        texture->m_width = width;
+        texture->m_height = height;
+        texture->m_channels = 4;
+        texture->m_format = TextureFormat::RGBA;
+        texture->m_filepath = "[SOLID_COLOR]";
+        texture->m_imageData = std::move(textureData);
+        
+        LOG_DEBUG("Created solid color texture (" + std::to_string(width) + "x" + std::to_string(height) + ")");
+        
+        return texture;
+    } catch (const std::exception& e) {
+        LOG_ERROR("Exception creating solid color texture: " + std::string(e.what()));
+        return nullptr;
+    } catch (...) {
+        LOG_ERROR("Unknown exception creating solid color texture");
+        return nullptr;
     }
-    
-    // Set texture properties and data
-    texture->m_width = width;
-    texture->m_height = height;
-    texture->m_channels = 4;
-    texture->m_format = TextureFormat::RGBA;
-    texture->m_filepath = "[SOLID_COLOR]";
-    texture->m_imageData = std::move(textureData);
-    
-    LOG_DEBUG("Created solid color texture (" + std::to_string(width) + "x" + std::to_string(height) + ")");
-    
-    return texture;
 }
 
 std::shared_ptr<Texture> MaterialImporter::CreateNormalMapTexture(int width, int height) {
-    auto texture = std::make_shared<Texture>("default_normal_map");
-    
-    // Create normal map texture data (default normal pointing up: 0.5, 0.5, 1.0 -> 128, 128, 255)
-    std::vector<unsigned char> textureData(width * height * 3);
-    
-    for (int i = 0; i < width * height; ++i) {
-        textureData[i * 3 + 0] = 128; // X component (0.5 * 255)
-        textureData[i * 3 + 1] = 128; // Y component (0.5 * 255)
-        textureData[i * 3 + 2] = 255; // Z component (1.0 * 255) - pointing up
+    try {
+        auto texture = std::make_shared<Texture>("default_normal_map");
+        
+        // Validate parameters
+        if (width <= 0 || height <= 0) {
+            LOG_WARNING("Invalid normal map dimensions, using 1x1");
+            width = 1;
+            height = 1;
+        }
+        
+        // Create normal map texture data (default normal pointing up: 0.5, 0.5, 1.0 -> 128, 128, 255)
+        std::vector<unsigned char> textureData(width * height * 3);
+        
+        for (int i = 0; i < width * height; ++i) {
+            textureData[i * 3 + 0] = 128; // X component (0.5 * 255)
+            textureData[i * 3 + 1] = 128; // Y component (0.5 * 255)
+            textureData[i * 3 + 2] = 255; // Z component (1.0 * 255) - pointing up
+        }
+        
+        // Set texture properties and data
+        texture->m_width = width;
+        texture->m_height = height;
+        texture->m_channels = 3;
+        texture->m_format = TextureFormat::RGB;
+        texture->m_filepath = "[DEFAULT_NORMAL]";
+        texture->m_imageData = std::move(textureData);
+        
+        LOG_DEBUG("Created default normal map texture (" + std::to_string(width) + "x" + std::to_string(height) + ")");
+        
+        return texture;
+    } catch (const std::exception& e) {
+        LOG_ERROR("Exception creating normal map texture: " + std::string(e.what()));
+        return nullptr;
+    } catch (...) {
+        LOG_ERROR("Unknown exception creating normal map texture");
+        return nullptr;
     }
-    
-    // Set texture properties and data
-    texture->m_width = width;
-    texture->m_height = height;
-    texture->m_channels = 3;
-    texture->m_format = TextureFormat::RGB;
-    texture->m_filepath = "[DEFAULT_NORMAL]";
-    texture->m_imageData = std::move(textureData);
-    
-    LOG_DEBUG("Created default normal map texture (" + std::to_string(width) + "x" + std::to_string(height) + ")");
-    
-    return texture;
 }
 
 std::string MaterialImporter::FindTextureInSearchPaths(const std::string& filename) {

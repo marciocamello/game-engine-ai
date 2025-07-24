@@ -1,169 +1,204 @@
 #include "Graphics/MaterialImporter.h"
 #include "Resource/ResourceManager.h"
 #include "Core/Logger.h"
-#include <iostream>
-#include <memory>
+#include "../TestUtils.h"
+#include <filesystem>
+#include <fstream>
 
 using namespace GameEngine;
+using namespace GameEngine::Testing;
 
 bool TestMaterialImporterInitialization() {
-    std::cout << "Testing MaterialImporter initialization..." << std::endl;
+    TestOutput::PrintTestStart("MaterialImporter initialization");
     
     auto resourceManager = std::make_shared<ResourceManager>();
-    if (!resourceManager->Initialize()) {
-        std::cerr << "Failed to initialize ResourceManager" << std::endl;
-        return false;
-    }
+    EXPECT_TRUE(resourceManager->Initialize());
     
     MaterialImporter importer;
-    if (!importer.Initialize(resourceManager)) {
-        std::cerr << "Failed to initialize MaterialImporter" << std::endl;
-        return false;
-    }
+    EXPECT_TRUE(importer.Initialize(resourceManager));
     
-    std::cout << "MaterialImporter initialized successfully" << std::endl;
-    return true;
-}
-
-bool TestTextureSearchPaths() {
-    std::cout << "Testing texture search paths..." << std::endl;
-    
-    auto resourceManager = std::make_shared<ResourceManager>();
-    resourceManager->Initialize();
-    
-    MaterialImporter importer;
-    importer.Initialize(resourceManager);
-    
-    // Test adding search paths
-    importer.AddTextureSearchPath("test/path1/");
-    importer.AddTextureSearchPath("test/path2/");
-    
+    // Test that importer is properly initialized
     auto searchPaths = importer.GetTextureSearchPaths();
-    if (searchPaths.size() < 2) {
-        std::cerr << "Search paths not added correctly" << std::endl;
-        return false;
-    }
+    EXPECT_TRUE(searchPaths.size() > 0);
     
-    std::cout << "Texture search paths working correctly" << std::endl;
+    TestOutput::PrintTestPass("MaterialImporter initialization");
     return true;
 }
 
-bool TestDefaultTextureCreation() {
-    std::cout << "Testing default texture creation..." << std::endl;
+bool TestTextureSearchAndFallbackSystem() {
+    TestOutput::PrintTestStart("texture search and fallback system");
     
     auto resourceManager = std::make_shared<ResourceManager>();
-    resourceManager->Initialize();
+    EXPECT_TRUE(resourceManager->Initialize());
     
     MaterialImporter importer;
-    importer.Initialize(resourceManager);
+    EXPECT_TRUE(importer.Initialize(resourceManager));
     
-    // Test creating different types of default textures
-    // Note: These may return null without OpenGL context, which is acceptable
-    auto diffuseTexture = importer.CreateDefaultTexture(TextureType::Diffuse);
-    auto normalTexture = importer.CreateDefaultTexture(TextureType::Normal);
-    auto metallicTexture = importer.CreateDefaultTexture(TextureType::Metallic);
+    // Test 1: Default texture search paths
+    auto searchPaths = importer.GetTextureSearchPaths();
+    EXPECT_TRUE(searchPaths.size() > 0);
+    TestOutput::PrintInfo("Default search paths count: " + std::to_string(searchPaths.size()));
     
-    // For now, just test that the method doesn't crash
-    // In a full implementation with OpenGL context, these would be non-null
-    std::cout << "Default texture creation completed (may be null without OpenGL context)" << std::endl;
-    return true;
-}
-
-bool TestTextureFormatSupport() {
-    std::cout << "Testing texture format support..." << std::endl;
+    // Test 2: Add custom search path
+    std::string customPath = "test_textures/";
+    importer.AddTextureSearchPath(customPath);
+    auto updatedPaths = importer.GetTextureSearchPaths();
+    EXPECT_TRUE(updatedPaths.size() == searchPaths.size() + 1);
     
-    auto resourceManager = std::make_shared<ResourceManager>();
-    resourceManager->Initialize();
-    
-    MaterialImporter importer;
-    importer.Initialize(resourceManager);
-    
-    // Test supported formats
-    if (!importer.IsTextureFormatSupported(".png")) {
-        std::cerr << "PNG format should be supported" << std::endl;
-        return false;
-    }
-    
-    if (!importer.IsTextureFormatSupported(".jpg")) {
-        std::cerr << "JPG format should be supported" << std::endl;
-        return false;
-    }
-    
-    if (importer.IsTextureFormatSupported(".xyz")) {
-        std::cerr << "XYZ format should not be supported" << std::endl;
-        return false;
-    }
-    
+    // Test 3: Test supported texture formats
     auto supportedFormats = importer.GetSupportedTextureFormats();
-    if (supportedFormats.empty()) {
-        std::cerr << "Should have supported texture formats" << std::endl;
-        return false;
-    }
+    EXPECT_TRUE(supportedFormats.size() > 0);
+    TestOutput::PrintInfo("Supported texture formats count: " + std::to_string(supportedFormats.size()));
     
-    std::cout << "Texture format support working correctly" << std::endl;
+    // Test 4: Check format support
+    EXPECT_TRUE(importer.IsTextureFormatSupported(".png"));
+    EXPECT_TRUE(importer.IsTextureFormatSupported(".jpg"));
+    EXPECT_TRUE(importer.IsTextureFormatSupported(".jpeg"));
+    EXPECT_FALSE(importer.IsTextureFormatSupported(".xyz"));
+    
+    // Test 5: Create fallback textures for different types
+    auto diffuseFallback = importer.CreateFallbackTexture(TextureType::Diffuse, "missing_diffuse.png");
+    EXPECT_NOT_NULL(diffuseFallback);
+    
+    auto normalFallback = importer.CreateFallbackTexture(TextureType::Normal, "missing_normal.png");
+    EXPECT_NOT_NULL(normalFallback);
+    
+    auto metallicFallback = importer.CreateFallbackTexture(TextureType::Metallic, "missing_metallic.png");
+    EXPECT_NOT_NULL(metallicFallback);
+    
+    // Test 6: Create default textures
+    auto whiteTexture = importer.CreateDefaultTexture(TextureType::Diffuse);
+    EXPECT_NOT_NULL(whiteTexture);
+    
+    auto normalTexture = importer.CreateDefaultTexture(TextureType::Normal);
+    EXPECT_NOT_NULL(normalTexture);
+    
+    // Test 7: Test statistics
+    size_t fallbackCount = importer.GetFallbackTextureCount();
+    size_t missingCount = importer.GetMissingTextureCount();
+    TestOutput::PrintInfo("Fallback textures created: " + std::to_string(fallbackCount));
+    TestOutput::PrintInfo("Missing textures encountered: " + std::to_string(missingCount));
+    
+    // Test 8: Test texture finding with non-existent file
+    auto foundTexture = importer.FindTexture("non_existent_texture.png", "");
+    EXPECT_NULL(foundTexture); // Should return null for non-existent texture
+    
+    // Test 9: Clear cache and verify statistics reset
+    importer.ClearCache();
+    EXPECT_EQUAL(importer.GetImportedTextureCount(), static_cast<size_t>(0));
+    
+    TestOutput::PrintTestPass("texture search and fallback system");
+    return true;
+}
+
+bool TestMaterialImportSettings() {
+    TestOutput::PrintTestStart("material import settings");
+    
+    auto resourceManager = std::make_shared<ResourceManager>();
+    EXPECT_TRUE(resourceManager->Initialize());
+    
+    MaterialImporter importer;
+    EXPECT_TRUE(importer.Initialize(resourceManager));
+    
+    // Test default settings
+    auto defaultSettings = importer.GetImportSettings();
+    EXPECT_TRUE(defaultSettings.textureSearchPaths.size() > 0);
+    EXPECT_TRUE(defaultSettings.generateMissingTextures);
+    EXPECT_TRUE(defaultSettings.enableTextureConversion);
+    
+    // Test custom settings
+    MaterialImportSettings customSettings;
+    customSettings.conversionMode = MaterialConversionMode::ForcePBR;
+    customSettings.textureSearchPaths = {"custom/path1/", "custom/path2/"};
+    customSettings.generateMissingTextures = false;
+    customSettings.enableTextureConversion = false;
+    customSettings.defaultMetallic = 0.2f;
+    customSettings.defaultRoughness = 0.8f;
+    
+    importer.SetImportSettings(customSettings);
+    auto updatedSettings = importer.GetImportSettings();
+    
+    EXPECT_EQUAL(static_cast<int>(updatedSettings.conversionMode), static_cast<int>(MaterialConversionMode::ForcePBR));
+    EXPECT_EQUAL(updatedSettings.textureSearchPaths.size(), static_cast<size_t>(2));
+    EXPECT_FALSE(updatedSettings.generateMissingTextures);
+    EXPECT_FALSE(updatedSettings.enableTextureConversion);
+    EXPECT_NEARLY_EQUAL(updatedSettings.defaultMetallic, 0.2f);
+    EXPECT_NEARLY_EQUAL(updatedSettings.defaultRoughness, 0.8f);
+    
+    TestOutput::PrintTestPass("material import settings");
+    return true;
+}
+
+bool TestTextureValidationAndConversion() {
+    TestOutput::PrintTestStart("texture validation and conversion");
+    
+    auto resourceManager = std::make_shared<ResourceManager>();
+    EXPECT_TRUE(resourceManager->Initialize());
+    
+    MaterialImporter importer;
+    EXPECT_TRUE(importer.Initialize(resourceManager));
+    
+    // Test texture validation with non-existent file
+    EXPECT_FALSE(importer.ValidateTexture("non_existent.png"));
+    EXPECT_FALSE(importer.ValidateTexture(""));
+    
+    // Test texture format conversion capabilities
+    EXPECT_TRUE(importer.CanConvertTextureFormat(".png", ".jpg"));
+    EXPECT_TRUE(importer.CanConvertTextureFormat(".jpg", ".png"));
+    EXPECT_FALSE(importer.CanConvertTextureFormat(".xyz", ".png"));
+    
+    // Test conversion with non-existent files (should fail gracefully)
+    EXPECT_FALSE(importer.ConvertTextureFormat("non_existent.png", "output.jpg", TextureFormat::RGB));
+    
+    TestOutput::PrintTestPass("texture validation and conversion");
     return true;
 }
 
 bool TestMaterialImporterStatistics() {
-    std::cout << "Testing MaterialImporter statistics..." << std::endl;
+    TestOutput::PrintTestStart("MaterialImporter statistics");
     
     auto resourceManager = std::make_shared<ResourceManager>();
-    resourceManager->Initialize();
+    EXPECT_TRUE(resourceManager->Initialize());
     
     MaterialImporter importer;
-    importer.Initialize(resourceManager);
+    EXPECT_TRUE(importer.Initialize(resourceManager));
     
     // Initial statistics should be zero
-    if (importer.GetImportedMaterialCount() != 0) {
-        std::cerr << "Initial material count should be 0" << std::endl;
-        return false;
-    }
+    EXPECT_EQUAL(importer.GetImportedMaterialCount(), static_cast<size_t>(0));
+    EXPECT_EQUAL(importer.GetImportedTextureCount(), static_cast<size_t>(0));
+    EXPECT_EQUAL(importer.GetFallbackTextureCount(), static_cast<size_t>(0));
+    EXPECT_EQUAL(importer.GetMissingTextureCount(), static_cast<size_t>(0));
     
-    if (importer.GetImportedTextureCount() != 0) {
-        std::cerr << "Initial texture count should be 0" << std::endl;
-        return false;
-    }
+    // Create some fallback textures to test statistics
+    importer.CreateFallbackTexture(TextureType::Diffuse, "test1.png");
+    importer.CreateFallbackTexture(TextureType::Normal, "test2.png");
     
-    if (importer.GetFallbackTextureCount() != 0) {
-        std::cerr << "Initial fallback texture count should be 0" << std::endl;
-        return false;
-    }
+    // Statistics should be updated
+    EXPECT_TRUE(importer.GetFallbackTextureCount() > 0);
     
-    if (importer.GetMissingTextureCount() != 0) {
-        std::cerr << "Initial missing texture count should be 0" << std::endl;
-        return false;
-    }
+    // Clear cache and verify reset
+    importer.ClearCache();
+    EXPECT_EQUAL(importer.GetImportedTextureCount(), static_cast<size_t>(0));
     
-    std::cout << "MaterialImporter statistics working correctly" << std::endl;
+    TestOutput::PrintTestPass("MaterialImporter statistics");
     return true;
 }
 
 int main() {
-    try {
-        Logger::GetInstance().Initialize();
-        
-        std::cout << "Running MaterialImporter tests..." << std::endl;
-        
-        bool allTestsPassed = true;
-        
-        allTestsPassed &= TestMaterialImporterInitialization();
-        allTestsPassed &= TestTextureSearchPaths();
-        allTestsPassed &= TestDefaultTextureCreation();
-        allTestsPassed &= TestTextureFormatSupport();
-        allTestsPassed &= TestMaterialImporterStatistics();
-        
-        if (allTestsPassed) {
-            std::cout << "All MaterialImporter tests passed!" << std::endl;
-            return 0;
-        } else {
-            std::cerr << "Some MaterialImporter tests failed!" << std::endl;
-            return 1;
-        }
-    } catch (const std::exception& e) {
-        std::cerr << "Exception during MaterialImporter tests: " << e.what() << std::endl;
-        return 1;
-    } catch (...) {
-        std::cerr << "Unknown exception during MaterialImporter tests" << std::endl;
-        return 1;
-    }
+    TestOutput::PrintHeader("MaterialImporter Integration Tests");
+    Logger::GetInstance().Initialize();
+    
+    TestSuite suite("MaterialImporter Integration Tests");
+    
+    bool allPassed = true;
+    allPassed &= suite.RunTest("MaterialImporter Initialization", TestMaterialImporterInitialization);
+    allPassed &= suite.RunTest("Texture Search and Fallback System", TestTextureSearchAndFallbackSystem);
+    allPassed &= suite.RunTest("Material Import Settings", TestMaterialImportSettings);
+    allPassed &= suite.RunTest("Texture Validation and Conversion", TestTextureValidationAndConversion);
+    allPassed &= suite.RunTest("MaterialImporter Statistics", TestMaterialImporterStatistics);
+    
+    suite.PrintSummary();
+    TestOutput::PrintFooter(allPassed);
+    
+    return allPassed ? 0 : 1;
 }

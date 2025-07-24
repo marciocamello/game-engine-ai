@@ -111,6 +111,7 @@ namespace GameEngine {
         bool ConvertTextureFormat(const std::string& inputPath, const std::string& outputPath, TextureFormat targetFormat);
         bool IsTextureFormatSupported(const std::string& extension);
         std::vector<std::string> GetSupportedTextureFormats();
+        bool CanConvertTextureFormat(const std::string& fromExt, const std::string& toExt);
 
         // Statistics and debugging
         size_t GetImportedMaterialCount() const { return m_importedMaterials.size(); }
@@ -172,7 +173,6 @@ namespace GameEngine {
         // Texture validation and conversion
         bool IsValidTextureFile(const std::string& path);
         std::string GetTextureFileExtension(const std::string& path);
-        bool CanConvertTextureFormat(const std::string& fromExt, const std::string& toExt);
 
         // Progress reporting
         void ReportProgress(const std::string& operation, float progress);

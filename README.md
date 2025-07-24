@@ -26,8 +26,6 @@ This game engine is being developed using cutting-edge AI development tools and 
 
 - **KiroDev (AWS)**: AI-powered development assistant for architecture and code generation
 - **Claude 4**: Advanced reasoning for complex system design and optimization
-- **GPT-4.1**: Code analysis, debugging, and feature implementation
-- **GitHub Copilot**: Real-time code completion and suggestions
 - **VS Code**: Enhanced with AI extensions for intelligent development
 
 The combination of human expertise and AI assistance allows for rapid prototyping, robust architecture, and innovative solutions in game engine development.

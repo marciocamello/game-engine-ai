@@ -54,16 +54,17 @@
   - Update resource validation tests to use proper IsValid() timing
   - _Requirements: 2.4_ (Addresses v1.0 confusing log messages)
 
-- [ ] 4. Create comprehensive material import system
+- [-] 4. Create comprehensive material import system
 
-  - [ ] 4.1 Implement MaterialImporter class
+  - [x] 4.1 Implement MaterialImporter class
 
     - Create material import from Assimp aiMaterial structures
     - Add automatic PBR material conversion with property mapping
     - Implement texture loading with embedded and external texture support
     - _Requirements: 2.1, 2.2, 2.3_
 
-  - [ ] 4.2 Add texture search and fallback system
+  - [-] 4.2 Add texture search and fallback system
+
     - Implement texture path resolution with multiple search directories
     - Add default texture creation for missing or invalid textures
     - Create texture format conversion and validation

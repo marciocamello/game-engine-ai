@@ -384,6 +384,9 @@ add_integration_test(FinalV1ValidationTest tests/integration/test_final_v1_valid
 # ModelLoader Assimp integration test
 add_integration_test(ModelLoaderAssimpTest tests/integration/test_model_loader_assimp.cpp)
 
+# MaterialImporter integration test
+add_integration_test(MaterialImporterTest tests/integration/test_material_importer.cpp)
+
 # Discover and add unit tests automatically
 discover_and_add_tests("tests/unit" "unit")
 

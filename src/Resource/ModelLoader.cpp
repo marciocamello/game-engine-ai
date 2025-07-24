@@ -1,4 +1,5 @@
 #include "Resource/ModelLoader.h"
+#include "Resource/GLTFLoader.h"
 #include "Core/Logger.h"
 #include <filesystem>
 #include <chrono>
@@ -31,6 +32,9 @@ bool ModelLoader::Initialize() {
         return true;
     }
 
+    // Initialize GLTF loader
+    m_gltfLoader = std::make_unique<GLTFLoader>();
+
 #ifdef GAMEENGINE_HAS_ASSIMP
     try {
         m_importer = std::make_unique<Assimp::Importer>();
@@ -43,7 +47,7 @@ bool ModelLoader::Initialize() {
                         LoadingFlags::RemoveDuplicateVertices;
         
         m_initialized = true;
-        Logger::GetInstance().Info("ModelLoader initialized successfully with Assimp");
+        Logger::GetInstance().Info("ModelLoader initialized successfully with Assimp and GLTF support");
         
         // Log supported formats
         auto formats = GetSupportedFormats();
@@ -55,8 +59,9 @@ bool ModelLoader::Initialize() {
         return false;
     }
 #else
-    Logger::GetInstance().Warning("ModelLoader: Assimp not available, model loading disabled");
-    return false;
+    Logger::GetInstance().Info("ModelLoader initialized with GLTF support (Assimp not available)");
+    m_initialized = true;
+    return true;
 #endif
 }
 
@@ -64,6 +69,8 @@ void ModelLoader::Shutdown() {
     if (!m_initialized) {
         return;
     }
+
+    m_gltfLoader.reset();
 
 #ifdef GAMEENGINE_HAS_ASSIMP
     m_importer.reset();
@@ -89,6 +96,34 @@ ModelLoader::LoadResult ModelLoader::LoadModel(const std::string& filepath) {
         result.errorMessage = "File not found: " + filepath;
         Logger::GetInstance().Error("ModelLoader::LoadModel: " + result.errorMessage);
         return result;
+    }
+
+    // Check if it's a GLTF file and use specialized loader
+    if (GLTFLoader::IsGLTFFile(filepath) || GLTFLoader::IsGLBFile(filepath)) {
+        if (m_gltfLoader) {
+            auto gltfResult = m_gltfLoader->LoadGLTF(filepath);
+            
+            // Convert GLTF result to ModelLoader result
+            if (gltfResult.success && gltfResult.model) {
+                result.success = true;
+                result.meshes = gltfResult.model->GetMeshes();
+                result.totalVertices = gltfResult.totalVertices;
+                result.totalTriangles = gltfResult.totalTriangles;
+                result.loadingTimeMs = gltfResult.loadingTimeMs;
+                result.formatUsed = GLTFLoader::IsGLBFile(filepath) ? "glb" : "gltf";
+                
+                LogLoadingStats(result);
+                return result;
+            } else {
+                result.errorMessage = "GLTF loading failed: " + gltfResult.errorMessage;
+                Logger::GetInstance().Error("ModelLoader::LoadModel: " + result.errorMessage);
+                return result;
+            }
+        } else {
+            result.errorMessage = "GLTF loader not available";
+            Logger::GetInstance().Error("ModelLoader::LoadModel: " + result.errorMessage);
+            return result;
+        }
     }
 
 #ifdef GAMEENGINE_HAS_ASSIMP
@@ -125,7 +160,7 @@ ModelLoader::LoadResult ModelLoader::LoadModel(const std::string& filepath) {
         Logger::GetInstance().Error("ModelLoader::LoadModel: " + result.errorMessage);
     }
 #else
-    result.errorMessage = "Assimp not available";
+    result.errorMessage = "Assimp not available and file is not GLTF format";
     Logger::GetInstance().Error("ModelLoader::LoadModel: " + result.errorMessage);
 #endif
 

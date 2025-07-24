@@ -7,22 +7,23 @@
   - Implement format detection and supported format enumeration
   - _Requirements: 1.5, 1.6, 10.1_
 
-- [ ] 2. Implement enhanced Model class with scene graph support
+- [x] 2. Implement enhanced Model class with scene graph support
 
-  - [ ] 2.1 Create Model class with hierarchical node system
+  - [x] 2.1 Create Model class with hierarchical node system
 
     - Implement Model class inheriting from Resource with scene graph support
     - Add ModelNode class with parent-child relationship management
     - Create node traversal methods (depth-first, breadth-first)
     - _Requirements: 3.1, 3.2, 3.4_
 
-  - [ ] 2.2 Add mesh, material, and animation containers
+  - [x] 2.2 Add mesh, material, and animation containers
+
     - Implement mesh collection management with indexing and lookup
     - Add material collection with name-based and index-based access
     - Create animation collection with timeline and skeleton support
     - _Requirements: 2.1, 5.1, 5.5_
 
-- [ ] 3. Enhance Mesh class with optimization capabilities
+- [-] 3. Enhance Mesh class with optimization capabilities
 
   - [ ] 3.1 Extend Mesh class with advanced vertex management
 

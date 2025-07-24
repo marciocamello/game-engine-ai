@@ -7,6 +7,7 @@
 #include <string>
 
 namespace GameEngine {
+    class Material;
     struct Vertex {
         Math::Vec3 position;
         Math::Vec3 normal;
@@ -47,6 +48,10 @@ namespace GameEngine {
         void SetName(const std::string& name) { m_name = name; }
         const std::string& GetName() const { return m_name; }
         
+        // Material management
+        void SetMaterial(std::shared_ptr<Material> material) { m_material = material; }
+        std::shared_ptr<Material> GetMaterial() const { return m_material; }
+        
         uint32_t GetVAO() const { return m_VAO; }
         uint32_t GetVBO() const { return m_VBO; }
         uint32_t GetEBO() const { return m_EBO; }
@@ -70,6 +75,7 @@ namespace GameEngine {
         std::vector<Vertex> m_vertices;
         std::vector<uint32_t> m_indices;
         std::string m_name;
+        std::shared_ptr<Material> m_material;
         
         // GPU resources (created lazily)
         mutable uint32_t m_VAO = 0;

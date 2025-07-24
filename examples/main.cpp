@@ -84,7 +84,7 @@ public:
     m_camera = std::make_unique<ThirdPersonCameraSystem>();
     m_camera->SetTarget(m_character.get());
     m_camera->SetArmLength(10.0f);
-    m_camera->SetRotationLimits(-45.0f, 30.0f);
+    m_camera->SetRotationLimits(-45.0f, 45.0f);
     m_camera->SetSensitivity(0.8f, 0.6f);
     m_camera->SetMouseSensitivity(0.15f);
 

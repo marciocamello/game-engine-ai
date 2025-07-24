@@ -29,6 +29,7 @@ namespace GameEngine {
     };
 
     class Texture : public Resource {
+        friend class MaterialImporter; // Allow MaterialImporter to access private members for texture creation
     public:
         Texture(const std::string& path = "");
         ~Texture();

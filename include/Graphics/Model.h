@@ -1,0 +1,183 @@
+#pragma once
+
+#include "Resource/ResourceManager.h"
+#include "Graphics/ModelNode.h"
+#include "Graphics/Mesh.h"
+#include "Graphics/Material.h"
+#include "Core/Math.h"
+#include <vector>
+#include <memory>
+#include <string>
+#include <unordered_map>
+
+namespace GameEngine {
+    class Shader;
+    class Animation;
+    class Skeleton;
+
+    struct BoundingSphere {
+        Math::Vec3 center = Math::Vec3(0.0f);
+        float radius = 0.0f;
+        
+        BoundingSphere() = default;
+        BoundingSphere(const Math::Vec3& centerPoint, float sphereRadius) 
+            : center(centerPoint), radius(sphereRadius) {}
+        
+        bool IsValid() const { return radius > 0.0f; }
+        
+        void Expand(const Math::Vec3& point) {
+            if (!IsValid()) {
+                center = point;
+                radius = 0.0f;
+            } else {
+                Math::Vec3 toPoint = point - center;
+                float distance = glm::length(toPoint);
+                if (distance > radius) {
+                    // Expand sphere to include the point
+                    float newRadius = (radius + distance) * 0.5f;
+                    Math::Vec3 newCenter = center + toPoint * ((newRadius - radius) / distance);
+                    center = newCenter;
+                    radius = newRadius;
+                }
+            }
+        }
+        
+        void Expand(const BoundingSphere& other) {
+            if (!other.IsValid()) return;
+            
+            if (!IsValid()) {
+                *this = other;
+                return;
+            }
+            
+            Math::Vec3 toOther = other.center - center;
+            float distance = glm::length(toOther);
+            
+            if (distance + other.radius <= radius) {
+                // Other sphere is inside this one
+                return;
+            }
+            
+            if (distance + radius <= other.radius) {
+                // This sphere is inside the other one
+                *this = other;
+                return;
+            }
+            
+            // Spheres overlap or are separate - create encompassing sphere
+            float newRadius = (radius + distance + other.radius) * 0.5f;
+            Math::Vec3 newCenter = center + toOther * ((newRadius - radius) / distance);
+            center = newCenter;
+            radius = newRadius;
+        }
+    };
+
+    struct ModelStats {
+        uint32_t nodeCount = 0;
+        uint32_t meshCount = 0;
+        uint32_t materialCount = 0;
+        uint32_t textureCount = 0;
+        uint32_t animationCount = 0;
+        uint32_t totalVertices = 0;
+        uint32_t totalTriangles = 0;
+        size_t totalMemoryUsage = 0;
+        float loadingTimeMs = 0.0f;
+        std::string formatUsed;
+    };
+
+    class Model : public Resource {
+    public:
+        // Lifecycle
+        Model(const std::string& filepath);
+        ~Model();
+
+        // Loading methods
+        bool LoadFromFile(const std::string& filepath) override;
+        void CreateDefault(); // Creates default model with a cube
+
+        // Scene graph access
+        std::shared_ptr<ModelNode> GetRootNode() const;
+        std::shared_ptr<ModelNode> FindNode(const std::string& name) const;
+        std::vector<std::shared_ptr<ModelNode>> GetAllNodes() const;
+
+        // Mesh access
+        std::vector<std::shared_ptr<Mesh>> GetMeshes() const;
+        std::shared_ptr<Mesh> GetMesh(size_t index) const;
+        std::shared_ptr<Mesh> FindMesh(const std::string& name) const;
+        size_t GetMeshCount() const;
+
+        // Material access
+        std::vector<std::shared_ptr<Material>> GetMaterials() const;
+        std::shared_ptr<Material> GetMaterial(size_t index) const;
+        std::shared_ptr<Material> FindMaterial(const std::string& name) const;
+        size_t GetMaterialCount() const;
+
+        // Animation access (placeholder for future implementation)
+        bool HasAnimations() const;
+        std::vector<std::shared_ptr<Animation>> GetAnimations() const;
+        std::shared_ptr<Animation> GetAnimation(size_t index) const;
+        std::shared_ptr<Animation> FindAnimation(const std::string& name) const;
+        size_t GetAnimationCount() const;
+
+        // Skeleton access (placeholder for future implementation)
+        std::shared_ptr<Skeleton> GetSkeleton() const;
+        bool HasSkeleton() const;
+
+        // Rendering
+        void Render(const Math::Mat4& transform, std::shared_ptr<Shader> shader);
+        void RenderNode(std::shared_ptr<ModelNode> node, const Math::Mat4& parentTransform, std::shared_ptr<Shader> shader);
+        void RenderInstanced(const std::vector<Math::Mat4>& transforms, std::shared_ptr<Shader> shader);
+
+        // Bounding information
+        BoundingBox GetBoundingBox() const;
+        BoundingSphere GetBoundingSphere() const;
+        void UpdateBounds();
+
+        // LOD support (placeholder for future implementation)
+        void SetLODLevels(const std::vector<std::shared_ptr<Model>>& lodLevels);
+        std::shared_ptr<Model> GetLOD(float distance) const;
+        size_t GetLODCount() const;
+
+        // Statistics and debugging
+        ModelStats GetStats() const;
+        void PrintDebugInfo() const;
+
+        // Serialization (placeholder for future implementation)
+        bool SaveToCache(const std::string& cachePath) const;
+        bool LoadFromCache(const std::string& cachePath);
+
+        // Resource interface
+        size_t GetMemoryUsage() const override;
+
+        // Name management
+        void SetName(const std::string& name) { m_name = name; }
+        const std::string& GetName() const { return m_name; }
+
+    private:
+        std::string m_name;
+        std::shared_ptr<ModelNode> m_rootNode;
+        std::vector<std::shared_ptr<Mesh>> m_meshes;
+        std::vector<std::shared_ptr<Material>> m_materials;
+        std::vector<std::shared_ptr<Animation>> m_animations; // Placeholder
+        std::shared_ptr<Skeleton> m_skeleton; // Placeholder
+        std::vector<std::shared_ptr<Model>> m_lodLevels; // Placeholder
+
+        BoundingBox m_boundingBox;
+        BoundingSphere m_boundingSphere;
+        ModelStats m_stats;
+
+        // Name-based lookup maps for performance
+        std::unordered_map<std::string, std::shared_ptr<ModelNode>> m_nodeMap;
+        std::unordered_map<std::string, std::shared_ptr<Mesh>> m_meshMap;
+        std::unordered_map<std::string, std::shared_ptr<Material>> m_materialMap;
+
+        // Helper methods
+        void CalculateBounds();
+        void OptimizeMeshes();
+        void ValidateModel();
+        void BuildNodeMap();
+        void BuildMeshMap();
+        void BuildMaterialMap();
+        void CollectAllNodes(std::shared_ptr<ModelNode> node, std::vector<std::shared_ptr<ModelNode>>& nodes) const;
+    };
+}

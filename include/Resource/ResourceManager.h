@@ -21,6 +21,7 @@ namespace GameEngine {
         const std::string& GetPath() const { return m_path; }
         virtual size_t GetMemoryUsage() const { return sizeof(*this); }
         virtual bool LoadFromFile(const std::string& filepath) { return true; } // Default implementation
+        virtual void CreateDefault() {} // Default implementation
         
         std::chrono::steady_clock::time_point GetLoadTime() const { return m_loadTime; }
         std::chrono::steady_clock::time_point GetLastAccessTime() const { return m_lastAccessTime; }

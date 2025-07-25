@@ -38,7 +38,7 @@ namespace GameEngine {
 
         // Loading methods
         bool LoadFromFile(const std::string& filepath) override;
-        void CreateDefault(); // Creates default model with a cube
+        void CreateDefault() override; // Creates default model with a cube
 
         // Scene graph access
         std::shared_ptr<ModelNode> GetRootNode() const;

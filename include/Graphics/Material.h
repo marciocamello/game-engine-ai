@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Core/Math.h"
+#include "Resource/ResourceManager.h"
 #include <memory>
 #include <unordered_map>
 #include <string>
@@ -9,10 +10,15 @@ namespace GameEngine {
     class Shader;
     class Texture;
 
-    class Material {
+    class Material : public Resource {
     public:
-        Material();
+        Material(const std::string& path = "");
         ~Material();
+
+        // Resource interface
+        bool LoadFromFile(const std::string& filepath) override;
+        void CreateDefault() override;
+        size_t GetMemoryUsage() const override;
 
         void SetShader(std::shared_ptr<Shader> shader) { m_shader = shader; }
         std::shared_ptr<Shader> GetShader() const { return m_shader; }

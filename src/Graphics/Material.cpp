@@ -4,7 +4,7 @@
 #include "Core/Logger.h"
 
 namespace GameEngine {
-    Material::Material() {
+    Material::Material(const std::string& path) : Resource(path) {
         // Set default PBR values
         SetFloat("u_metallic", 0.0f);
         SetFloat("u_roughness", 0.5f);
@@ -224,5 +224,88 @@ namespace GameEngine {
                 textureUnit++;
             }
         }
+    }
+
+    bool Material::LoadFromFile(const std::string& filepath) {
+        LOG_INFO("Loading material from file: " + filepath);
+        
+        // This is a placeholder implementation
+        // In a full implementation, this would load material properties from a file
+        // (e.g., JSON, XML, or custom material format)
+        
+        // For now, just return true to indicate successful loading
+        LOG_INFO("Material loaded successfully: " + filepath);
+        return true;
+    }
+
+    void Material::CreateDefault() {
+        LOG_INFO("Creating default material");
+        
+        // Reset to default PBR values
+        m_floatProperties.clear();
+        m_intProperties.clear();
+        m_boolProperties.clear();
+        m_vec2Properties.clear();
+        m_vec3Properties.clear();
+        m_vec4Properties.clear();
+        m_mat3Properties.clear();
+        m_mat4Properties.clear();
+        m_textures.clear();
+        
+        // Set default PBR values
+        SetFloat("u_metallic", 0.0f);
+        SetFloat("u_roughness", 0.5f);
+        SetFloat("u_ao", 1.0f);
+        SetVec3("u_albedo", Math::Vec3(0.8f, 0.8f, 0.8f));
+        
+        LOG_INFO("Default material created");
+    }
+
+    size_t Material::GetMemoryUsage() const {
+        size_t totalMemory = sizeof(*this);
+        
+        // Add memory for property maps
+        totalMemory += m_floatProperties.size() * (sizeof(std::string) + sizeof(float));
+        totalMemory += m_intProperties.size() * (sizeof(std::string) + sizeof(int));
+        totalMemory += m_boolProperties.size() * (sizeof(std::string) + sizeof(bool));
+        totalMemory += m_vec2Properties.size() * (sizeof(std::string) + sizeof(Math::Vec2));
+        totalMemory += m_vec3Properties.size() * (sizeof(std::string) + sizeof(Math::Vec3));
+        totalMemory += m_vec4Properties.size() * (sizeof(std::string) + sizeof(Math::Vec4));
+        totalMemory += m_mat3Properties.size() * (sizeof(std::string) + sizeof(Math::Mat3));
+        totalMemory += m_mat4Properties.size() * (sizeof(std::string) + sizeof(Math::Mat4));
+        
+        // Add memory for texture references (not the actual texture data)
+        totalMemory += m_textures.size() * (sizeof(std::string) + sizeof(std::shared_ptr<Texture>));
+        
+        // Add string capacity for property names
+        for (const auto& pair : m_floatProperties) {
+            totalMemory += pair.first.capacity();
+        }
+        for (const auto& pair : m_intProperties) {
+            totalMemory += pair.first.capacity();
+        }
+        for (const auto& pair : m_boolProperties) {
+            totalMemory += pair.first.capacity();
+        }
+        for (const auto& pair : m_vec2Properties) {
+            totalMemory += pair.first.capacity();
+        }
+        for (const auto& pair : m_vec3Properties) {
+            totalMemory += pair.first.capacity();
+        }
+        for (const auto& pair : m_vec4Properties) {
+            totalMemory += pair.first.capacity();
+        }
+        for (const auto& pair : m_mat3Properties) {
+            totalMemory += pair.first.capacity();
+        }
+        for (const auto& pair : m_mat4Properties) {
+            totalMemory += pair.first.capacity();
+        }
+        for (const auto& pair : m_textures) {
+            totalMemory += pair.first.capacity();
+        }
+        
+        return totalMemory;
     }
 }

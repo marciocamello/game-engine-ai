@@ -456,6 +456,12 @@ add_integration_test(GLTFLoaderTest tests/integration/test_gltf_loader.cpp)
 # FBX Loader integration test
 add_integration_test(FBXLoaderTest tests/integration/test_fbx_loader.cpp)
 
+# Model Resource Integration test
+add_integration_test(ModelResourceIntegrationTest tests/integration/test_model_resource_integration.cpp)
+
+# Resource Usage Tracking test
+add_integration_test(ResourceUsageTrackingTest tests/integration/test_resource_usage_tracking.cpp)
+
 # Simple FBX test
 add_executable(FBXSimpleTest
     test_fbx_simple.cpp

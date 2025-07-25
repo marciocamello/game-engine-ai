@@ -5,6 +5,7 @@
 #include "Graphics/Shader.h"
 #include "Graphics/Animation.h"
 #include "Graphics/Skeleton.h"
+#include "Resource/ResourceUsageTracker.h"
 #include "Core/Logger.h"
 #include <algorithm>
 #include <chrono>
@@ -13,9 +14,15 @@ namespace GameEngine {
     Model::Model(const std::string& filepath) 
         : Resource(filepath), m_name("Model") {
         m_rootNode = std::make_shared<ModelNode>("Root");
+        
+        // Track this model resource
+        GlobalResourceTracker::GetInstance().TrackResourceLoad(filepath, "Model", sizeof(*this));
     }
 
     Model::~Model() {
+        // Track resource unload
+        GlobalResourceTracker::GetInstance().TrackResourceUnload(m_path);
+        
         // Clear all collections to break potential circular references
         m_meshes.clear();
         m_materials.clear();
@@ -132,6 +139,8 @@ namespace GameEngine {
     }
 
     std::vector<std::shared_ptr<Mesh>> Model::GetMeshes() const {
+        // Track resource access
+        GlobalResourceTracker::GetInstance().TrackResourceAccess(m_path);
         return m_meshes;
     }
 
@@ -155,6 +164,8 @@ namespace GameEngine {
     }
 
     std::vector<std::shared_ptr<Material>> Model::GetMaterials() const {
+        // Track resource access
+        GlobalResourceTracker::GetInstance().TrackResourceAccess(m_path);
         return m_materials;
     }
 
@@ -493,11 +504,18 @@ namespace GameEngine {
             }
         }
         
-        // Add material memory usage (rough estimate)
-        totalSize += m_materials.size() * sizeof(Material);
+        // Add material memory usage
+        for (const auto& material : m_materials) {
+            if (material) {
+                totalSize += material->GetMemoryUsage();
+            }
+        }
         
         // Add node memory usage (rough estimate)
         totalSize += m_stats.nodeCount * sizeof(ModelNode);
+        
+        // Update the resource tracker with current memory usage
+        GlobalResourceTracker::GetInstance().UpdateResourceMemoryUsage(m_path, totalSize);
         
         return totalSize;
     }

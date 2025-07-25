@@ -404,6 +404,30 @@ if exist "build\Release\FBXLoaderTest.exe" (
     )
 )
 
+REM Run ModelResourceIntegrationTest
+if exist "build\Release\ModelResourceIntegrationTest.exe" (
+    echo [INFO] Running ModelResourceIntegrationTest...
+    build\Release\ModelResourceIntegrationTest.exe >nul 2>&1
+    if errorlevel 1 (
+        echo [FAILED] ModelResourceIntegrationTest
+        goto :test_failed
+    ) else (
+        echo [PASS] ModelResourceIntegrationTest
+    )
+)
+
+REM Run ResourceUsageTrackingTest
+if exist "build\Release\ResourceUsageTrackingTest.exe" (
+    echo [INFO] Running ResourceUsageTrackingTest...
+    build\Release\ResourceUsageTrackingTest.exe >nul 2>&1
+    if errorlevel 1 (
+        echo [FAILED] ResourceUsageTrackingTest
+        goto :test_failed
+    ) else (
+        echo [PASS] ResourceUsageTrackingTest
+    )
+)
+
 echo.
 echo ========================================
 echo [SUCCESS] ALL TESTS PASSED!

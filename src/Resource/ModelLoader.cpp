@@ -1,4 +1,5 @@
 #include "Resource/ModelLoader.h"
+#include "Graphics/Model.h"
 #include "Resource/GLTFLoader.h"
 #include "Resource/FBXLoader.h"
 #include "Core/Logger.h"
@@ -205,6 +206,38 @@ ModelLoader::LoadResult ModelLoader::LoadModel(const std::string& filepath) {
 #endif
 
     return result;
+}
+
+std::shared_ptr<Model> ModelLoader::LoadModelAsResource(const std::string& filepath) {
+    if (!m_initialized) {
+        LOG_ERROR("ModelLoader not initialized");
+        return nullptr;
+    }
+
+    // Create a new Model resource
+    auto model = std::make_shared<Model>(filepath);
+    
+    // Load the model data using the existing LoadModel method
+    auto result = LoadModel(filepath);
+    if (!result.success) {
+        LOG_ERROR("Failed to load model as resource: " + filepath + " - " + result.errorMessage);
+        return nullptr;
+    }
+    
+    // Populate the Model with the loaded data
+    model->SetMeshes(result.meshes);
+    
+    // Set model metadata - Graphics/Model doesn't have SetFormat method
+    // The format information is stored in the LoadResult for now
+    
+    // Extract filename as model name
+    std::filesystem::path path(filepath);
+    model->SetName(path.stem().string());
+    
+    LOG_INFO("Successfully loaded model as resource: " + filepath + 
+             " (" + std::to_string(result.meshes.size()) + " meshes)");
+    
+    return model;
 }
 
 ModelLoader::LoadResult ModelLoader::LoadModelFromMemory(const std::vector<uint8_t>& data, const std::string& format) {

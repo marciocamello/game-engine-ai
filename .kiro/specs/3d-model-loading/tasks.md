@@ -177,16 +177,17 @@
     - Create memory management for concurrent loading operations
     - _Requirements: 6.2, 6.4, 6.6_
 
-- [ ] 11. Integrate with engine resource management
+- [x] 11. Integrate with engine resource management
 
-  - [ ] 11.1 Connect with ResourceManager system
+  - [x] 11.1 Connect with ResourceManager system
 
     - Integrate ModelLoader with existing ResourceManager caching
     - Add model resource lifecycle management with automatic cleanup
     - Implement shared resource handling for textures and materials
     - _Requirements: 7.1, 7.2, 7.4_
 
-  - [ ] 11.2 Add resource usage tracking and optimization
+  - [x] 11.2 Add resource usage tracking and optimization
+
     - Implement memory usage tracking for loaded models
     - Add least-recently-used (LRU) cache management for models
     - Create resource usage statistics and reporting

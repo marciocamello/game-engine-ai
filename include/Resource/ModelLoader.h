@@ -18,6 +18,7 @@
 namespace GameEngine {
     class GLTFLoader;
     class FBXLoader;
+    class Model;
 }
 
 namespace GameEngine {
@@ -95,6 +96,9 @@ namespace GameEngine {
         // Main loading interface
         LoadResult LoadModel(const std::string& filepath);
         LoadResult LoadModelFromMemory(const std::vector<uint8_t>& data, const std::string& format);
+        
+        // Model-based loading interface
+        std::shared_ptr<Model> LoadModelAsResource(const std::string& filepath);
 
         // Format support queries
         bool IsFormatSupported(const std::string& extension) const;

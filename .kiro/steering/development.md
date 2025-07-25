@@ -73,10 +73,10 @@ int main() {
         // Add more tests...
 
         suite.PrintSummary();
-        return suite.HasFailures() ? 1 : 0;
+        return suite.AllTestsPassed() ? 1 : 0;
 
     } catch (const std::exception& e) {
-        TestOutput::PrintError("Exception: " + std::string(e.what()));
+        TestOutput::PrintTestFail("Exception: " + std::string(e.what()));
         return 1;
     }
 }

@@ -387,6 +387,9 @@ add_integration_test(ModelLoaderAssimpTest tests/integration/test_model_loader_a
 # MaterialImporter integration test
 add_integration_test(MaterialImporterTest tests/integration/test_material_importer.cpp)
 
+# GLTF Loader integration test
+add_integration_test(GLTFLoaderTest tests/integration/test_gltf_loader.cpp)
+
 # Discover and add unit tests automatically
 discover_and_add_tests("tests/unit" "unit")
 

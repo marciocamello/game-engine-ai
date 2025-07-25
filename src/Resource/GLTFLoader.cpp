@@ -492,17 +492,23 @@ bool GLTFLoader::ParseMaterials() {
 
 bool GLTFLoader::ParseMeshes() {
     if (!m_gltfJson.contains("meshes")) {
-        LogError("No meshes found in GLTF");
-        return false;
+        LogInfo("No meshes found in GLTF");
+        return true; // Empty scenes are valid
     }
     
     const auto& meshesJson = m_gltfJson["meshes"];
     m_meshes.reserve(meshesJson.size());
     
+    LogInfo("Starting to parse " + std::to_string(meshesJson.size()) + " meshes");
+    
     for (size_t i = 0; i < meshesJson.size(); ++i) {
+        LogInfo("Parsing mesh " + std::to_string(i + 1) + "/" + std::to_string(meshesJson.size()));
+        
         auto mesh = ParseMesh(meshesJson[i], static_cast<uint32_t>(i));
         if (mesh) {
             m_meshes.push_back(mesh);
+            LogInfo("Successfully parsed mesh " + std::to_string(i) + " with " + 
+                   std::to_string(mesh->GetVertexCount()) + " vertices");
         } else {
             LogError("Failed to parse mesh " + std::to_string(i));
             return false;

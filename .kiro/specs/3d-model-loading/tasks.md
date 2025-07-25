@@ -145,16 +145,17 @@
     - Create mesh optimization statistics and performance reporting
     - _Requirements: 4.7, 9.3, 10.5_
 
-- [ ] 9. Implement bounding volume calculation
+- [x] 9. Implement bounding volume calculation
 
-  - [ ] 9.1 Create automatic bounding volume generation
+  - [x] 9.1 Create automatic bounding volume generation
 
     - Implement axis-aligned bounding box calculation for meshes and models
     - Add bounding sphere calculation with optimal center and radius
     - Create hierarchical bounding volumes for scene graph nodes
     - _Requirements: 8.1, 8.2, 8.7_
 
-  - [ ] 9.2 Add animated bounding volume support
+  - [x] 9.2 Add animated bounding volume support
+
     - Implement bounding volume calculation for animated meshes
     - Add bounding volume updates during animation playback
     - Create efficient bounding volume queries for culling and collision

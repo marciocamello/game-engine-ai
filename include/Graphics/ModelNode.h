@@ -48,7 +48,22 @@ namespace GameEngine {
         // Bounding information
         BoundingBox GetLocalBounds() const;
         BoundingBox GetWorldBounds() const;
+        BoundingSphere GetLocalBoundingSphere() const;
+        BoundingSphere GetWorldBoundingSphere() const;
         void SetLocalBounds(const BoundingBox& bounds);
+        void SetLocalBoundingSphere(const BoundingSphere& sphere);
+        
+        // Hierarchical bounding volume calculation
+        void CalculateHierarchicalBounds(const std::vector<std::shared_ptr<class Mesh>>& meshes);
+        BoundingBox CalculateCombinedBounds(const std::vector<std::shared_ptr<class Mesh>>& meshes) const;
+        BoundingSphere CalculateCombinedBoundingSphere(const std::vector<std::shared_ptr<class Mesh>>& meshes) const;
+        
+        // Animated bounding volume support
+        void UpdateAnimatedBounds(const std::vector<std::shared_ptr<class Mesh>>& meshes, float animationTime);
+        BoundingBox GetAnimatedBounds(float animationTime) const;
+        BoundingSphere GetAnimatedBoundingSphere(float animationTime) const;
+        void SetAnimatedBoundsCache(const std::vector<std::pair<float, BoundingBox>>& boundsCache);
+        void SetAnimatedSphereCache(const std::vector<std::pair<float, BoundingSphere>>& sphereCache);
 
     private:
         std::string m_name;
@@ -61,6 +76,14 @@ namespace GameEngine {
 
         bool m_visible = true;
         BoundingBox m_localBounds;
+        BoundingSphere m_localBoundingSphere;
+        
+        // Animated bounding volume caches
+        std::vector<std::pair<float, BoundingBox>> m_animatedBoundsCache;
+        std::vector<std::pair<float, BoundingSphere>> m_animatedSphereCache;
+        mutable float m_lastAnimationTime = -1.0f;
+        mutable BoundingBox m_cachedAnimatedBounds;
+        mutable BoundingSphere m_cachedAnimatedSphere;
 
         void UpdateChildTransforms();
     };

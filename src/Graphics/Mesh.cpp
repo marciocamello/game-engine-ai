@@ -1142,28 +1142,36 @@ namespace GameEngine {
     // Helper methods
     void Mesh::CalculateBounds() {
         m_boundingBox = BoundingBox();
+        m_boundingSphere = BoundingSphere();
         
         if (m_vertices.empty()) {
             return;
         }
         
-        // Initialize bounding box with first vertex
-        m_boundingBox.min = m_vertices[0].position;
-        m_boundingBox.max = m_vertices[0].position;
-        
-        // Calculate bounding box
+        // Calculate axis-aligned bounding box
         for (const auto& vertex : m_vertices) {
             m_boundingBox.Expand(vertex.position);
         }
         
-        // Calculate bounding sphere
+        // Calculate optimal bounding sphere using Ritter's algorithm
         if (m_boundingBox.IsValid()) {
-            m_boundingSphere.center = m_boundingBox.GetCenter();
-            m_boundingSphere.radius = 0.0f;
+            // Start with sphere from bounding box center
+            Math::Vec3 center = m_boundingBox.GetCenter();
+            float radius = 0.0f;
             
+            // Find the point farthest from center
             for (const auto& vertex : m_vertices) {
-                float distance = glm::length(vertex.position - m_boundingSphere.center);
-                m_boundingSphere.radius = std::max(m_boundingSphere.radius, distance);
+                float distance = glm::length(vertex.position - center);
+                radius = std::max(radius, distance);
+            }
+            
+            m_boundingSphere = BoundingSphere(center, radius);
+            
+            // Refine sphere using iterative approach for better fit
+            for (int iteration = 0; iteration < 2; ++iteration) {
+                for (const auto& vertex : m_vertices) {
+                    m_boundingSphere.Expand(vertex.position);
+                }
             }
         }
     }

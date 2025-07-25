@@ -161,7 +161,7 @@
     - Create efficient bounding volume queries for culling and collision
     - _Requirements: 8.3, 8.4, 8.5_
 
-- [-] 10. Create asynchronous loading system
+- [x] 10. Create asynchronous loading system
 
   - [x] 10.1 Implement AsyncModelLoader class
 

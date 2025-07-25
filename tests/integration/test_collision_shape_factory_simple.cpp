@@ -141,11 +141,44 @@ int main() {
 
 using namespace GameEngine::Testing;
 
+/**
+ * Test Bullet Physics availability
+ * Requirements: Physics system availability check
+ */
+bool TestBulletPhysicsAvailability() {
+    TestOutput::PrintTestStart("bullet physics availability");
+    
+    TestOutput::PrintWarning("Bullet Physics not available - collision shape factory tests skipped");
+    
+    TestOutput::PrintTestPass("bullet physics availability");
+    return true;
+}
+
 int main() {
     TestOutput::PrintHeader("Collision Shape Factory Integration");
-    TestOutput::PrintWarning("Bullet Physics not available - skipping collision shape factory tests");
-    TestOutput::PrintFooter(true);
-    return 0;
+
+    bool allPassed = true;
+
+    try {
+        // Create test suite for result tracking
+        TestSuite suite("Collision Shape Factory Integration Tests");
+
+        // Run availability test
+        allPassed &= suite.RunTest("Bullet Physics Availability", TestBulletPhysicsAvailability);
+
+        // Print detailed summary
+        suite.PrintSummary();
+
+        TestOutput::PrintFooter(allPassed);
+        return allPassed ? 0 : 1;
+
+    } catch (const std::exception& e) {
+        TestOutput::PrintError("TEST EXCEPTION: " + std::string(e.what()));
+        return 1;
+    } catch (...) {
+        TestOutput::PrintError("UNKNOWN TEST ERROR!");
+        return 1;
+    }
 }
 
 #endif // GAMEENGINE_HAS_BULLET

@@ -209,20 +209,32 @@ bool TestErrorHandling() {
 }
 
 int main() {
-    TestOutput::PrintHeader("ModelLoader Assimp Integration");
-    
-    TestSuite suite("ModelLoader");
-    
+    TestOutput::PrintHeader("Model Loader Assimp Integration");
+
     bool allPassed = true;
-    
-    allPassed &= suite.RunTest("ModelLoader Initialization", TestModelLoaderInitialization);
-    allPassed &= suite.RunTest("Format Detection", TestFormatDetectionAndEnumeration);
-    allPassed &= suite.RunTest("Loading Flags", TestLoadingFlagsConfiguration);
-    allPassed &= suite.RunTest("Bitwise Operators", TestBitwiseOperators);
-    allPassed &= suite.RunTest("Error Handling", TestErrorHandling);
-    
-    suite.PrintSummary();
-    TestOutput::PrintFooter(allPassed);
-    
-    return allPassed ? 0 : 1;
+
+    try {
+        // Create test suite for result tracking
+        TestSuite suite("Model Loader Assimp Integration Tests");
+
+        // Run all tests
+        allPassed &= suite.RunTest("ModelLoader Initialization", TestModelLoaderInitialization);
+        allPassed &= suite.RunTest("Format Detection", TestFormatDetectionAndEnumeration);
+        allPassed &= suite.RunTest("Loading Flags", TestLoadingFlagsConfiguration);
+        allPassed &= suite.RunTest("Bitwise Operators", TestBitwiseOperators);
+        allPassed &= suite.RunTest("Error Handling", TestErrorHandling);
+
+        // Print detailed summary
+        suite.PrintSummary();
+
+        TestOutput::PrintFooter(allPassed);
+        return allPassed ? 0 : 1;
+
+    } catch (const std::exception& e) {
+        TestOutput::PrintError("TEST EXCEPTION: " + std::string(e.what()));
+        return 1;
+    } catch (...) {
+        TestOutput::PrintError("UNKNOWN TEST ERROR!");
+        return 1;
+    }
 }

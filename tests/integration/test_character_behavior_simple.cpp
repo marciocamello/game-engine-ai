@@ -3,11 +3,13 @@
 #include "Physics/PhysicsEngine.h"
 #include "Input/InputManager.h"
 #include "Core/Logger.h"
+#include "../TestUtils.h"
 #include <iostream>
 #include <memory>
 #include <cmath>
 
 using namespace GameEngine;
+using namespace GameEngine::Testing;
 
 /**
  * @brief Simple character behavior test
@@ -41,27 +43,18 @@ public:
         }
     }
 
-    void RunBehaviorTests() {
-        std::cout << "=== Simple Character Behavior Tests ===" << std::endl;
+    bool RunBehaviorTests() {
+        TestOutput::PrintInfo("Starting Simple Character Behavior Tests");
         
-        int passedTests = 0;
-        int totalTests = 0;
+        bool allPassed = true;
+        allPassed &= TestCharacterInitialization();
+        allPassed &= TestCharacterProperties();
+        allPassed &= TestCharacterMovementComponents();
+        allPassed &= TestCharacterControllerCompatibility();
+        allPassed &= TestCharacterUpdate();
         
-        if (TestCharacterInitialization()) passedTests++; totalTests++;
-        if (TestCharacterProperties()) passedTests++; totalTests++;
-        if (TestCharacterMovementComponents()) passedTests++; totalTests++;
-        if (TestCharacterControllerCompatibility()) passedTests++; totalTests++;
-        if (TestCharacterUpdate()) passedTests++; totalTests++;
-        
-        std::cout << "\n=== Test Results ===" << std::endl;
-        std::cout << "Passed: " << passedTests << "/" << totalTests << " tests" << std::endl;
-        std::cout << "Success Rate: " << (100.0 * passedTests / totalTests) << "%" << std::endl;
-        
-        if (passedTests == totalTests) {
-            std::cout << "[SUCCESS] All character behavior tests passed!" << std::endl;
-        } else {
-            std::cout << "[FAILED] Some tests failed. Review the output above for details." << std::endl;
-        }
+        TestOutput::PrintInfo("Character Behavior Tests Complete");
+        return allPassed;
     }
 
 private:
@@ -69,28 +62,29 @@ private:
     std::unique_ptr<InputManager> m_inputManager;
     
     bool TestCharacterInitialization() {
-        std::cout << "\nTesting Character Initialization..." << std::endl;
+        TestOutput::PrintTestStart("character initialization");
         
         try {
             auto character = std::make_unique<Character>();
             bool initSuccess = character->Initialize(m_physicsEngine.get());
             
-            std::cout << "Character initialization: " << (initSuccess ? "SUCCESS" : "FAILED") << std::endl;
+            EXPECT_TRUE(initSuccess);
             
             // Test initial state
             Math::Vec3 initialPos = character->GetPosition();
             float initialSpeed = character->GetMoveSpeed();
             
-            std::cout << "Initial position: (" << initialPos.x << ", " << initialPos.y << ", " << initialPos.z << ")" << std::endl;
-            std::cout << "Initial move speed: " << initialSpeed << std::endl;
+            TestOutput::PrintInfo("Initial position: (" + std::to_string(initialPos.x) + ", " + 
+                                 std::to_string(initialPos.y) + ", " + std::to_string(initialPos.z) + ")");
+            TestOutput::PrintInfo("Initial move speed: " + std::to_string(initialSpeed));
             
-            bool success = initSuccess && initialSpeed > 0.0f;
-            std::cout << "Character initialization test: " << (success ? "PASS" : "FAIL") << std::endl;
+            EXPECT_TRUE(initialSpeed > 0.0f);
             
-            return success;
+            TestOutput::PrintTestPass("character initialization");
+            return true;
         }
         catch (const std::exception& e) {
-            std::cout << "Character initialization test FAILED with exception: " << e.what() << std::endl;
+            TestOutput::PrintError("Character initialization exception: " + std::string(e.what()));
             return false;
         }
     }
@@ -297,14 +291,30 @@ private:
 };
 
 int main() {
+    TestOutput::PrintHeader("Character Behavior Simple Integration");
+
+    bool allPassed = true;
+
     try {
-        SimpleCharacterBehaviorTest test;
-        test.RunBehaviorTests();
+        // Create test suite for result tracking
+        TestSuite suite("Character Behavior Simple Integration Tests");
         
-        return 0;
-    }
-    catch (const std::exception& e) {
-        std::cerr << "Character behavior test failed with exception: " << e.what() << std::endl;
+        SimpleCharacterBehaviorTest test;
+        bool testResult = test.RunBehaviorTests();
+        
+        allPassed &= suite.RunTest("Character Behavior Tests", [testResult]() { return testResult; });
+
+        // Print detailed summary
+        suite.PrintSummary();
+
+        TestOutput::PrintFooter(allPassed);
+        return allPassed ? 0 : 1;
+
+    } catch (const std::exception& e) {
+        TestOutput::PrintError("TEST EXCEPTION: " + std::string(e.what()));
+        return 1;
+    } catch (...) {
+        TestOutput::PrintError("UNKNOWN TEST ERROR!");
         return 1;
     }
 }

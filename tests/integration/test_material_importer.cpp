@@ -185,20 +185,35 @@ bool TestMaterialImporterStatistics() {
 }
 
 int main() {
-    TestOutput::PrintHeader("MaterialImporter Integration Tests");
-    Logger::GetInstance().Initialize();
-    
-    TestSuite suite("MaterialImporter Integration Tests");
-    
+    TestOutput::PrintHeader("Material Importer Integration");
+
     bool allPassed = true;
-    allPassed &= suite.RunTest("MaterialImporter Initialization", TestMaterialImporterInitialization);
-    allPassed &= suite.RunTest("Texture Search and Fallback System", TestTextureSearchAndFallbackSystem);
-    allPassed &= suite.RunTest("Material Import Settings", TestMaterialImportSettings);
-    allPassed &= suite.RunTest("Texture Validation and Conversion", TestTextureValidationAndConversion);
-    allPassed &= suite.RunTest("MaterialImporter Statistics", TestMaterialImporterStatistics);
-    
-    suite.PrintSummary();
-    TestOutput::PrintFooter(allPassed);
-    
-    return allPassed ? 0 : 1;
+
+    try {
+        // Initialize logger
+        Logger::GetInstance().Initialize();
+        
+        // Create test suite for result tracking
+        TestSuite suite("Material Importer Integration Tests");
+
+        // Run all tests
+        allPassed &= suite.RunTest("MaterialImporter Initialization", TestMaterialImporterInitialization);
+        allPassed &= suite.RunTest("Texture Search and Fallback System", TestTextureSearchAndFallbackSystem);
+        allPassed &= suite.RunTest("Material Import Settings", TestMaterialImportSettings);
+        allPassed &= suite.RunTest("Texture Validation and Conversion", TestTextureValidationAndConversion);
+        allPassed &= suite.RunTest("MaterialImporter Statistics", TestMaterialImporterStatistics);
+
+        // Print detailed summary
+        suite.PrintSummary();
+
+        TestOutput::PrintFooter(allPassed);
+        return allPassed ? 0 : 1;
+
+    } catch (const std::exception& e) {
+        TestOutput::PrintError("TEST EXCEPTION: " + std::string(e.what()));
+        return 1;
+    } catch (...) {
+        TestOutput::PrintError("UNKNOWN TEST ERROR!");
+        return 1;
+    }
 }

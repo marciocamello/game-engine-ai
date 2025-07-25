@@ -390,6 +390,9 @@ add_integration_test(MaterialImporterTest tests/integration/test_material_import
 # GLTF Loader integration test
 add_integration_test(GLTFLoaderTest tests/integration/test_gltf_loader.cpp)
 
+# FBX Loader integration test
+add_integration_test(FBXLoaderTest tests/integration/test_fbx_loader.cpp)
+
 # Discover and add unit tests automatically
 discover_and_add_tests("tests/unit" "unit")
 

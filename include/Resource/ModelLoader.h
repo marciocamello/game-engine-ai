@@ -17,6 +17,7 @@
 // Forward declarations
 namespace GameEngine {
     class GLTFLoader;
+    class FBXLoader;
 }
 
 namespace GameEngine {
@@ -129,8 +130,9 @@ namespace GameEngine {
         void ValidateScene(const aiScene* scene) const;
 #endif
 
-        // GLTF loader
+        // Specialized loaders
         std::unique_ptr<GLTFLoader> m_gltfLoader;
+        std::unique_ptr<FBXLoader> m_fbxLoader;
 
         // Configuration
         LoadingFlags m_loadingFlags = LoadingFlags::None;

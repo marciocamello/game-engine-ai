@@ -87,6 +87,12 @@ namespace GameEngine {
         BoundingBox GetBoundingBox() const;
         BoundingSphere GetBoundingSphere() const;
         void UpdateBounds();
+        
+        // Animated bounding volume support
+        BoundingBox GetAnimatedBoundingBox(float animationTime) const;
+        BoundingSphere GetAnimatedBoundingSphere(float animationTime) const;
+        void UpdateAnimatedBounds(float animationTime);
+        void PrecomputeAnimatedBounds(float startTime, float endTime, float timeStep);
 
         // LOD support (placeholder for future implementation)
         void SetLODLevels(const std::vector<std::shared_ptr<Model>>& lodLevels);
@@ -127,6 +133,11 @@ namespace GameEngine {
         BoundingBox m_boundingBox;
         BoundingSphere m_boundingSphere;
         ModelStats m_stats;
+        
+        // Animated bounding volume cache
+        mutable float m_lastAnimationTime = -1.0f;
+        mutable BoundingBox m_cachedAnimatedBoundingBox;
+        mutable BoundingSphere m_cachedAnimatedBoundingSphere;
 
         // Name-based lookup maps for performance
         std::unordered_map<std::string, std::shared_ptr<ModelNode>> m_nodeMap;

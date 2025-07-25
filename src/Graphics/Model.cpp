@@ -322,24 +322,104 @@ namespace GameEngine {
         m_boundingBox = BoundingBox();
         m_boundingSphere = BoundingSphere();
         
-        // Calculate bounds from all meshes
-        for (const auto& mesh : m_meshes) {
-            if (!mesh) continue;
-            
-            const auto& vertices = mesh->GetVertices();
-            for (const auto& vertex : vertices) {
-                m_boundingBox.Expand(vertex.position);
-                m_boundingSphere.Expand(vertex.position);
+        // First, ensure all meshes have updated bounds
+        for (auto& mesh : m_meshes) {
+            if (mesh) {
+                mesh->UpdateBounds();
             }
         }
         
-        // If we have a valid bounding box but invalid sphere, create sphere from box
+        // Calculate hierarchical bounds starting from root node
+        if (m_rootNode) {
+            m_rootNode->CalculateHierarchicalBounds(m_meshes);
+            m_boundingBox = m_rootNode->GetLocalBounds();
+            m_boundingSphere = m_rootNode->GetLocalBoundingSphere();
+        }
+        
+        // Fallback: if hierarchical calculation didn't work, calculate from all meshes
+        if (!m_boundingBox.IsValid() && !m_meshes.empty()) {
+            for (const auto& mesh : m_meshes) {
+                if (mesh) {
+                    m_boundingBox.Expand(mesh->GetBoundingBox());
+                    m_boundingSphere.Expand(mesh->GetBoundingSphere());
+                }
+            }
+        }
+        
+        // Final fallback: if we have a valid bounding box but invalid sphere, create sphere from box
         if (m_boundingBox.IsValid() && !m_boundingSphere.IsValid()) {
             Math::Vec3 center = m_boundingBox.GetCenter();
             Math::Vec3 size = m_boundingBox.GetSize();
             float radius = glm::length(size) * 0.5f;
             m_boundingSphere = BoundingSphere(center, radius);
         }
+    }
+
+    BoundingBox Model::GetAnimatedBoundingBox(float animationTime) const {
+        // Check if we have cached bounds for this time
+        if (std::abs(m_lastAnimationTime - animationTime) < 0.001f) {
+            return m_cachedAnimatedBoundingBox;
+        }
+        
+        // Calculate animated bounds from root node
+        if (m_rootNode) {
+            return m_rootNode->GetAnimatedBounds(animationTime);
+        }
+        
+        // Fallback to static bounds
+        return m_boundingBox;
+    }
+
+    BoundingSphere Model::GetAnimatedBoundingSphere(float animationTime) const {
+        // Check if we have cached sphere for this time
+        if (std::abs(m_lastAnimationTime - animationTime) < 0.001f) {
+            return m_cachedAnimatedBoundingSphere;
+        }
+        
+        // Calculate animated sphere from root node
+        if (m_rootNode) {
+            return m_rootNode->GetAnimatedBoundingSphere(animationTime);
+        }
+        
+        // Fallback to static sphere
+        return m_boundingSphere;
+    }
+
+    void Model::UpdateAnimatedBounds(float animationTime) {
+        m_lastAnimationTime = animationTime;
+        
+        if (m_rootNode) {
+            m_rootNode->UpdateAnimatedBounds(m_meshes, animationTime);
+            m_cachedAnimatedBoundingBox = m_rootNode->GetAnimatedBounds(animationTime);
+            m_cachedAnimatedBoundingSphere = m_rootNode->GetAnimatedBoundingSphere(animationTime);
+        } else {
+            m_cachedAnimatedBoundingBox = m_boundingBox;
+            m_cachedAnimatedBoundingSphere = m_boundingSphere;
+        }
+    }
+
+    void Model::PrecomputeAnimatedBounds(float startTime, float endTime, float timeStep) {
+        if (!m_rootNode || timeStep <= 0.0f || endTime <= startTime) {
+            return;
+        }
+        
+        LOG_INFO("Precomputing animated bounds for model from " + std::to_string(startTime) + 
+                "s to " + std::to_string(endTime) + "s with step " + std::to_string(timeStep) + "s");
+        
+        std::vector<std::pair<float, BoundingBox>> boundsCache;
+        std::vector<std::pair<float, BoundingSphere>> sphereCache;
+        
+        for (float time = startTime; time <= endTime; time += timeStep) {
+            UpdateAnimatedBounds(time);
+            boundsCache.emplace_back(time, m_cachedAnimatedBoundingBox);
+            sphereCache.emplace_back(time, m_cachedAnimatedBoundingSphere);
+        }
+        
+        // Set the cache on the root node (and it will propagate to children)
+        m_rootNode->SetAnimatedBoundsCache(boundsCache);
+        m_rootNode->SetAnimatedSphereCache(sphereCache);
+        
+        LOG_INFO("Precomputed " + std::to_string(boundsCache.size()) + " animated bound entries");
     }
 
     // LOD methods (placeholders)

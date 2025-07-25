@@ -1,4 +1,5 @@
 #include "Graphics/ModelNode.h"
+#include "Graphics/Mesh.h"
 #include "Core/Logger.h"
 #include <algorithm>
 #include <queue>
@@ -203,7 +204,204 @@ namespace GameEngine {
         return m_localBounds.Transform(m_worldTransform);
     }
 
+    BoundingSphere ModelNode::GetLocalBoundingSphere() const {
+        return m_localBoundingSphere;
+    }
+
+    BoundingSphere ModelNode::GetWorldBoundingSphere() const {
+        // Transform sphere center to world space
+        Math::Vec4 worldCenter = m_worldTransform * Math::Vec4(m_localBoundingSphere.center, 1.0f);
+        
+        // Calculate scale factor from transform matrix
+        Math::Vec3 scale = Math::Vec3(
+            glm::length(Math::Vec3(m_worldTransform[0])),
+            glm::length(Math::Vec3(m_worldTransform[1])),
+            glm::length(Math::Vec3(m_worldTransform[2]))
+        );
+        float maxScale = std::max({scale.x, scale.y, scale.z});
+        
+        return BoundingSphere(Math::Vec3(worldCenter), m_localBoundingSphere.radius * maxScale);
+    }
+
     void ModelNode::SetLocalBounds(const BoundingBox& bounds) {
         m_localBounds = bounds;
+    }
+
+    void ModelNode::SetLocalBoundingSphere(const BoundingSphere& sphere) {
+        m_localBoundingSphere = sphere;
+    }
+
+    void ModelNode::CalculateHierarchicalBounds(const std::vector<std::shared_ptr<Mesh>>& meshes) {
+        // Calculate bounds from meshes associated with this node
+        m_localBounds = CalculateCombinedBounds(meshes);
+        m_localBoundingSphere = CalculateCombinedBoundingSphere(meshes);
+        
+        // Expand bounds to include all child nodes
+        for (auto& child : m_children) {
+            child->CalculateHierarchicalBounds(meshes);
+            
+            // Transform child bounds to this node's local space
+            Math::Mat4 childToLocal = glm::inverse(m_localTransform) * child->GetLocalTransform();
+            BoundingBox childBounds = child->GetLocalBounds().Transform(childToLocal);
+            m_localBounds.Expand(childBounds);
+            
+            // For sphere, we need to transform and expand
+            BoundingSphere childSphere = child->GetLocalBoundingSphere();
+            if (childSphere.IsValid()) {
+                Math::Vec4 transformedCenter = childToLocal * Math::Vec4(childSphere.center, 1.0f);
+                
+                // Calculate scale factor
+                Math::Vec3 scale = Math::Vec3(
+                    glm::length(Math::Vec3(childToLocal[0])),
+                    glm::length(Math::Vec3(childToLocal[1])),
+                    glm::length(Math::Vec3(childToLocal[2]))
+                );
+                float maxScale = std::max({scale.x, scale.y, scale.z});
+                
+                BoundingSphere transformedSphere(Math::Vec3(transformedCenter), childSphere.radius * maxScale);
+                m_localBoundingSphere.Expand(transformedSphere);
+            }
+        }
+    }
+
+    BoundingBox ModelNode::CalculateCombinedBounds(const std::vector<std::shared_ptr<Mesh>>& meshes) const {
+        BoundingBox combinedBounds;
+        
+        // Combine bounds from all meshes associated with this node
+        for (uint32_t meshIndex : m_meshIndices) {
+            if (meshIndex < meshes.size() && meshes[meshIndex]) {
+                combinedBounds.Expand(meshes[meshIndex]->GetBoundingBox());
+            }
+        }
+        
+        return combinedBounds;
+    }
+
+    BoundingSphere ModelNode::CalculateCombinedBoundingSphere(const std::vector<std::shared_ptr<Mesh>>& meshes) const {
+        BoundingSphere combinedSphere;
+        
+        // Combine bounding spheres from all meshes associated with this node
+        for (uint32_t meshIndex : m_meshIndices) {
+            if (meshIndex < meshes.size() && meshes[meshIndex]) {
+                combinedSphere.Expand(meshes[meshIndex]->GetBoundingSphere());
+            }
+        }
+        
+        return combinedSphere;
+    }
+
+    void ModelNode::UpdateAnimatedBounds(const std::vector<std::shared_ptr<Mesh>>& meshes, float animationTime) {
+        // For now, we'll use the static bounds as animated bounds
+        // In a full implementation, this would calculate bounds based on animated vertex positions
+        m_lastAnimationTime = animationTime;
+        m_cachedAnimatedBounds = CalculateCombinedBounds(meshes);
+        m_cachedAnimatedSphere = CalculateCombinedBoundingSphere(meshes);
+        
+        // Update child nodes
+        for (auto& child : m_children) {
+            child->UpdateAnimatedBounds(meshes, animationTime);
+        }
+    }
+
+    BoundingBox ModelNode::GetAnimatedBounds(float animationTime) const {
+        // Check if we have cached bounds for this time
+        if (std::abs(m_lastAnimationTime - animationTime) < 0.001f) {
+            return m_cachedAnimatedBounds;
+        }
+        
+        // Check animated bounds cache
+        for (const auto& entry : m_animatedBoundsCache) {
+            if (std::abs(entry.first - animationTime) < 0.001f) {
+                return entry.second;
+            }
+        }
+        
+        // Interpolate between cached values if available
+        if (m_animatedBoundsCache.size() >= 2) {
+            // Find the two closest time entries
+            float t1 = -1.0f, t2 = -1.0f;
+            BoundingBox b1, b2;
+            
+            for (size_t i = 0; i < m_animatedBoundsCache.size() - 1; ++i) {
+                if (m_animatedBoundsCache[i].first <= animationTime && 
+                    m_animatedBoundsCache[i + 1].first >= animationTime) {
+                    t1 = m_animatedBoundsCache[i].first;
+                    t2 = m_animatedBoundsCache[i + 1].first;
+                    b1 = m_animatedBoundsCache[i].second;
+                    b2 = m_animatedBoundsCache[i + 1].second;
+                    break;
+                }
+            }
+            
+            if (t1 >= 0.0f && t2 >= 0.0f && t2 > t1) {
+                // Linear interpolation between bounds
+                float alpha = (animationTime - t1) / (t2 - t1);
+                BoundingBox interpolated;
+                interpolated.min = b1.min + alpha * (b2.min - b1.min);
+                interpolated.max = b1.max + alpha * (b2.max - b1.max);
+                return interpolated;
+            }
+        }
+        
+        // Fallback to static bounds
+        return m_localBounds;
+    }
+
+    BoundingSphere ModelNode::GetAnimatedBoundingSphere(float animationTime) const {
+        // Check if we have cached sphere for this time
+        if (std::abs(m_lastAnimationTime - animationTime) < 0.001f) {
+            return m_cachedAnimatedSphere;
+        }
+        
+        // Check animated sphere cache
+        for (const auto& entry : m_animatedSphereCache) {
+            if (std::abs(entry.first - animationTime) < 0.001f) {
+                return entry.second;
+            }
+        }
+        
+        // Interpolate between cached values if available
+        if (m_animatedSphereCache.size() >= 2) {
+            // Find the two closest time entries
+            float t1 = -1.0f, t2 = -1.0f;
+            BoundingSphere s1, s2;
+            
+            for (size_t i = 0; i < m_animatedSphereCache.size() - 1; ++i) {
+                if (m_animatedSphereCache[i].first <= animationTime && 
+                    m_animatedSphereCache[i + 1].first >= animationTime) {
+                    t1 = m_animatedSphereCache[i].first;
+                    t2 = m_animatedSphereCache[i + 1].first;
+                    s1 = m_animatedSphereCache[i].second;
+                    s2 = m_animatedSphereCache[i + 1].second;
+                    break;
+                }
+            }
+            
+            if (t1 >= 0.0f && t2 >= 0.0f && t2 > t1) {
+                // Linear interpolation between spheres
+                float alpha = (animationTime - t1) / (t2 - t1);
+                BoundingSphere interpolated;
+                interpolated.center = s1.center + alpha * (s2.center - s1.center);
+                interpolated.radius = s1.radius + alpha * (s2.radius - s1.radius);
+                return interpolated;
+            }
+        }
+        
+        // Fallback to static sphere
+        return m_localBoundingSphere;
+    }
+
+    void ModelNode::SetAnimatedBoundsCache(const std::vector<std::pair<float, BoundingBox>>& boundsCache) {
+        m_animatedBoundsCache = boundsCache;
+        // Sort by time for efficient lookup
+        std::sort(m_animatedBoundsCache.begin(), m_animatedBoundsCache.end(),
+                  [](const auto& a, const auto& b) { return a.first < b.first; });
+    }
+
+    void ModelNode::SetAnimatedSphereCache(const std::vector<std::pair<float, BoundingSphere>>& sphereCache) {
+        m_animatedSphereCache = sphereCache;
+        // Sort by time for efficient lookup
+        std::sort(m_animatedSphereCache.begin(), m_animatedSphereCache.end(),
+                  [](const auto& a, const auto& b) { return a.first < b.first; });
     }
 }

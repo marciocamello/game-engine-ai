@@ -87,7 +87,7 @@
     - We have on /assets/GLTF some examples with animation this example to use
     - _Requirements: 5.1, 5.2, 5.7_
 
-- [ ] 6. Implement FBX format support
+- [x] 6. Implement FBX format support
 
   - [x] 6.1 Create FBX scene import
 

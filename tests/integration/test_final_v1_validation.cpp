@@ -594,19 +594,29 @@ private:
 };
 
 int main() {
-    Logger::GetInstance().Initialize();
-    Logger::GetInstance().Info("Starting Game Engine Kiro v1.0 Final Validation Test");
-    
-    V1ValidationTest validator;
-    bool allTestsPassed = validator.RunAllTests();
-    
-    if (allTestsPassed) {
-        Logger::GetInstance().Info("✅ Game Engine Kiro v1.0 VALIDATION PASSED");
-        Logger::GetInstance().Info("All systems are working correctly and requirements are met.");
-    } else {
-        Logger::GetInstance().Error("❌ Game Engine Kiro v1.0 VALIDATION FAILED");
-        Logger::GetInstance().Error("Some systems or requirements are not working correctly.");
+    try {
+        // Initialize logger
+        Logger::GetInstance().Initialize();
+        Logger::GetInstance().Info("Starting Game Engine Kiro v1.0 Final Validation Test");
+        
+        V1ValidationTest validator;
+        bool allTestsPassed = validator.RunAllTests();
+        
+        if (allTestsPassed) {
+            Logger::GetInstance().Info("✅ Game Engine Kiro v1.0 VALIDATION PASSED");
+            Logger::GetInstance().Info("All systems are working correctly and requirements are met.");
+        } else {
+            Logger::GetInstance().Error("❌ Game Engine Kiro v1.0 VALIDATION FAILED");
+            Logger::GetInstance().Error("Some systems or requirements are not working correctly.");
+        }
+        
+        return allTestsPassed ? 0 : 1;
+
+    } catch (const std::exception& e) {
+        TestOutput::PrintError("TEST EXCEPTION: " + std::string(e.what()));
+        return 1;
+    } catch (...) {
+        TestOutput::PrintError("UNKNOWN TEST ERROR!");
+        return 1;
     }
-    
-    return allTestsPassed ? 0 : 1;
 }

@@ -19,9 +19,8 @@
 
 ## Optional Dependencies
 
-- **Assimp**: 3D model loading (FBX, GLTF support)
+- **Assimp**: 3D model loading (FBX, GLTF, OBJ support) - ACTIVE
 - **Lua**: Scripting engine integration
-
 - **STB**: Image loading utilities
 
 ## Development Tools
@@ -30,59 +29,83 @@
 - **Visual Studio**: Primary IDE on Windows
 - **VS Code**: Alternative development environment
 
-## Common Commands
-
-### Initial Setup
+## Primary Build Commands
 
 ```cmd
-# Windows setup
-git clone <repository>
-setup_dependencies.bat
-build.bat
-```
+# Windows - Primary build command
+scripts\build.bat
 
-### Build Commands
-
-```cmd
-# Release build
-build.bat
-
-# Debug build (manual)
-mkdir build && cd build
-cmake .. -DCMAKE_BUILD_TYPE=Debug -DCMAKE_TOOLCHAIN_FILE=../vcpkg/scripts/buildsystems/vcpkg.cmake
-cmake --build . --config Debug
-
-# Clean build
+# Clean build (when needed)
 rmdir /s /q build
-```
+scripts\build.bat
 
-### Development Workflow
-
-```cmd
 # Development console with multiple options
-dev.bat
+scripts\dev.bat
 
 # Run with logging
-start.bat
+scripts\start.bat
 
 # Monitor logs in real-time
-monitor.bat
+scripts\monitor.bat
 
 # Debug session
-debug.bat
+scripts\debug.bat
 ```
 
-### Testing
+### Test Execution
 
 ```cmd
-# Run integration tests
-build\Release\BulletIntegrationTest.exe
-build\Release\BulletConversionTest.exe
+# Run all tests after build
+scripts\run_tests.bat
 
-# Run integration tests
-build\Release\BulletIntegrationTest.exe
-build\Release\BulletConversionTest.exe
+# Individual test execution
+build\Release\[TestName].exe
+
+# Tests are automatically discovered by CMake from:
+# - tests/unit/test_*.cpp -> Unit tests (13 tests)
+# - tests/integration/test_*.cpp -> Integration tests (18 tests)
 ```
+
+## Current Test Suite Status
+
+### Unit Tests (13 total - 100% passing)
+
+- MathTest, MatrixTest, QuaternionTest
+- AssertionmacrosTest, Audio3dpositioningTest, AudioengineTest
+- AudioloaderTest, MeshloaderTest, MeshoptimizerTest
+- ModelnodeTest, ResourcefallbacksTest, ResourcemanagerTest
+- TextureloaderTest
+
+### Integration Tests (18 total - 100% passing)
+
+- Physics: BulletUtilsSimpleTest, BulletIntegrationTest, BulletConversionTest
+- Physics: CollisionShapeFactorySimpleTest, PhysicsQueriesTest, PhysicsConfigurationTest
+- Movement: MovementComponentComparisonTest, PhysicsPerformanceSimpleTest
+- Memory: MemoryUsageSimpleTest, CharacterBehaviorSimpleTest
+- Audio: OpenALIntegrationTest, AudioCameraIntegrationTest
+- Resources: ResourceStatisticsTest, ErrorHandlingTest, FinalV1ValidationTest
+- 3D Models: ModelLoaderAssimpTest, MaterialImporterTest, GLTFLoaderTest, FBXLoaderTest
+
+## 3D Model Loading System Status
+
+### Implemented Components
+
+- **ModelLoader**: Assimp-based loader with format detection
+- **MeshOptimizer**: Vertex cache optimization, mesh analysis
+- **MaterialImporter**: PBR material conversion, texture search/fallback
+- **GLTF Support**: Scene parsing, animation, skinning
+- **FBX Support**: Scene import, animation, rigging
+- **OBJ Enhancement**: MTL materials, optimization, validation
+
+### Current Capabilities
+
+- Multi-format support (GLTF, FBX, OBJ via Assimp)
+- Mesh optimization algorithms (Tom Forsyth's algorithm)
+- Material import with PBR conversion
+- Texture loading with fallback system
+- Scene graph hierarchy support
+- Animation and skinning support
+- Comprehensive mesh analysis and validation
 
 ## Compiler Configuration
 
@@ -99,3 +122,4 @@ build\Release\BulletConversionTest.exe
 - **Optional dependency handling**: Graceful fallback when dependencies missing
 - **Asset copying**: Automatic asset deployment to build directory
 - **Multiple executables**: Engine library + example game + tests
+- **Automatic test discovery**: CMake discovers tests from tests/ directory

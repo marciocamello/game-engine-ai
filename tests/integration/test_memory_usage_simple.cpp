@@ -2,6 +2,7 @@
 #include "Game/Character.h"
 #include "Input/InputManager.h"
 #include "Core/Logger.h"
+#include "../TestUtils.h"
 #include <iostream>
 #include <vector>
 #include <memory>
@@ -13,6 +14,7 @@
 #endif
 
 using namespace GameEngine;
+using namespace GameEngine::Testing;
 
 /**
  * @brief Simple memory usage test
@@ -50,14 +52,16 @@ public:
         }
     }
 
-    void RunMemoryTests() {
-        std::cout << "=== Simple Memory Usage Tests ===" << std::endl;
+    bool RunMemoryTests() {
+        TestOutput::PrintInfo("Starting Simple Memory Usage Tests");
         
-        TestPhysicsObjectChurn();
-        TestCharacterLifecycle();
-        TestExtendedSimulation();
+        bool allPassed = true;
+        allPassed &= TestPhysicsObjectChurn();
+        allPassed &= TestCharacterLifecycle();
+        allPassed &= TestExtendedSimulation();
         
-        std::cout << "=== Memory Usage Tests Complete ===" << std::endl;
+        TestOutput::PrintInfo("Memory Usage Tests Complete");
+        return allPassed;
     }
 
 private:
@@ -79,35 +83,39 @@ private:
     }
     
     void PrintMemoryUsage(const std::string& testName, const MemoryInfo& before, const MemoryInfo& after) {
-        std::cout << "\n--- " << testName << " Memory Usage ---" << std::endl;
+        TestOutput::PrintInfo("--- " + testName + " Memory Usage ---");
         
         long long workingSetDiff = static_cast<long long>(after.workingSetSize) - static_cast<long long>(before.workingSetSize);
         long long privateDiff = static_cast<long long>(after.privateUsage) - static_cast<long long>(before.privateUsage);
         
-        std::cout << "Working Set: " << (before.workingSetSize / 1024 / 1024) << " MB -> " 
-                  << (after.workingSetSize / 1024 / 1024) << " MB (";
-        if (workingSetDiff >= 0) std::cout << "+";
-        std::cout << (workingSetDiff / 1024 / 1024) << " MB)" << std::endl;
+        std::string workingSetMsg = "Working Set: " + std::to_string(before.workingSetSize / 1024 / 1024) + " MB -> " + 
+                                   std::to_string(after.workingSetSize / 1024 / 1024) + " MB (";
+        if (workingSetDiff >= 0) workingSetMsg += "+";
+        workingSetMsg += std::to_string(workingSetDiff / 1024 / 1024) + " MB)";
+        TestOutput::PrintInfo(workingSetMsg);
         
-        std::cout << "Private Usage: " << (before.privateUsage / 1024 / 1024) << " MB -> " 
-                  << (after.privateUsage / 1024 / 1024) << " MB (";
-        if (privateDiff >= 0) std::cout << "+";
-        std::cout << (privateDiff / 1024 / 1024) << " MB)" << std::endl;
+        std::string privateMsg = "Private Usage: " + std::to_string(before.privateUsage / 1024 / 1024) + " MB -> " + 
+                                std::to_string(after.privateUsage / 1024 / 1024) + " MB (";
+        if (privateDiff >= 0) privateMsg += "+";
+        privateMsg += std::to_string(privateDiff / 1024 / 1024) + " MB)";
+        TestOutput::PrintInfo(privateMsg);
         
         // Simple leak detection
         const long long LEAK_THRESHOLD_MB = 5; // 5 MB threshold
         
         if (workingSetDiff > LEAK_THRESHOLD_MB * 1024 * 1024) {
-            std::cout << "[WARNING] POTENTIAL MEMORY LEAK DETECTED!" << std::endl;
+            TestOutput::PrintWarning("POTENTIAL MEMORY LEAK DETECTED!");
         } else if (workingSetDiff < -1024 * 1024) { // More than 1MB freed
-            std::cout << "[INFO] Good memory cleanup detected" << std::endl;
+            TestOutput::PrintInfo("Good memory cleanup detected");
         } else {
-            std::cout << "[INFO] Memory usage within acceptable range" << std::endl;
+            TestOutput::PrintInfo("Memory usage within acceptable range");
         }
     }
     
-    void TestPhysicsObjectChurn() {
-        std::cout << "\nTesting Physics Object Creation/Destruction..." << std::endl;
+    bool TestPhysicsObjectChurn() {
+        TestOutput::PrintTestStart("physics object creation/destruction");
+        
+        TestOutput::PrintInfo("Testing Physics Object Creation/Destruction...");
         
         auto beforeMemory = GetMemoryInfo();
         
@@ -150,16 +158,21 @@ private:
             
             // Progress indicator
             if (iter % 100 == 0) {
-                std::cout << "Progress: " << iter << "/" << ITERATIONS << " iterations" << std::endl;
+                TestOutput::PrintInfo("Progress: " + std::to_string(iter) + "/" + std::to_string(ITERATIONS) + " iterations");
             }
         }
         
         auto afterMemory = GetMemoryInfo();
         PrintMemoryUsage("Physics Object Churn", beforeMemory, afterMemory);
+        
+        TestOutput::PrintTestPass("physics object creation/destruction");
+        return true;
     }
     
-    void TestCharacterLifecycle() {
-        std::cout << "\nTesting Character Lifecycle..." << std::endl;
+    bool TestCharacterLifecycle() {
+        TestOutput::PrintTestStart("character lifecycle");
+        
+        TestOutput::PrintInfo("Testing Character Lifecycle...");
         
         auto beforeMemory = GetMemoryInfo();
         
@@ -207,16 +220,21 @@ private:
             
             // Progress indicator
             if (iter % 50 == 0) {
-                std::cout << "Progress: " << iter << "/" << ITERATIONS << " iterations" << std::endl;
+                TestOutput::PrintInfo("Progress: " + std::to_string(iter) + "/" + std::to_string(ITERATIONS) + " iterations");
             }
         }
         
         auto afterMemory = GetMemoryInfo();
         PrintMemoryUsage("Character Lifecycle", beforeMemory, afterMemory);
+        
+        TestOutput::PrintTestPass("character lifecycle");
+        return true;
     }
     
-    void TestExtendedSimulation() {
-        std::cout << "\nTesting Extended Simulation..." << std::endl;
+    bool TestExtendedSimulation() {
+        TestOutput::PrintTestStart("extended simulation");
+        
+        TestOutput::PrintInfo("Testing Extended Simulation...");
         
         auto beforeMemory = GetMemoryInfo();
         
@@ -311,7 +329,7 @@ private:
             
             // Progress indicator
             if (step % 1200 == 0) { // Every 20 seconds
-                std::cout << "Simulation progress: " << (step / 1200) << "/6 (20-second intervals)" << std::endl;
+                TestOutput::PrintInfo("Simulation progress: " + std::to_string(step / 1200) + "/6 (20-second intervals)");
             }
         }
         
@@ -326,25 +344,43 @@ private:
         
         auto afterMemory = GetMemoryInfo();
         PrintMemoryUsage("Extended Simulation (2 minutes)", beforeMemory, afterMemory);
+        
+        TestOutput::PrintTestPass("extended simulation");
+        return true;
     }
 };
 
 int main() {
+    TestOutput::PrintHeader("Memory Usage Simple Integration");
+
+    bool allPassed = true;
+
     try {
-        std::cout << "Starting Simple Memory Usage Tests..." << std::endl;
-        std::cout << "This test will run for a few minutes to check memory patterns." << std::endl;
+        TestOutput::PrintInfo("Starting Simple Memory Usage Tests...");
+        TestOutput::PrintInfo("This test will run for a few minutes to check memory patterns.");
+        
+        // Create test suite for result tracking
+        TestSuite suite("Memory Usage Simple Integration Tests");
         
         SimpleMemoryUsageTest test;
-        test.RunMemoryTests();
+        bool testResult = test.RunMemoryTests();
         
-        std::cout << "\n=== Memory Usage Tests Complete ===" << std::endl;
-        std::cout << "If no memory leak warnings were shown, the physics system" << std::endl;
-        std::cout << "appears to be managing memory correctly." << std::endl;
+        allPassed &= suite.RunTest("Memory Usage Tests", [testResult]() { return testResult; });
         
-        return 0;
-    }
-    catch (const std::exception& e) {
-        std::cerr << "Memory usage test failed with exception: " << e.what() << std::endl;
+        TestOutput::PrintInfo("If no memory leak warnings were shown, the physics system");
+        TestOutput::PrintInfo("appears to be managing memory correctly.");
+
+        // Print detailed summary
+        suite.PrintSummary();
+
+        TestOutput::PrintFooter(allPassed);
+        return allPassed ? 0 : 1;
+
+    } catch (const std::exception& e) {
+        TestOutput::PrintError("TEST EXCEPTION: " + std::string(e.what()));
+        return 1;
+    } catch (...) {
+        TestOutput::PrintError("UNKNOWN TEST ERROR!");
         return 1;
     }
 }

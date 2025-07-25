@@ -52,6 +52,126 @@ if exist "build\Release\QuaternionTest.exe" (
     )
 )
 
+REM Run AssertionMacros unit test
+if exist "build\Release\AssertionmacrosTest.exe" (
+    echo [INFO] Running AssertionmacrosTest...
+    build\Release\AssertionmacrosTest.exe >nul 2>&1
+    if errorlevel 1 (
+        echo [FAILED] AssertionmacrosTest
+        goto :test_failed
+    ) else (
+        echo [PASS] AssertionmacrosTest
+    )
+)
+
+REM Run Audio3DPositioning unit test
+if exist "build\Release\Audio3dpositioningTest.exe" (
+    echo [INFO] Running Audio3dpositioningTest...
+    build\Release\Audio3dpositioningTest.exe >nul 2>&1
+    if errorlevel 1 (
+        echo [FAILED] Audio3dpositioningTest
+        goto :test_failed
+    ) else (
+        echo [PASS] Audio3dpositioningTest
+    )
+)
+
+REM Run AudioEngine unit test
+if exist "build\Release\AudioengineTest.exe" (
+    echo [INFO] Running AudioengineTest...
+    build\Release\AudioengineTest.exe >nul 2>&1
+    if errorlevel 1 (
+        echo [FAILED] AudioengineTest
+        goto :test_failed
+    ) else (
+        echo [PASS] AudioengineTest
+    )
+)
+
+REM Run AudioLoader unit test
+if exist "build\Release\AudioloaderTest.exe" (
+    echo [INFO] Running AudioloaderTest...
+    build\Release\AudioloaderTest.exe >nul 2>&1
+    if errorlevel 1 (
+        echo [FAILED] AudioloaderTest
+        goto :test_failed
+    ) else (
+        echo [PASS] AudioloaderTest
+    )
+)
+
+REM Run MeshLoader unit test
+if exist "build\Release\MeshloaderTest.exe" (
+    echo [INFO] Running MeshloaderTest...
+    build\Release\MeshloaderTest.exe >nul 2>&1
+    if errorlevel 1 (
+        echo [FAILED] MeshloaderTest
+        goto :test_failed
+    ) else (
+        echo [PASS] MeshloaderTest
+    )
+)
+
+REM Run MeshOptimizer unit test
+if exist "build\Release\MeshoptimizerTest.exe" (
+    echo [INFO] Running MeshoptimizerTest...
+    build\Release\MeshoptimizerTest.exe >nul 2>&1
+    if errorlevel 1 (
+        echo [FAILED] MeshoptimizerTest
+        goto :test_failed
+    ) else (
+        echo [PASS] MeshoptimizerTest
+    )
+)
+
+REM Run ModelNode unit test
+if exist "build\Release\ModelnodeTest.exe" (
+    echo [INFO] Running ModelnodeTest...
+    build\Release\ModelnodeTest.exe >nul 2>&1
+    if errorlevel 1 (
+        echo [FAILED] ModelnodeTest
+        goto :test_failed
+    ) else (
+        echo [PASS] ModelnodeTest
+    )
+)
+
+REM Run ResourceFallbacks unit test
+if exist "build\Release\ResourcefallbacksTest.exe" (
+    echo [INFO] Running ResourcefallbacksTest...
+    build\Release\ResourcefallbacksTest.exe >nul 2>&1
+    if errorlevel 1 (
+        echo [FAILED] ResourcefallbacksTest
+        goto :test_failed
+    ) else (
+        echo [PASS] ResourcefallbacksTest
+    )
+)
+
+REM Run ResourceManager unit test
+if exist "build\Release\ResourcemanagerTest.exe" (
+    echo [INFO] Running ResourcemanagerTest...
+    build\Release\ResourcemanagerTest.exe >nul 2>&1
+    if errorlevel 1 (
+        echo [FAILED] ResourcemanagerTest
+        goto :test_failed
+    ) else (
+        echo [PASS] ResourcemanagerTest
+    )
+)
+
+REM Run TextureLoader unit test
+if exist "build\Release\TextureloaderTest.exe" (
+    echo [INFO] Running TextureloaderTest...
+    build\Release\TextureloaderTest.exe >nul 2>&1
+    if errorlevel 1 (
+        echo [FAILED] TextureloaderTest
+        goto :test_failed
+    ) else (
+        echo [PASS] TextureloaderTest
+    )
+)
+
 echo.
 echo Running Integration Tests...
 echo ----------------------------------------
@@ -173,6 +293,114 @@ if exist "build\Release\CharacterBehaviorSimpleTest.exe" (
         goto :test_failed
     ) else (
         echo [PASS] CharacterBehaviorSimpleTest
+    )
+)
+
+REM Run OpenALIntegrationTest
+if exist "build\Release\OpenALIntegrationTest.exe" (
+    echo [INFO] Running OpenALIntegrationTest...
+    build\Release\OpenALIntegrationTest.exe >nul 2>&1
+    if errorlevel 1 (
+        echo [FAILED] OpenALIntegrationTest
+        goto :test_failed
+    ) else (
+        echo [PASS] OpenALIntegrationTest
+    )
+)
+
+REM Run AudioCameraIntegrationTest
+if exist "build\Release\AudioCameraIntegrationTest.exe" (
+    echo [INFO] Running AudioCameraIntegrationTest...
+    build\Release\AudioCameraIntegrationTest.exe >nul 2>&1
+    if errorlevel 1 (
+        echo [FAILED] AudioCameraIntegrationTest
+        goto :test_failed
+    ) else (
+        echo [PASS] AudioCameraIntegrationTest
+    )
+)
+
+REM Run ResourceStatisticsTest
+if exist "build\Release\ResourceStatisticsTest.exe" (
+    echo [INFO] Running ResourceStatisticsTest...
+    build\Release\ResourceStatisticsTest.exe >nul 2>&1
+    if errorlevel 1 (
+        echo [FAILED] ResourceStatisticsTest
+        goto :test_failed
+    ) else (
+        echo [PASS] ResourceStatisticsTest
+    )
+)
+
+REM Run ErrorHandlingTest
+if exist "build\Release\ErrorHandlingTest.exe" (
+    echo [INFO] Running ErrorHandlingTest...
+    build\Release\ErrorHandlingTest.exe >nul 2>&1
+    if errorlevel 1 (
+        echo [FAILED] ErrorHandlingTest
+        goto :test_failed
+    ) else (
+        echo [PASS] ErrorHandlingTest
+    )
+)
+
+REM Run FinalV1ValidationTest
+if exist "build\Release\FinalV1ValidationTest.exe" (
+    echo [INFO] Running FinalV1ValidationTest...
+    build\Release\FinalV1ValidationTest.exe >nul 2>&1
+    if errorlevel 1 (
+        echo [FAILED] FinalV1ValidationTest
+        goto :test_failed
+    ) else (
+        echo [PASS] FinalV1ValidationTest
+    )
+)
+
+REM Run ModelLoaderAssimpTest
+if exist "build\Release\ModelLoaderAssimpTest.exe" (
+    echo [INFO] Running ModelLoaderAssimpTest...
+    build\Release\ModelLoaderAssimpTest.exe >nul 2>&1
+    if errorlevel 1 (
+        echo [FAILED] ModelLoaderAssimpTest
+        goto :test_failed
+    ) else (
+        echo [PASS] ModelLoaderAssimpTest
+    )
+)
+
+REM Run MaterialImporterTest
+if exist "build\Release\MaterialImporterTest.exe" (
+    echo [INFO] Running MaterialImporterTest...
+    build\Release\MaterialImporterTest.exe >nul 2>&1
+    if errorlevel 1 (
+        echo [FAILED] MaterialImporterTest
+        goto :test_failed
+    ) else (
+        echo [PASS] MaterialImporterTest
+    )
+)
+
+REM Run GLTFLoaderTest
+if exist "build\Release\GLTFLoaderTest.exe" (
+    echo [INFO] Running GLTFLoaderTest...
+    build\Release\GLTFLoaderTest.exe >nul 2>&1
+    if errorlevel 1 (
+        echo [FAILED] GLTFLoaderTest
+        goto :test_failed
+    ) else (
+        echo [PASS] GLTFLoaderTest
+    )
+)
+
+REM Run FBXLoaderTest
+if exist "build\Release\FBXLoaderTest.exe" (
+    echo [INFO] Running FBXLoaderTest...
+    build\Release\FBXLoaderTest.exe >nul 2>&1
+    if errorlevel 1 (
+        echo [FAILED] FBXLoaderTest
+        goto :test_failed
+    ) else (
+        echo [PASS] FBXLoaderTest
     )
 )
 

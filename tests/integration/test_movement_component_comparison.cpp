@@ -5,6 +5,7 @@
 #include "Physics/PhysicsEngine.h"
 #include "Input/InputManager.h"
 #include "Core/Logger.h"
+#include "../TestUtils.h"
 #include <iostream>
 #include <chrono>
 #include <vector>
@@ -12,6 +13,7 @@
 #include <iomanip>
 
 using namespace GameEngine;
+using namespace GameEngine::Testing;
 
 /**
  * @brief Comprehensive test comparing all movement component types
@@ -49,7 +51,7 @@ public:
         }
     }
 
-    void RunAllTests() {
+    bool RunAllTests() {
         LOG_INFO("=== Movement Component Comparison Test ===");
         
         // Test each movement component type
@@ -81,6 +83,7 @@ public:
         TestBackwardCompatibility();
         
         LOG_INFO("=== Movement Component Comparison Test Complete ===");
+        return true;
     }
 
 private:
@@ -353,24 +356,32 @@ private:
     }
     
     void PrintComparisonResults(const std::vector<TestResult>& results) {
-        LOG_INFO("=== Movement Component Performance Comparison ===");
+        TestOutput::PrintInfo("=== Movement Component Performance Comparison ===");
         
-        std::cout << std::endl;
-        std::cout << "Component Name                          | Init | Avg Time | Max Time | Min Time | Behavior | Final Pos" << std::endl;
-        std::cout << "----------------------------------------|------|----------|----------|----------|----------|----------" << std::endl;
+        TestOutput::PrintInfo("Component Name                          | Init | Avg Time | Max Time | Min Time | Behavior | Final Pos");
+        TestOutput::PrintInfo("----------------------------------------|------|----------|----------|----------|----------|----------");
         
         for (const auto& result : results) {
-            std::cout << std::left << std::setw(39) << result.componentName << " | ";
-            std::cout << std::setw(4) << (result.initializationSuccess ? "OK" : "FAIL") << " | ";
-            std::cout << std::setw(8) << std::fixed << std::setprecision(3) << result.averageUpdateTime << " | ";
-            std::cout << std::setw(8) << std::fixed << std::setprecision(3) << result.maxUpdateTime << " | ";
-            std::cout << std::setw(8) << std::fixed << std::setprecision(3) << result.minUpdateTime << " | ";
-            std::cout << std::setw(8) << (result.behaviorCorrect ? "OK" : "FAIL") << " | ";
-            std::cout << "(" << std::setprecision(1) << result.finalPosition.x << "," 
-                     << result.finalPosition.y << "," << result.finalPosition.z << ")" << std::endl;
+            std::string line = "";
+            line += result.componentName;
+            line.resize(39, ' ');
+            line += " | ";
+            line += (result.initializationSuccess ? "OK  " : "FAIL");
+            line += " | ";
+            line += std::to_string(result.averageUpdateTime).substr(0, 8);
+            line += " | ";
+            line += std::to_string(result.maxUpdateTime).substr(0, 8);
+            line += " | ";
+            line += std::to_string(result.minUpdateTime).substr(0, 8);
+            line += " | ";
+            line += (result.behaviorCorrect ? "OK      " : "FAIL    ");
+            line += " | ";
+            line += "(" + std::to_string(result.finalPosition.x).substr(0, 3) + "," + 
+                    std::to_string(result.finalPosition.y).substr(0, 3) + "," + 
+                    std::to_string(result.finalPosition.z).substr(0, 3) + ")";
+            
+            TestOutput::PrintInfo(line);
         }
-        
-        std::cout << std::endl;
         
         // Find best performing component
         auto bestPerformance = std::min_element(results.begin(), results.end(), 
@@ -396,12 +407,34 @@ private:
 };
 
 int main() {
-    // Initialize logging
-    Logger::GetInstance().Initialize();
-    
-    // Run comprehensive movement component comparison test
-    MovementComponentComparisonTest test;
-    test.RunAllTests();
-    
-    return 0;
+    TestOutput::PrintHeader("Movement Component Comparison Integration");
+
+    bool allPassed = true;
+
+    try {
+        // Initialize logging
+        Logger::GetInstance().Initialize();
+        
+        // Create test suite for result tracking
+        TestSuite suite("Movement Component Comparison Integration Tests");
+        
+        // Run comprehensive movement component comparison test
+        MovementComponentComparisonTest test;
+        bool testResult = test.RunAllTests();
+        
+        allPassed &= suite.RunTest("Movement Component Comparison", [testResult]() { return testResult; });
+
+        // Print detailed summary
+        suite.PrintSummary();
+
+        TestOutput::PrintFooter(allPassed);
+        return allPassed ? 0 : 1;
+
+    } catch (const std::exception& e) {
+        TestOutput::PrintError("TEST EXCEPTION: " + std::string(e.what()));
+        return 1;
+    } catch (...) {
+        TestOutput::PrintError("UNKNOWN TEST ERROR!");
+        return 1;
+    }
 }

@@ -75,6 +75,10 @@ namespace GameEngine {
         m_audio3DCalculator.reset();
         
         ShutdownOpenAL();
+        
+        // Mark audio as unavailable after shutdown
+        m_audioAvailable = false;
+        
         LOG_INFO("Audio Engine shutdown");
     }
 

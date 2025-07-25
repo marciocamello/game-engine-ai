@@ -162,24 +162,33 @@ bool TestGLTFLoaderWithRealFile() {
 }
 
 int main() {
-    TestOutput::PrintHeader("GLTF Loader Integration Tests");
-    
-    bool allTestsPassed = true;
-    
+    TestOutput::PrintHeader("GLTF Loader Integration");
+
+    bool allPassed = true;
+
     try {
-        allTestsPassed &= TestGLTFLoaderInitialization();
-        allTestsPassed &= TestGLTFLoaderWithNonExistentFile();
-        allTestsPassed &= TestGLTFLoaderWithInvalidJSON();
-        allTestsPassed &= TestGLTFLoaderWithMinimalValidGLTF();
-        allTestsPassed &= TestGLTFLoaderMemoryLoading();
-        allTestsPassed &= TestGLTFLoaderWithRealFile();
-        
+        // Create test suite for result tracking
+        TestSuite suite("GLTF Loader Integration Tests");
+
+        // Run all tests
+        allPassed &= suite.RunTest("GLTF Loader Initialization", TestGLTFLoaderInitialization);
+        allPassed &= suite.RunTest("GLTF Loader with Non-Existent File", TestGLTFLoaderWithNonExistentFile);
+        allPassed &= suite.RunTest("GLTF Loader with Invalid JSON", TestGLTFLoaderWithInvalidJSON);
+        allPassed &= suite.RunTest("GLTF Loader with Minimal Valid GLTF", TestGLTFLoaderWithMinimalValidGLTF);
+        allPassed &= suite.RunTest("GLTF Loader Memory Loading", TestGLTFLoaderMemoryLoading);
+        allPassed &= suite.RunTest("GLTF Loader with Real File", TestGLTFLoaderWithRealFile);
+
+        // Print detailed summary
+        suite.PrintSummary();
+
+        TestOutput::PrintFooter(allPassed);
+        return allPassed ? 0 : 1;
+
     } catch (const std::exception& e) {
-        TestOutput::PrintError("Exception during testing: " + std::string(e.what()));
-        allTestsPassed = false;
+        TestOutput::PrintError("TEST EXCEPTION: " + std::string(e.what()));
+        return 1;
+    } catch (...) {
+        TestOutput::PrintError("UNKNOWN TEST ERROR!");
+        return 1;
     }
-    
-    TestOutput::PrintFooter(allTestsPassed);
-    
-    return allTestsPassed ? 0 : 1;
 }

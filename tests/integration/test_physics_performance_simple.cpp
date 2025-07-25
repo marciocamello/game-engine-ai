@@ -1,11 +1,13 @@
 #include "Physics/PhysicsEngine.h"
 #include "Core/Logger.h"
+#include "../TestUtils.h"
 #include <iostream>
 #include <chrono>
 #include <vector>
 #include <memory>
 
 using namespace GameEngine;
+using namespace GameEngine::Testing;
 
 /**
  * @brief Simple physics performance test
@@ -31,22 +33,26 @@ public:
         }
     }
 
-    void RunPerformanceTests() {
-        std::cout << "=== Simple Physics Performance Tests ===" << std::endl;
+    bool RunPerformanceTests() {
+        TestOutput::PrintInfo("Starting Simple Physics Performance Tests");
         
-        TestRigidBodyCreation();
-        TestPhysicsUpdates();
-        TestRaycastPerformance();
-        TestOverlapPerformance();
+        bool allPassed = true;
+        allPassed &= TestRigidBodyCreation();
+        allPassed &= TestPhysicsUpdates();
+        allPassed &= TestRaycastPerformance();
+        allPassed &= TestOverlapPerformance();
         
-        std::cout << "=== Performance Tests Complete ===" << std::endl;
+        TestOutput::PrintInfo("Performance Tests Complete");
+        return allPassed;
     }
 
 private:
     std::unique_ptr<PhysicsEngine> m_physicsEngine;
     
-    void TestRigidBodyCreation() {
-        std::cout << "\nTesting Rigid Body Creation Performance..." << std::endl;
+    bool TestRigidBodyCreation() {
+        TestOutput::PrintTestStart("rigid body creation performance");
+        
+        TestOutput::PrintInfo("Testing Rigid Body Creation Performance...");
         
         auto world = m_physicsEngine->CreateWorld(Math::Vec3(0.0f, -9.81f, 0.0f));
         m_physicsEngine->SetActiveWorld(world);
@@ -78,8 +84,8 @@ private:
         auto endTime = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
         
-        std::cout << "Created " << NUM_BODIES << " rigid bodies in " << duration.count() << "ms" << std::endl;
-        std::cout << "Average: " << (static_cast<double>(duration.count()) / NUM_BODIES) << "ms per body" << std::endl;
+        TestOutput::PrintInfo("Created " + std::to_string(NUM_BODIES) + " rigid bodies in " + std::to_string(duration.count()) + "ms");
+        TestOutput::PrintInfo("Average: " + std::to_string(static_cast<double>(duration.count()) / NUM_BODIES) + "ms per body");
         
         // Cleanup
         startTime = std::chrono::high_resolution_clock::now();
@@ -89,11 +95,16 @@ private:
         endTime = std::chrono::high_resolution_clock::now();
         duration = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
         
-        std::cout << "Destroyed " << NUM_BODIES << " rigid bodies in " << duration.count() << "ms" << std::endl;
+        TestOutput::PrintInfo("Destroyed " + std::to_string(NUM_BODIES) + " rigid bodies in " + std::to_string(duration.count()) + "ms");
+        
+        TestOutput::PrintTestPass("rigid body creation performance");
+        return true;
     }
     
-    void TestPhysicsUpdates() {
-        std::cout << "\nTesting Physics Update Performance..." << std::endl;
+    bool TestPhysicsUpdates() {
+        TestOutput::PrintTestStart("physics updates performance");
+        
+        TestOutput::PrintInfo("Testing Physics Update Performance...");
         
         auto world = m_physicsEngine->CreateWorld(Math::Vec3(0.0f, -9.81f, 0.0f));
         m_physicsEngine->SetActiveWorld(world);
@@ -129,17 +140,22 @@ private:
         auto endTime = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
         
-        std::cout << "Performed " << NUM_UPDATES << " physics updates in " << duration.count() << "ms" << std::endl;
-        std::cout << "Average: " << (static_cast<double>(duration.count()) / NUM_UPDATES) << "ms per update" << std::endl;
+        TestOutput::PrintInfo("Performed " + std::to_string(NUM_UPDATES) + " physics updates in " + std::to_string(duration.count()) + "ms");
+        TestOutput::PrintInfo("Average: " + std::to_string(static_cast<double>(duration.count()) / NUM_UPDATES) + "ms per update");
         
         // Cleanup
         for (uint32_t bodyId : bodyIds) {
             m_physicsEngine->DestroyRigidBody(bodyId);
         }
+        
+        TestOutput::PrintTestPass("physics updates performance");
+        return true;
     }
     
-    void TestRaycastPerformance() {
-        std::cout << "\nTesting Raycast Performance..." << std::endl;
+    bool TestRaycastPerformance() {
+        TestOutput::PrintTestStart("raycast performance");
+        
+        TestOutput::PrintInfo("Testing Raycast Performance...");
         
         auto world = m_physicsEngine->CreateWorld(Math::Vec3(0.0f, -9.81f, 0.0f));
         m_physicsEngine->SetActiveWorld(world);
@@ -178,18 +194,23 @@ private:
         auto endTime = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
         
-        std::cout << "Performed " << NUM_RAYCASTS << " raycasts in " << duration.count() << "ms" << std::endl;
-        std::cout << "Average: " << (static_cast<double>(duration.count()) / NUM_RAYCASTS) << "ms per raycast" << std::endl;
-        std::cout << "Hits: " << hits << "/" << NUM_RAYCASTS << std::endl;
+        TestOutput::PrintInfo("Performed " + std::to_string(NUM_RAYCASTS) + " raycasts in " + std::to_string(duration.count()) + "ms");
+        TestOutput::PrintInfo("Average: " + std::to_string(static_cast<double>(duration.count()) / NUM_RAYCASTS) + "ms per raycast");
+        TestOutput::PrintInfo("Hits: " + std::to_string(hits) + "/" + std::to_string(NUM_RAYCASTS));
         
         // Cleanup
         for (uint32_t bodyId : bodyIds) {
             m_physicsEngine->DestroyRigidBody(bodyId);
         }
+        
+        TestOutput::PrintTestPass("raycast performance");
+        return true;
     }
     
-    void TestOverlapPerformance() {
-        std::cout << "\nTesting Overlap Query Performance..." << std::endl;
+    bool TestOverlapPerformance() {
+        TestOutput::PrintTestStart("overlap performance");
+        
+        TestOutput::PrintInfo("Testing Overlap Query Performance...");
         
         auto world = m_physicsEngine->CreateWorld(Math::Vec3(0.0f, -9.81f, 0.0f));
         m_physicsEngine->SetActiveWorld(world);
@@ -229,26 +250,45 @@ private:
         auto endTime = std::chrono::high_resolution_clock::now();
         auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
         
-        std::cout << "Performed " << NUM_OVERLAPS << " overlap queries in " << duration.count() << "ms" << std::endl;
-        std::cout << "Average: " << (static_cast<double>(duration.count()) / NUM_OVERLAPS) << "ms per query" << std::endl;
-        std::cout << "Total hits found: " << totalHits << std::endl;
+        TestOutput::PrintInfo("Performed " + std::to_string(NUM_OVERLAPS) + " overlap queries in " + std::to_string(duration.count()) + "ms");
+        TestOutput::PrintInfo("Average: " + std::to_string(static_cast<double>(duration.count()) / NUM_OVERLAPS) + "ms per query");
+        TestOutput::PrintInfo("Total hits found: " + std::to_string(totalHits));
         
         // Cleanup
         for (uint32_t bodyId : bodyIds) {
             m_physicsEngine->DestroyRigidBody(bodyId);
         }
+        
+        TestOutput::PrintTestPass("overlap performance");
+        return true;
     }
 };
 
 int main() {
+    TestOutput::PrintHeader("Physics Performance Simple Integration");
+
+    bool allPassed = true;
+
     try {
-        SimplePhysicsPerformanceTest test;
-        test.RunPerformanceTests();
+        // Create test suite for result tracking
+        TestSuite suite("Physics Performance Simple Integration Tests");
         
-        return 0;
-    }
-    catch (const std::exception& e) {
-        std::cerr << "Performance test failed with exception: " << e.what() << std::endl;
+        SimplePhysicsPerformanceTest test;
+        bool testResult = test.RunPerformanceTests();
+        
+        allPassed &= suite.RunTest("Physics Performance Tests", [testResult]() { return testResult; });
+
+        // Print detailed summary
+        suite.PrintSummary();
+
+        TestOutput::PrintFooter(allPassed);
+        return allPassed ? 0 : 1;
+
+    } catch (const std::exception& e) {
+        TestOutput::PrintError("TEST EXCEPTION: " + std::string(e.what()));
+        return 1;
+    } catch (...) {
+        TestOutput::PrintError("UNKNOWN TEST ERROR!");
         return 1;
     }
 }

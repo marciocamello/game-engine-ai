@@ -71,18 +71,33 @@ bool TestResourceStatsStructure() {
 }
 
 int main() {
-    TestOutput::PrintHeader("Basic Resource Manager Tests");
-    Logger::GetInstance().Initialize();
-    
-    TestSuite suite("Basic Resource Manager Tests");
-    
+    TestOutput::PrintHeader("Resource Manager Basic Integration");
+
     bool allPassed = true;
-    allPassed &= suite.RunTest("Basic Resource Manager", TestBasicResourceManager);
-    allPassed &= suite.RunTest("Memory Threshold Settings", TestMemoryThresholdSettings);
-    allPassed &= suite.RunTest("Resource Stats Structure", TestResourceStatsStructure);
-    
-    suite.PrintSummary();
-    TestOutput::PrintFooter(allPassed);
-    
-    return allPassed ? 0 : 1;
+
+    try {
+        // Initialize logger
+        Logger::GetInstance().Initialize();
+        
+        // Create test suite for result tracking
+        TestSuite suite("Resource Manager Basic Integration Tests");
+
+        // Run all tests
+        allPassed &= suite.RunTest("Basic Resource Manager", TestBasicResourceManager);
+        allPassed &= suite.RunTest("Memory Threshold Settings", TestMemoryThresholdSettings);
+        allPassed &= suite.RunTest("Resource Stats Structure", TestResourceStatsStructure);
+
+        // Print detailed summary
+        suite.PrintSummary();
+
+        TestOutput::PrintFooter(allPassed);
+        return allPassed ? 0 : 1;
+
+    } catch (const std::exception& e) {
+        TestOutput::PrintError("TEST EXCEPTION: " + std::string(e.what()));
+        return 1;
+    } catch (...) {
+        TestOutput::PrintError("UNKNOWN TEST ERROR!");
+        return 1;
+    }
 }

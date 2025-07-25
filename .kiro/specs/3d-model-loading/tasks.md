@@ -72,7 +72,7 @@
 
 - [-] 5. Implement GLTF 2.0 format support
 
-  - [-] 5.1 Create GLTF scene parsing
+  - [x] 5.1 Create GLTF scene parsing
 
     - Implement GLTF JSON parsing with scene, node, and mesh extraction
     - Add GLTF binary (.glb) format support with embedded resources
@@ -91,12 +91,14 @@
 
     - Implement FBX scene parsing using Assimp FBX importer
     - Add FBX material conversion with texture mapping
+    - We have on /assets/meshes/XBot.fbx to use, this is a fbx with skeleton from mixamo, a T-Poser
     - Create FBX mesh import with proper coordinate system conversion
     - _Requirements: 1.2, 2.1, 2.2_
 
   - [ ] 6.2 Add FBX animation and rigging support
     - Implement FBX skeletal animation import with bone weights
     - Add FBX animation curve parsing and keyframe extraction
+    - We have on /assets/meshes/Idle.fbx to use, this is a fbx with skeleton from mixamo, a Idle
     - Create FBX blend shape and morph target support
     - _Requirements: 5.1, 5.3, 5.6_
 

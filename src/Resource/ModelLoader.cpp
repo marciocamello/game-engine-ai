@@ -1,5 +1,6 @@
 #include "Resource/ModelLoader.h"
 #include "Resource/GLTFLoader.h"
+#include "Resource/FBXLoader.h"
 #include "Core/Logger.h"
 #include <filesystem>
 #include <chrono>
@@ -32,8 +33,15 @@ bool ModelLoader::Initialize() {
         return true;
     }
 
-    // Initialize GLTF loader
+    // Initialize specialized loaders
     m_gltfLoader = std::make_unique<GLTFLoader>();
+    m_fbxLoader = std::make_unique<FBXLoader>();
+    
+    // Initialize FBX loader
+    if (m_fbxLoader && !m_fbxLoader->Initialize()) {
+        Logger::GetInstance().Warning("Failed to initialize FBX loader");
+        m_fbxLoader.reset();
+    }
 
 #ifdef GAMEENGINE_HAS_ASSIMP
     try {
@@ -47,7 +55,12 @@ bool ModelLoader::Initialize() {
                         LoadingFlags::RemoveDuplicateVertices;
         
         m_initialized = true;
-        Logger::GetInstance().Info("ModelLoader initialized successfully with Assimp and GLTF support");
+        std::string loaderInfo = "ModelLoader initialized successfully with Assimp, GLTF";
+        if (m_fbxLoader) {
+            loaderInfo += ", and FBX";
+        }
+        loaderInfo += " support";
+        Logger::GetInstance().Info(loaderInfo);
         
         // Log supported formats
         auto formats = GetSupportedFormats();
@@ -71,6 +84,11 @@ void ModelLoader::Shutdown() {
     }
 
     m_gltfLoader.reset();
+    
+    if (m_fbxLoader) {
+        m_fbxLoader->Shutdown();
+        m_fbxLoader.reset();
+    }
 
 #ifdef GAMEENGINE_HAS_ASSIMP
     m_importer.reset();
@@ -98,6 +116,28 @@ ModelLoader::LoadResult ModelLoader::LoadModel(const std::string& filepath) {
         return result;
     }
 
+    // Check if it's an FBX file and use specialized loader
+    if (FBXLoader::IsFBXFile(filepath) && m_fbxLoader) {
+        auto fbxResult = m_fbxLoader->LoadFBX(filepath);
+        
+        // Convert FBX result to ModelLoader result
+        if (fbxResult.success) {
+            result.success = true;
+            result.meshes = fbxResult.meshes;
+            result.totalVertices = fbxResult.totalVertices;
+            result.totalTriangles = fbxResult.totalTriangles;
+            result.loadingTimeMs = fbxResult.loadingTimeMs;
+            result.formatUsed = "fbx";
+            
+            LogLoadingStats(result);
+            return result;
+        } else {
+            result.errorMessage = "FBX loading failed: " + fbxResult.errorMessage;
+            Logger::GetInstance().Error("ModelLoader::LoadModel: " + result.errorMessage);
+            return result;
+        }
+    }
+    
     // Check if it's a GLTF file and use specialized loader
     if (GLTFLoader::IsGLTFFile(filepath) || GLTFLoader::IsGLBFile(filepath)) {
         if (m_gltfLoader) {

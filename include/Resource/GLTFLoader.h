@@ -3,6 +3,9 @@
 #include "Graphics/Model.h"
 #include "Graphics/Mesh.h"
 #include "Graphics/Material.h"
+#include "Graphics/Animation.h"
+#include "Graphics/Skeleton.h"
+#include "Graphics/MorphTarget.h"
 #include "Core/Math.h"
 #include <nlohmann/json.hpp>
 #include <string>
@@ -96,6 +99,9 @@ namespace GameEngine {
         std::vector<AccessorInfo> m_accessors;
         std::vector<std::shared_ptr<Material>> m_materials;
         std::vector<std::shared_ptr<Mesh>> m_meshes;
+        std::vector<std::shared_ptr<Animation>> m_animations;
+        std::vector<std::shared_ptr<Skeleton>> m_skeletons;
+        std::vector<std::shared_ptr<Skin>> m_skins;
         
         // Loading methods
         bool LoadGLTFJson(const std::string& filepath);
@@ -112,6 +118,8 @@ namespace GameEngine {
         bool ParseAccessors();
         bool ParseMaterials();
         bool ParseMeshes();
+        bool ParseAnimations();
+        bool ParseSkins();
         std::shared_ptr<Model> ParseScene(uint32_t sceneIndex = 0);
         
         // Node parsing
@@ -125,6 +133,20 @@ namespace GameEngine {
         // Material parsing
         std::shared_ptr<Material> ParseMaterial(const nlohmann::json& materialJson, uint32_t materialIndex);
         void ParsePBRMetallicRoughness(const nlohmann::json& pbrJson, std::shared_ptr<Material> material);
+        
+        // Animation parsing
+        std::shared_ptr<Animation> ParseAnimation(const nlohmann::json& animationJson, uint32_t animationIndex);
+        std::shared_ptr<AnimationChannel> ParseAnimationChannel(const nlohmann::json& channelJson);
+        template<typename T>
+        std::shared_ptr<AnimationSampler<T>> ParseAnimationSampler(const nlohmann::json& samplerJson);
+        InterpolationType ParseInterpolationType(const std::string& interpolation);
+        
+        // Skeleton and skin parsing
+        std::shared_ptr<Skin> ParseSkin(const nlohmann::json& skinJson, uint32_t skinIndex);
+        std::shared_ptr<Skeleton> CreateSkeletonFromSkin(const nlohmann::json& skinJson);
+        
+        // Morph target parsing
+        std::shared_ptr<MorphTargetSet> ParseMorphTargets(const nlohmann::json& targetsJson);
         
         // Accessor data extraction
         template<typename T>

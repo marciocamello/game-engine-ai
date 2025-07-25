@@ -1,6 +1,9 @@
 #include "Resource/GLTFLoader.h"
 #include "Graphics/ModelNode.h"
 #include "Graphics/Texture.h"
+#include "Graphics/Animation.h"
+#include "Graphics/Skeleton.h"
+#include "Graphics/MorphTarget.h"
 #include "Core/Logger.h"
 #include <filesystem>
 #include <fstream>
@@ -52,6 +55,9 @@ GLTFLoader::LoadResult GLTFLoader::LoadGLTF(const std::string& filepath) {
     m_accessors.clear();
     m_materials.clear();
     m_meshes.clear();
+    m_animations.clear();
+    m_skeletons.clear();
+    m_skins.clear();
     
     bool loadSuccess = false;
     
@@ -74,7 +80,7 @@ GLTFLoader::LoadResult GLTFLoader::LoadGLTF(const std::string& filepath) {
     
     // Parse GLTF components
     if (!ParseBuffers() || !ParseBufferViews() || !ParseAccessors() || 
-        !ParseMaterials() || !ParseMeshes()) {
+        !ParseMaterials() || !ParseMeshes() || !ParseAnimations() || !ParseSkins()) {
         result.errorMessage = "Failed to parse GLTF components";
         LogError(result.errorMessage);
         return result;
@@ -126,6 +132,9 @@ GLTFLoader::LoadResult GLTFLoader::LoadGLTFFromMemory(const std::vector<uint8_t>
     m_accessors.clear();
     m_materials.clear();
     m_meshes.clear();
+    m_animations.clear();
+    m_skeletons.clear();
+    m_skins.clear();
     
     // Check if it's GLB format (starts with magic number)
     if (data.size() >= 12) {
@@ -176,7 +185,7 @@ GLTFLoader::LoadResult GLTFLoader::LoadGLTFFromMemory(const std::vector<uint8_t>
     
     // Parse GLTF components
     if (!ParseBuffers() || !ParseBufferViews() || !ParseAccessors() || 
-        !ParseMaterials() || !ParseMeshes()) {
+        !ParseMaterials() || !ParseMeshes() || !ParseAnimations() || !ParseSkins()) {
         result.errorMessage = "Failed to parse GLTF components";
         LogError(result.errorMessage);
         return result;
@@ -541,6 +550,13 @@ std::shared_ptr<Model> GLTFLoader::ParseScene(uint32_t sceneIndex) {
     model->SetMeshes(m_meshes);
     model->SetMaterials(m_materials);
     
+    // Set animations and skeletons
+    model->SetAnimations(m_animations);
+    model->SetSkins(m_skins);
+    if (!m_skeletons.empty()) {
+        model->SetSkeleton(m_skeletons[0]); // Use first skeleton as primary
+    }
+    
     // Parse root nodes
     if (sceneJson.contains("nodes")) {
         auto rootNode = model->GetRootNode();
@@ -724,6 +740,30 @@ bool GLTFLoader::ParseMeshPrimitive(const nlohmann::json& primitiveJson, std::sh
         }
     }
     
+    // Bone IDs (for skinning)
+    if (attributesJson.contains("JOINTS_0")) {
+        uint32_t jointsAccessor = attributesJson["JOINTS_0"];
+        auto joints = GetAccessorData<Math::Vec4>(jointsAccessor);
+        
+        if (joints.size() == vertices.size()) {
+            for (size_t i = 0; i < joints.size(); ++i) {
+                vertices[i].boneIds = joints[i];
+            }
+        }
+    }
+    
+    // Bone weights (for skinning)
+    if (attributesJson.contains("WEIGHTS_0")) {
+        uint32_t weightsAccessor = attributesJson["WEIGHTS_0"];
+        auto weights = GetAccessorData<Math::Vec4>(weightsAccessor);
+        
+        if (weights.size() == vertices.size()) {
+            for (size_t i = 0; i < weights.size(); ++i) {
+                vertices[i].boneWeights = weights[i];
+            }
+        }
+    }
+    
     mesh->SetVertices(vertices);
     
     // Parse indices
@@ -744,6 +784,14 @@ bool GLTFLoader::ParseMeshPrimitive(const nlohmann::json& primitiveJson, std::sh
         // Use default material
         mesh->SetMaterial(m_materials[0]);
         mesh->SetMaterialIndex(0);
+    }
+    
+    // Parse morph targets
+    if (primitiveJson.contains("targets")) {
+        auto morphTargets = ParseMorphTargets(primitiveJson["targets"]);
+        if (morphTargets) {
+            mesh->SetMorphTargets(morphTargets);
+        }
     }
     
     return true;
@@ -1025,5 +1073,346 @@ void GLTFLoader::LogWarning(const std::string& message) {
 void GLTFLoader::LogInfo(const std::string& message) {
     Logger::GetInstance().Info("GLTFLoader: " + message);
 }
+
+bool GLTFLoader::ParseAnimations() {
+    if (!m_gltfJson.contains("animations")) {
+        LogInfo("No animations found in GLTF");
+        return true;
+    }
+    
+    const auto& animationsJson = m_gltfJson["animations"];
+    m_animations.reserve(animationsJson.size());
+    
+    for (size_t i = 0; i < animationsJson.size(); ++i) {
+        auto animation = ParseAnimation(animationsJson[i], static_cast<uint32_t>(i));
+        if (animation) {
+            m_animations.push_back(animation);
+        } else {
+            LogWarning("Failed to parse animation " + std::to_string(i));
+        }
+    }
+    
+    LogInfo("Loaded " + std::to_string(m_animations.size()) + " animations");
+    return true;
+}
+
+bool GLTFLoader::ParseSkins() {
+    if (!m_gltfJson.contains("skins")) {
+        LogInfo("No skins found in GLTF");
+        return true;
+    }
+    
+    const auto& skinsJson = m_gltfJson["skins"];
+    m_skins.reserve(skinsJson.size());
+    m_skeletons.reserve(skinsJson.size());
+    
+    for (size_t i = 0; i < skinsJson.size(); ++i) {
+        auto skin = ParseSkin(skinsJson[i], static_cast<uint32_t>(i));
+        if (skin) {
+            m_skins.push_back(skin);
+            
+            // Create skeleton from skin
+            auto skeleton = CreateSkeletonFromSkin(skinsJson[i]);
+            if (skeleton) {
+                skin->SetSkeleton(skeleton);
+                m_skeletons.push_back(skeleton);
+            }
+        } else {
+            LogWarning("Failed to parse skin " + std::to_string(i));
+        }
+    }
+    
+    LogInfo("Loaded " + std::to_string(m_skins.size()) + " skins and " + 
+            std::to_string(m_skeletons.size()) + " skeletons");
+    return true;
+}
+
+std::shared_ptr<Animation> GLTFLoader::ParseAnimation(const nlohmann::json& animationJson, uint32_t animationIndex) {
+    std::string animationName = animationJson.value("name", "Animation_" + std::to_string(animationIndex));
+    auto animation = std::make_shared<Animation>(animationName);
+    
+    if (!animationJson.contains("channels") || !animationJson.contains("samplers")) {
+        LogError("Animation missing channels or samplers: " + animationName);
+        return nullptr;
+    }
+    
+    const auto& channelsJson = animationJson["channels"];
+    const auto& samplersJson = animationJson["samplers"];
+    
+    // Parse channels
+    for (const auto& channelJson : channelsJson) {
+        auto channel = ParseAnimationChannel(channelJson);
+        if (channel) {
+            // Get sampler index
+            if (!channelJson.contains("sampler")) {
+                LogError("Animation channel missing sampler reference");
+                continue;
+            }
+            
+            uint32_t samplerIndex = channelJson["sampler"];
+            if (samplerIndex >= samplersJson.size()) {
+                LogError("Animation channel sampler index out of range");
+                continue;
+            }
+            
+            const auto& samplerJson = samplersJson[samplerIndex];
+            
+            // Parse target property
+            if (!channelJson.contains("target") || !channelJson["target"].contains("path")) {
+                LogError("Animation channel missing target path");
+                continue;
+            }
+            
+            std::string targetPath = channelJson["target"]["path"];
+            
+            if (targetPath == "translation") {
+                auto sampler = ParseAnimationSampler<Math::Vec3>(samplerJson);
+                channel->SetTranslationSampler(sampler);
+                channel->SetTargetProperty(AnimationTarget::Translation);
+            } else if (targetPath == "rotation") {
+                auto sampler = ParseAnimationSampler<Math::Quat>(samplerJson);
+                channel->SetRotationSampler(sampler);
+                channel->SetTargetProperty(AnimationTarget::Rotation);
+            } else if (targetPath == "scale") {
+                auto sampler = ParseAnimationSampler<Math::Vec3>(samplerJson);
+                channel->SetScaleSampler(sampler);
+                channel->SetTargetProperty(AnimationTarget::Scale);
+            } else if (targetPath == "weights") {
+                auto sampler = ParseAnimationSampler<std::vector<float>>(samplerJson);
+                channel->SetWeightsSampler(sampler);
+                channel->SetTargetProperty(AnimationTarget::Weights);
+            }
+            
+            animation->AddChannel(channel);
+        }
+    }
+    
+    return animation;
+}
+
+std::shared_ptr<AnimationChannel> GLTFLoader::ParseAnimationChannel(const nlohmann::json& channelJson) {
+    auto channel = std::make_shared<AnimationChannel>();
+    
+    if (!channelJson.contains("target") || !channelJson["target"].contains("node")) {
+        LogError("Animation channel missing target node");
+        return nullptr;
+    }
+    
+    uint32_t targetNode = channelJson["target"]["node"];
+    channel->SetTargetNode(targetNode);
+    
+    return channel;
+}
+
+template<typename T>
+std::shared_ptr<AnimationSampler<T>> GLTFLoader::ParseAnimationSampler(const nlohmann::json& samplerJson) {
+    auto sampler = std::make_shared<AnimationSampler<T>>();
+    
+    if (!samplerJson.contains("input") || !samplerJson.contains("output")) {
+        LogError("Animation sampler missing input or output");
+        return nullptr;
+    }
+    
+    uint32_t inputAccessor = samplerJson["input"];
+    uint32_t outputAccessor = samplerJson["output"];
+    
+    // Parse interpolation type
+    std::string interpolation = samplerJson.value("interpolation", "LINEAR");
+    sampler->SetInterpolationType(ParseInterpolationType(interpolation));
+    
+    // Get time values
+    auto timeValues = GetAccessorData<float>(inputAccessor);
+    
+    // Get output values
+    std::vector<T> outputValues;
+    if constexpr (std::is_same_v<T, Math::Vec3>) {
+        outputValues = GetVec3AccessorData(outputAccessor);
+    } else if constexpr (std::is_same_v<T, Math::Quat>) {
+        auto quatData = GetAccessorData<Math::Vec4>(outputAccessor);
+        outputValues.reserve(quatData.size());
+        for (const auto& q : quatData) {
+            outputValues.emplace_back(q.w, q.x, q.y, q.z); // GLTF uses (x,y,z,w), GLM uses (w,x,y,z)
+        }
+    } else if constexpr (std::is_same_v<T, std::vector<float>>) {
+        // For morph target weights, we need to handle variable-length arrays
+        auto floatData = GetAccessorData<float>(outputAccessor);
+        // Group floats into vectors based on the number of morph targets
+        // This is a simplified approach - in practice, we'd need to know the target count
+        outputValues.push_back(floatData);
+    }
+    
+    // Create keyframes
+    std::vector<Keyframe<T>> keyframes;
+    size_t keyframeCount = std::min(timeValues.size(), outputValues.size());
+    
+    for (size_t i = 0; i < keyframeCount; ++i) {
+        keyframes.emplace_back(timeValues[i], outputValues[i]);
+    }
+    
+    sampler->SetKeyframes(keyframes);
+    return sampler;
+}
+
+InterpolationType GLTFLoader::ParseInterpolationType(const std::string& interpolation) {
+    if (interpolation == "LINEAR") {
+        return InterpolationType::Linear;
+    } else if (interpolation == "STEP") {
+        return InterpolationType::Step;
+    } else if (interpolation == "CUBICSPLINE") {
+        return InterpolationType::CubicSpline;
+    } else {
+        LogWarning("Unknown interpolation type: " + interpolation + ", using LINEAR");
+        return InterpolationType::Linear;
+    }
+}
+
+std::shared_ptr<Skin> GLTFLoader::ParseSkin(const nlohmann::json& skinJson, uint32_t skinIndex) {
+    auto skin = std::make_shared<Skin>();
+    
+    if (!skinJson.contains("joints")) {
+        LogError("Skin missing joints array");
+        return nullptr;
+    }
+    
+    // Parse joint indices
+    std::vector<uint32_t> joints;
+    for (uint32_t jointIndex : skinJson["joints"]) {
+        joints.push_back(jointIndex);
+    }
+    skin->SetJoints(joints);
+    
+    // Parse inverse bind matrices
+    if (skinJson.contains("inverseBindMatrices")) {
+        uint32_t accessorIndex = skinJson["inverseBindMatrices"];
+        auto matrices = GetAccessorData<Math::Mat4>(accessorIndex);
+        skin->SetInverseBindMatrices(matrices);
+    }
+    
+    return skin;
+}
+
+std::shared_ptr<Skeleton> GLTFLoader::CreateSkeletonFromSkin(const nlohmann::json& skinJson) {
+    if (!skinJson.contains("joints") || !m_gltfJson.contains("nodes")) {
+        return nullptr;
+    }
+    
+    auto skeleton = std::make_shared<Skeleton>();
+    std::vector<std::shared_ptr<Bone>> bones;
+    
+    const auto& nodesJson = m_gltfJson["nodes"];
+    const auto& jointIndices = skinJson["joints"];
+    
+    // Create bones for each joint
+    for (size_t i = 0; i < jointIndices.size(); ++i) {
+        uint32_t nodeIndex = jointIndices[i];
+        
+        if (nodeIndex >= nodesJson.size()) {
+            LogError("Joint node index out of range: " + std::to_string(nodeIndex));
+            continue;
+        }
+        
+        const auto& nodeJson = nodesJson[nodeIndex];
+        std::string boneName = nodeJson.value("name", "Bone_" + std::to_string(nodeIndex));
+        
+        auto bone = std::make_shared<Bone>(boneName, static_cast<int32_t>(i));
+        
+        // Parse transform
+        Math::Mat4 transform = Math::Mat4(1.0f);
+        if (nodeJson.contains("matrix")) {
+            transform = ParseMatrix(nodeJson["matrix"]);
+        } else {
+            // TRS transform
+            if (nodeJson.contains("translation")) {
+                Math::Vec3 translation = ParseVec3(nodeJson["translation"]);
+                transform = glm::translate(transform, translation);
+            }
+            
+            if (nodeJson.contains("rotation")) {
+                auto rotJson = nodeJson["rotation"];
+                if (rotJson.size() == 4) {
+                    Math::Quat rotation(rotJson[3], rotJson[0], rotJson[1], rotJson[2]); // w, x, y, z
+                    transform = transform * glm::mat4_cast(rotation);
+                }
+            }
+            
+            if (nodeJson.contains("scale")) {
+                Math::Vec3 scale = ParseVec3(nodeJson["scale"], Math::Vec3(1.0f));
+                transform = glm::scale(transform, scale);
+            }
+        }
+        
+        bone->SetLocalTransform(transform);
+        bones.push_back(bone);
+    }
+    
+    skeleton->SetBones(bones);
+    
+    // Build hierarchy by examining node children
+    for (size_t i = 0; i < jointIndices.size(); ++i) {
+        uint32_t nodeIndex = jointIndices[i];
+        const auto& nodeJson = nodesJson[nodeIndex];
+        
+        if (nodeJson.contains("children")) {
+            for (uint32_t childNodeIndex : nodeJson["children"]) {
+                // Find if this child is also a joint
+                auto childJointIt = std::find(jointIndices.begin(), jointIndices.end(), childNodeIndex);
+                if (childJointIt != jointIndices.end()) {
+                    size_t childJointIndex = std::distance(jointIndices.begin(), childJointIt);
+                    bones[i]->AddChild(bones[childJointIndex]);
+                }
+            }
+        }
+    }
+    
+    skeleton->BuildHierarchy();
+    return skeleton;
+}
+
+std::shared_ptr<MorphTargetSet> GLTFLoader::ParseMorphTargets(const nlohmann::json& targetsJson) {
+    auto morphTargetSet = std::make_shared<MorphTargetSet>();
+    
+    for (size_t i = 0; i < targetsJson.size(); ++i) {
+        const auto& targetJson = targetsJson[i];
+        
+        std::string targetName = "MorphTarget_" + std::to_string(i);
+        auto morphTarget = std::make_shared<MorphTarget>(targetName);
+        
+        // Parse position deltas
+        if (targetJson.contains("POSITION")) {
+            uint32_t accessorIndex = targetJson["POSITION"];
+            auto positionDeltas = GetVec3AccessorData(accessorIndex);
+            morphTarget->SetPositionDeltas(positionDeltas);
+        }
+        
+        // Parse normal deltas
+        if (targetJson.contains("NORMAL")) {
+            uint32_t accessorIndex = targetJson["NORMAL"];
+            auto normalDeltas = GetVec3AccessorData(accessorIndex);
+            morphTarget->SetNormalDeltas(normalDeltas);
+        }
+        
+        // Parse tangent deltas
+        if (targetJson.contains("TANGENT")) {
+            uint32_t accessorIndex = targetJson["TANGENT"];
+            auto tangentData = GetAccessorData<Math::Vec4>(accessorIndex);
+            
+            std::vector<Math::Vec3> tangentDeltas;
+            tangentDeltas.reserve(tangentData.size());
+            for (const auto& t : tangentData) {
+                tangentDeltas.emplace_back(t.x, t.y, t.z);
+            }
+            morphTarget->SetTangentDeltas(tangentDeltas);
+        }
+        
+        morphTargetSet->AddMorphTarget(morphTarget);
+    }
+    
+    return morphTargetSet;
+}
+
+// Explicit template instantiations for animation samplers
+template std::shared_ptr<AnimationSampler<Math::Vec3>> GLTFLoader::ParseAnimationSampler<Math::Vec3>(const nlohmann::json& samplerJson);
+template std::shared_ptr<AnimationSampler<Math::Quat>> GLTFLoader::ParseAnimationSampler<Math::Quat>(const nlohmann::json& samplerJson);
+template std::shared_ptr<AnimationSampler<std::vector<float>>> GLTFLoader::ParseAnimationSampler<std::vector<float>>(const nlohmann::json& samplerJson);
 
 } // namespace GameEngine

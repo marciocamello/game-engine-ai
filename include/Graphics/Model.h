@@ -12,6 +12,7 @@ namespace GameEngine {
     class Shader;
     class Animation;
     class Skeleton;
+    class Skin;
     class ModelNode;
     class Mesh;
     class Material;
@@ -56,16 +57,26 @@ namespace GameEngine {
         std::shared_ptr<Material> FindMaterial(const std::string& name) const;
         size_t GetMaterialCount() const;
 
-        // Animation access (placeholder for future implementation)
+        // Animation access
         bool HasAnimations() const;
         std::vector<std::shared_ptr<Animation>> GetAnimations() const;
         std::shared_ptr<Animation> GetAnimation(size_t index) const;
         std::shared_ptr<Animation> FindAnimation(const std::string& name) const;
         size_t GetAnimationCount() const;
+        void AddAnimation(std::shared_ptr<Animation> animation);
+        void SetAnimations(const std::vector<std::shared_ptr<Animation>>& animations);
 
-        // Skeleton access (placeholder for future implementation)
+        // Skeleton access
         std::shared_ptr<Skeleton> GetSkeleton() const;
         bool HasSkeleton() const;
+        void SetSkeleton(std::shared_ptr<Skeleton> skeleton);
+        
+        // Skin access
+        std::vector<std::shared_ptr<Skin>> GetSkins() const;
+        std::shared_ptr<Skin> GetSkin(size_t index) const;
+        size_t GetSkinCount() const;
+        void AddSkin(std::shared_ptr<Skin> skin);
+        void SetSkins(const std::vector<std::shared_ptr<Skin>>& skins);
 
         // Rendering
         void Render(const Math::Mat4& transform, std::shared_ptr<Shader> shader);
@@ -108,8 +119,9 @@ namespace GameEngine {
         std::shared_ptr<ModelNode> m_rootNode;
         std::vector<std::shared_ptr<Mesh>> m_meshes;
         std::vector<std::shared_ptr<Material>> m_materials;
-        std::vector<std::shared_ptr<Animation>> m_animations; // Placeholder
-        std::shared_ptr<Skeleton> m_skeleton; // Placeholder
+        std::vector<std::shared_ptr<Animation>> m_animations;
+        std::shared_ptr<Skeleton> m_skeleton;
+        std::vector<std::shared_ptr<Skin>> m_skins;
         std::vector<std::shared_ptr<Model>> m_lodLevels; // Placeholder
 
         BoundingBox m_boundingBox;
@@ -120,6 +132,7 @@ namespace GameEngine {
         std::unordered_map<std::string, std::shared_ptr<ModelNode>> m_nodeMap;
         std::unordered_map<std::string, std::shared_ptr<Mesh>> m_meshMap;
         std::unordered_map<std::string, std::shared_ptr<Material>> m_materialMap;
+        std::unordered_map<std::string, std::shared_ptr<Animation>> m_animationMap;
 
         // Helper methods
         void CalculateBounds();
@@ -128,6 +141,7 @@ namespace GameEngine {
         void BuildNodeMap();
         void BuildMeshMap();
         void BuildMaterialMap();
+        void BuildAnimationMap();
         void CollectAllNodes(std::shared_ptr<ModelNode> node, std::vector<std::shared_ptr<ModelNode>>& nodes) const;
     };
 }

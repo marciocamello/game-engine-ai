@@ -8,6 +8,11 @@
 #include <string>
 #include <unordered_map>
 
+// Forward declarations
+namespace GameEngine {
+    class MorphTargetSet;
+}
+
 namespace GameEngine {
     class Material;
     
@@ -133,6 +138,11 @@ namespace GameEngine {
         void SetPrimitiveType(PrimitiveType type) { m_primitiveType = type; }
         PrimitiveType GetPrimitiveType() const { return m_primitiveType; }
         
+        // Morph target management
+        void SetMorphTargets(std::shared_ptr<MorphTargetSet> morphTargets) { m_morphTargets = morphTargets; }
+        std::shared_ptr<MorphTargetSet> GetMorphTargets() const { return m_morphTargets; }
+        bool HasMorphTargets() const { return m_morphTargets != nullptr; }
+        
         // Bounding volume management
         BoundingBox GetBoundingBox() const { return m_boundingBox; }
         BoundingSphere GetBoundingSphere() const { return m_boundingSphere; }
@@ -188,6 +198,9 @@ namespace GameEngine {
         
         // Vertex layout system
         VertexLayout m_layout;
+        
+        // Morph targets
+        std::shared_ptr<MorphTargetSet> m_morphTargets;
         
         // Bounding volumes
         BoundingBox m_boundingBox;

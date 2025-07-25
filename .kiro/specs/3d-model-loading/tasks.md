@@ -79,10 +79,12 @@
     - Create GLTF material parsing with PBR metallic-roughness workflow
     - _Requirements: 1.1, 2.1, 2.3_
 
-  - [ ] 5.2 Add GLTF animation and skinning support
+  - [x] 5.2 Add GLTF animation and skinning support
+
     - Implement GLTF animation parsing with keyframe extraction
     - Add skeletal animation support with bone hierarchy
     - Create morph target (blend shape) import for facial animation
+    - We have on /assets/GLTF some examples with animation this example to use
     - _Requirements: 5.1, 5.2, 5.7_
 
 - [ ] 6. Implement FBX format support
@@ -109,12 +111,14 @@
     - Improve existing OBJ parser with complete vertex attribute support
     - Add MTL material file parsing with texture and property extraction
     - Implement OBJ group and object separation with proper naming
+    - We have on /assets/meshes some .obj for use
     - _Requirements: 1.3, 2.1, 2.2_
 
   - [ ] 7.2 Add OBJ optimization and validation
     - Implement OBJ mesh validation with error detection and reporting
     - Add automatic normal generation for OBJ meshes without normals
     - Create OBJ coordinate system conversion and scaling
+    - We have on /assets/meshes some .obj for use
     - _Requirements: 4.3, 9.3, 10.5_
 
 - [ ] 8. Create mesh optimization and LOD system

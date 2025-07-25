@@ -3,6 +3,8 @@
 #include "Graphics/Mesh.h"
 #include "Graphics/Material.h"
 #include "Graphics/Shader.h"
+#include "Graphics/Animation.h"
+#include "Graphics/Skeleton.h"
 #include "Core/Logger.h"
 #include <algorithm>
 #include <chrono>
@@ -18,10 +20,12 @@ namespace GameEngine {
         m_meshes.clear();
         m_materials.clear();
         m_animations.clear();
+        m_skins.clear();
         m_lodLevels.clear();
         m_nodeMap.clear();
         m_meshMap.clear();
         m_materialMap.clear();
+        m_animationMap.clear();
         m_rootNode.reset();
     }
 
@@ -190,7 +194,10 @@ namespace GameEngine {
     }
 
     std::shared_ptr<Animation> Model::FindAnimation(const std::string& name) const {
-        // Placeholder implementation
+        auto it = m_animationMap.find(name);
+        if (it != m_animationMap.end()) {
+            return it->second;
+        }
         return nullptr;
     }
 
@@ -198,13 +205,55 @@ namespace GameEngine {
         return m_animations.size();
     }
 
-    // Skeleton methods (placeholders)
+    void Model::AddAnimation(std::shared_ptr<Animation> animation) {
+        if (animation) {
+            m_animations.push_back(animation);
+            BuildAnimationMap();
+        }
+    }
+
+    void Model::SetAnimations(const std::vector<std::shared_ptr<Animation>>& animations) {
+        m_animations = animations;
+        BuildAnimationMap();
+    }
+
+    // Skeleton methods
     std::shared_ptr<Skeleton> Model::GetSkeleton() const {
         return m_skeleton;
     }
 
     bool Model::HasSkeleton() const {
         return m_skeleton != nullptr;
+    }
+
+    void Model::SetSkeleton(std::shared_ptr<Skeleton> skeleton) {
+        m_skeleton = skeleton;
+    }
+
+    // Skin methods
+    std::vector<std::shared_ptr<Skin>> Model::GetSkins() const {
+        return m_skins;
+    }
+
+    std::shared_ptr<Skin> Model::GetSkin(size_t index) const {
+        if (index < m_skins.size()) {
+            return m_skins[index];
+        }
+        return nullptr;
+    }
+
+    size_t Model::GetSkinCount() const {
+        return m_skins.size();
+    }
+
+    void Model::AddSkin(std::shared_ptr<Skin> skin) {
+        if (skin) {
+            m_skins.push_back(skin);
+        }
+    }
+
+    void Model::SetSkins(const std::vector<std::shared_ptr<Skin>>& skins) {
+        m_skins = skins;
     }
 
     void Model::Render(const Math::Mat4& transform, std::shared_ptr<Shader> shader) {
@@ -422,6 +471,15 @@ namespace GameEngine {
         m_materialMap.clear();
         // Materials don't have names in the current implementation
         // This would be implemented when materials get name support
+    }
+
+    void Model::BuildAnimationMap() {
+        m_animationMap.clear();
+        for (const auto& animation : m_animations) {
+            if (animation && !animation->GetName().empty()) {
+                m_animationMap[animation->GetName()] = animation;
+            }
+        }
     }
 
     void Model::AddMesh(std::shared_ptr<Mesh> mesh) {

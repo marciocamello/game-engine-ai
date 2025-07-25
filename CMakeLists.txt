@@ -315,6 +315,69 @@ add_executable(PhysicsDebugExample
 
 target_link_libraries(PhysicsDebugExample PRIVATE GameEngineKiro)
 
+# FBX test example
+add_executable(FBXTestSimple
+    examples/test_fbx_simple.cpp
+)
+
+target_link_libraries(FBXTestSimple PRIVATE GameEngineKiro)
+
+# FBX minimal test
+add_executable(FBXTestMinimal
+    examples/test_fbx_minimal.cpp
+)
+
+target_link_libraries(FBXTestMinimal PRIVATE GameEngineKiro)
+
+# FBX via ModelLoader test
+add_executable(FBXViaModelLoader
+    examples/test_fbx_via_modelloader.cpp
+)
+
+target_link_libraries(FBXViaModelLoader PRIVATE GameEngineKiro)
+
+# FBX Animation test
+add_executable(FBXAnimationTest
+    examples/test_fbx_animation.cpp
+)
+
+target_link_libraries(FBXAnimationTest PRIVATE GameEngineKiro)
+
+# FBX Debug test
+add_executable(DebugFBXLoading
+    examples/debug_fbx_loading.cpp
+)
+
+target_link_libraries(DebugFBXLoading PRIVATE GameEngineKiro)
+
+# FBX Isolated Debug test
+add_executable(DebugFBXIsolated
+    examples/debug_fbx_isolated.cpp
+)
+
+target_link_libraries(DebugFBXIsolated PRIVATE GameEngineKiro)
+
+# Mesh Creation Debug test
+add_executable(DebugMeshCreation
+    examples/debug_mesh_creation.cpp
+)
+
+target_link_libraries(DebugMeshCreation PRIVATE GameEngineKiro)
+
+# VertexLayout Debug test
+add_executable(DebugVertexLayout
+    examples/debug_vertex_layout.cpp
+)
+
+target_link_libraries(DebugVertexLayout PRIVATE GameEngineKiro)
+
+# Direct Mesh Debug test
+add_executable(DebugMeshDirect
+    examples/debug_mesh_direct.cpp
+)
+
+target_link_libraries(DebugMeshDirect PRIVATE GameEngineKiro)
+
 # Integration test for Bullet Physics
 add_executable(BulletIntegrationTest
     tests/integration/test_bullet_integration.cpp
@@ -392,6 +455,12 @@ add_integration_test(GLTFLoaderTest tests/integration/test_gltf_loader.cpp)
 
 # FBX Loader integration test
 add_integration_test(FBXLoaderTest tests/integration/test_fbx_loader.cpp)
+
+# Simple FBX test
+add_executable(FBXSimpleTest
+    test_fbx_simple.cpp
+)
+target_link_libraries(FBXSimpleTest PRIVATE GameEngineKiro)
 
 # Discover and add unit tests automatically
 discover_and_add_tests("tests/unit" "unit")

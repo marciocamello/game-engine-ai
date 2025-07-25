@@ -144,15 +144,23 @@ int main() {
     bool allPassed = true;
 
     try {
-        allPassed &= TestVec3AssertionMacro();
-        allPassed &= TestMatrixAssertionMacro();
-        allPassed &= TestQuaternionAssertionMacro();
-        allPassed &= TestBasicAssertionMacros();
-        allPassed &= TestPointerAssertionMacros();
-        allPassed &= TestCustomEpsilonMacros();
+        // Create test suite for result tracking
+        TestSuite suite("Assertion Macros Tests");
+
+        // Run all tests
+        allPassed &= suite.RunTest("Vec3 Assertion Macro", TestVec3AssertionMacro);
+        allPassed &= suite.RunTest("Matrix Assertion Macro", TestMatrixAssertionMacro);
+        allPassed &= suite.RunTest("Quaternion Assertion Macro", TestQuaternionAssertionMacro);
+        allPassed &= suite.RunTest("Basic Assertion Macros", TestBasicAssertionMacros);
+        allPassed &= suite.RunTest("Pointer Assertion Macros", TestPointerAssertionMacros);
+        allPassed &= suite.RunTest("Custom Epsilon Macros", TestCustomEpsilonMacros);
+
+        // Print detailed summary
+        suite.PrintSummary();
 
         TestOutput::PrintFooter(allPassed);
         return allPassed ? 0 : 1;
+
     } catch (const std::exception& e) {
         TestOutput::PrintError("TEST EXCEPTION: " + std::string(e.what()));
         return 1;

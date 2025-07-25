@@ -134,22 +134,35 @@ bool TestMemoryPressureHandling() {
 }
 
 int main() {
-    TestOutput::PrintHeader("Error Handling Integration Test");
-    
-    // Initialize logger
-    Logger::GetInstance().Initialize();
-    Logger::GetInstance().SetLogLevel(LogLevel::Info);
-    
-    TestSuite suite("Error Handling Tests");
+    TestOutput::PrintHeader("Error Handling Integration");
     
     bool allPassed = true;
-    allPassed &= suite.RunTest("Audio Error Handling", TestAudioErrorHandling);
-    allPassed &= suite.RunTest("Resource Error Handling", TestResourceErrorHandling);
-    allPassed &= suite.RunTest("Fallback Resources", TestFallbackResources);
-    allPassed &= suite.RunTest("Memory Pressure Handling", TestMemoryPressureHandling);
-    
-    suite.PrintSummary();
-    TestOutput::PrintFooter(allPassed);
-    
-    return allPassed ? 0 : 1;
+
+    try {
+        // Initialize logger
+        Logger::GetInstance().Initialize();
+        Logger::GetInstance().SetLogLevel(LogLevel::Info);
+        
+        // Create test suite for result tracking
+        TestSuite suite("Error Handling Integration Tests");
+        
+        // Run all tests
+        allPassed &= suite.RunTest("Audio Error Handling", TestAudioErrorHandling);
+        allPassed &= suite.RunTest("Resource Error Handling", TestResourceErrorHandling);
+        allPassed &= suite.RunTest("Fallback Resources", TestFallbackResources);
+        allPassed &= suite.RunTest("Memory Pressure Handling", TestMemoryPressureHandling);
+        
+        // Print detailed summary
+        suite.PrintSummary();
+
+        TestOutput::PrintFooter(allPassed);
+        return allPassed ? 0 : 1;
+
+    } catch (const std::exception& e) {
+        TestOutput::PrintError("TEST EXCEPTION: " + std::string(e.what()));
+        return 1;
+    } catch (...) {
+        TestOutput::PrintError("UNKNOWN TEST ERROR!");
+        return 1;
+    }
 }

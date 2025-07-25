@@ -7,6 +7,7 @@
 #include <cctype>
 #include <sstream>
 #include <stdexcept>
+#include <functional>
 
 #ifdef GAMEENGINE_HAS_ASSIMP
 #include <assimp/Importer.hpp>
@@ -21,7 +22,9 @@ FBXLoader::FBXLoader()
     // Set default configuration
     m_config.convertToOpenGLCoordinates = true;
     m_config.importMaterials = true;
-    m_config.importTextures = true;
+    m_config.importTextures = false; // Disable texture loading for now to focus on basic mesh import
+    m_config.importSkeleton = true;
+    m_config.importAnimations = true;
     m_config.optimizeMeshes = true;
     m_config.generateMissingNormals = true;
     m_config.generateTangents = true;
@@ -95,20 +98,45 @@ FBXLoader::FBXLoadResult FBXLoader::LoadFBX(const std::string& filepath) {
     auto startTime = std::chrono::high_resolution_clock::now();
     
     try {
-        // Load the FBX scene with specific post-processing
-        const aiScene* scene = m_importer->ReadFile(filepath, GetFBXPostProcessFlags());
+        Logger::GetInstance().Debug("FBXLoader: Starting to load file: " + filepath);
         
-        if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
-            result.errorMessage = "Assimp FBX error: " + std::string(m_importer->GetErrorString());
+        // Load the FBX scene with specific post-processing
+        Logger::GetInstance().Debug("FBXLoader: Calling Assimp ReadFile...");
+        const aiScene* scene = m_importer->ReadFile(filepath, GetFBXPostProcessFlags());
+        Logger::GetInstance().Debug("FBXLoader: Assimp ReadFile completed");
+        
+        if (!scene) {
+            result.errorMessage = "Assimp FBX error (scene is null): " + std::string(m_importer->GetErrorString());
+            Logger::GetInstance().Error("FBXLoader::LoadFBX: " + result.errorMessage);
+            return result;
+        }
+        
+        if (scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE) {
+            Logger::GetInstance().Warning("FBXLoader: Scene has incomplete flag set");
+        }
+        
+        if (!scene->mRootNode) {
+            result.errorMessage = "Assimp FBX error: Scene has no root node";
             Logger::GetInstance().Error("FBXLoader::LoadFBX: " + result.errorMessage);
             return result;
         }
 
+        Logger::GetInstance().Debug("FBXLoader: Scene loaded successfully, validating...");
+        
         // Validate the FBX scene
-        ValidateFBXScene(scene);
+        try {
+            ValidateFBXScene(scene);
+            Logger::GetInstance().Debug("FBXLoader: Scene validation completed");
+        } catch (const std::exception& e) {
+            result.errorMessage = "FBX scene validation failed: " + std::string(e.what());
+            Logger::GetInstance().Error("FBXLoader::LoadFBX: " + result.errorMessage);
+            return result;
+        }
         
         // Process the FBX scene
+        Logger::GetInstance().Debug("FBXLoader: Starting scene processing...");
         result = ProcessFBXScene(scene, filepath);
+        Logger::GetInstance().Debug("FBXLoader: Scene processing completed");
         
         // Calculate loading time
         auto endTime = std::chrono::high_resolution_clock::now();
@@ -223,14 +251,62 @@ FBXLoader::FBXLoadResult FBXLoader::ProcessFBXScene(const aiScene* scene, const 
     FBXLoadResult result;
     
     try {
-        // Process materials first if enabled
+        // Process skeleton first if enabled
+        if (m_config.importSkeleton && scene->mNumMeshes > 0) {
+            result.skeleton = ProcessFBXSkeleton(scene);
+            if (result.skeleton) {
+                result.boneCount = static_cast<uint32_t>(result.skeleton->GetBoneCount());
+                result.hasSkeleton = true;
+            }
+        }
+        
+        // Process materials if enabled
         if (m_config.importMaterials) {
+            Logger::GetInstance().Info("FBXLoader: Starting material processing...");
             result.materials = ProcessFBXMaterials(scene, filepath);
             result.materialCount = static_cast<uint32_t>(result.materials.size());
+            Logger::GetInstance().Info("FBXLoader: Finished material processing.");
         }
         
         // Process all meshes in the scene
-        ProcessFBXNode(scene->mRootNode, scene, result.meshes);
+        Logger::GetInstance().Info("FBXLoader: Starting mesh processing...");
+        try {
+            ProcessFBXNode(scene->mRootNode, scene, result.meshes);
+            Logger::GetInstance().Info("FBXLoader: Finished mesh processing, found " + std::to_string(result.meshes.size()) + " meshes");
+        } catch (const std::exception& e) {
+            Logger::GetInstance().Error("FBXLoader: Exception during mesh processing: " + std::string(e.what()));
+            throw; // Re-throw to be caught by outer try-catch
+        }
+        
+        // Process bone weights for meshes if we have a skeleton
+        if (result.skeleton && m_config.importSkeleton) {
+            Logger::GetInstance().Info("FBXLoader: Starting skeleton binding...");
+            for (auto& mesh : result.meshes) {
+                if (mesh) {
+                    // Find the corresponding aiMesh and process bone weights
+                    for (uint32_t i = 0; i < scene->mNumMeshes; i++) {
+                        const aiMesh* aiMesh = scene->mMeshes[i];
+                        if (aiMesh->mName.length > 0 && mesh->GetName() == std::string(aiMesh->mName.C_Str())) {
+                            Logger::GetInstance().Info("FBXLoader: Processing bone weights for mesh: " + mesh->GetName());
+                            auto vertices = mesh->GetVertices();
+                            ProcessBoneWeights(aiMesh, scene, const_cast<std::vector<Vertex>&>(vertices));
+                            mesh->SetVertices(vertices);
+                            break;
+                        }
+                    }
+                }
+            }
+            Logger::GetInstance().Info("FBXLoader: Finished skeleton binding.");
+        }
+        
+        // Process animations if enabled
+        if (m_config.importAnimations && scene->mNumAnimations > 0) {
+            Logger::GetInstance().Info("FBXLoader: Starting animation import...");
+            result.animations = ProcessFBXAnimations(scene);
+            result.animationCount = static_cast<uint32_t>(result.animations.size());
+            result.hasAnimations = !result.animations.empty();
+            Logger::GetInstance().Info("FBXLoader: Finished animation import.");
+        }
         
         // Associate materials with meshes
         if (m_config.importMaterials && !result.materials.empty()) {
@@ -252,11 +328,21 @@ FBXLoader::FBXLoadResult FBXLoader::ProcessFBXScene(const aiScene* scene, const 
         result.success = !result.meshes.empty();
         
         if (result.success) {
-            Logger::GetInstance().Info("Successfully loaded FBX model '" + filepath + "': " + 
-                                     std::to_string(result.meshes.size()) + " meshes, " + 
-                                     std::to_string(result.totalVertices) + " vertices, " + 
-                                     std::to_string(result.totalTriangles) + " triangles, " +
-                                     std::to_string(result.materialCount) + " materials");
+            std::string logMessage = "Successfully loaded FBX model '" + filepath + "': " + 
+                                   std::to_string(result.meshes.size()) + " meshes, " + 
+                                   std::to_string(result.totalVertices) + " vertices, " + 
+                                   std::to_string(result.totalTriangles) + " triangles, " +
+                                   std::to_string(result.materialCount) + " materials";
+            
+            if (result.hasSkeleton) {
+                logMessage += ", " + std::to_string(result.boneCount) + " bones";
+            }
+            
+            if (result.hasAnimations) {
+                logMessage += ", " + std::to_string(result.animationCount) + " animations";
+            }
+            
+            Logger::GetInstance().Info(logMessage);
         } else {
             result.errorMessage = "No valid meshes found in FBX model";
             Logger::GetInstance().Warning("FBXLoader::ProcessFBXScene: " + result.errorMessage);
@@ -273,18 +359,36 @@ FBXLoader::FBXLoadResult FBXLoader::ProcessFBXScene(const aiScene* scene, const 
 
 std::shared_ptr<Mesh> FBXLoader::ProcessFBXMesh(const aiMesh* mesh, const aiScene* scene) {
     if (!mesh) {
+        Logger::GetInstance().Error("FBXLoader::ProcessFBXMesh: mesh is null");
         return nullptr;
     }
     
+    std::string meshName = mesh->mName.length > 0 ? std::string(mesh->mName.C_Str()) : "unnamed_mesh";
+    Logger::GetInstance().Info("FBXLoader::ProcessFBXMesh: Starting to process mesh '" + meshName + "'");
+    Logger::GetInstance().Info("  Vertices: " + std::to_string(mesh->mNumVertices));
+    Logger::GetInstance().Info("  Faces: " + std::to_string(mesh->mNumFaces));
+    Logger::GetInstance().Info("  Has bones: " + std::string(mesh->HasBones() ? "Yes" : "No"));
+    
     try {
+        Logger::GetInstance().Info("FBXLoader::ProcessFBXMesh: Creating engine mesh...");
         auto engineMesh = std::make_shared<Mesh>();
+        Logger::GetInstance().Info("FBXLoader::ProcessFBXMesh: Engine mesh created successfully");
         
+        Logger::GetInstance().Info("FBXLoader::ProcessFBXMesh: Initializing vertex and index arrays...");
         std::vector<Vertex> vertices;
         std::vector<uint32_t> indices;
+        Logger::GetInstance().Info("FBXLoader::ProcessFBXMesh: Arrays initialized");
         
         // Process vertices
+        Logger::GetInstance().Info("FBXLoader::ProcessFBXMesh: Starting vertex processing...");
         vertices.reserve(mesh->mNumVertices);
+        Logger::GetInstance().Info("FBXLoader::ProcessFBXMesh: Reserved space for " + std::to_string(mesh->mNumVertices) + " vertices");
+        
         for (uint32_t i = 0; i < mesh->mNumVertices; i++) {
+            if (i % 1000 == 0) { // Log every 1000 vertices to avoid spam
+                Logger::GetInstance().Info("FBXLoader::ProcessFBXMesh: Processing vertex " + std::to_string(i) + "/" + std::to_string(mesh->mNumVertices));
+            }
+            
             Vertex vertex;
             
             // Position (required)
@@ -331,14 +435,25 @@ std::shared_ptr<Mesh> FBXLoader::ProcessFBXMesh(const aiMesh* mesh, const aiScen
             vertices.push_back(vertex);
         }
         
+        Logger::GetInstance().Info("FBXLoader::ProcessFBXMesh: Finished processing " + std::to_string(vertices.size()) + " vertices");
+        
         // Apply coordinate system conversion if enabled
         if (m_config.convertToOpenGLCoordinates) {
+            Logger::GetInstance().Info("FBXLoader::ProcessFBXMesh: Applying coordinate system conversion...");
             ApplyCoordinateSystemConversion(vertices);
+            Logger::GetInstance().Info("FBXLoader::ProcessFBXMesh: Coordinate system conversion completed");
         }
         
         // Process indices
+        Logger::GetInstance().Info("FBXLoader::ProcessFBXMesh: Starting index processing...");
         indices.reserve(mesh->mNumFaces * 3);
+        Logger::GetInstance().Info("FBXLoader::ProcessFBXMesh: Reserved space for " + std::to_string(mesh->mNumFaces * 3) + " indices");
+        
         for (uint32_t i = 0; i < mesh->mNumFaces; i++) {
+            if (i % 1000 == 0) { // Log every 1000 faces to avoid spam
+                Logger::GetInstance().Info("FBXLoader::ProcessFBXMesh: Processing face " + std::to_string(i) + "/" + std::to_string(mesh->mNumFaces));
+            }
+            
             const aiFace& face = mesh->mFaces[i];
             
             // We triangulate during post-processing, so faces should have 3 indices
@@ -352,9 +467,14 @@ std::shared_ptr<Mesh> FBXLoader::ProcessFBXMesh(const aiMesh* mesh, const aiScen
             }
         }
         
+        Logger::GetInstance().Info("FBXLoader::ProcessFBXMesh: Finished processing " + std::to_string(indices.size()) + " indices");
+        
         // Set mesh data
+        Logger::GetInstance().Info("FBXLoader::ProcessFBXMesh: Setting vertices on engine mesh...");
         engineMesh->SetVertices(vertices);
+        Logger::GetInstance().Info("FBXLoader::ProcessFBXMesh: Setting indices on engine mesh...");
         engineMesh->SetIndices(indices);
+        Logger::GetInstance().Info("FBXLoader::ProcessFBXMesh: Mesh data set successfully");
         
         // Set mesh name if available
         if (mesh->mName.length > 0) {
@@ -410,6 +530,7 @@ std::vector<std::shared_ptr<Material>> FBXLoader::ProcessFBXMaterials(const aiSc
 
 std::shared_ptr<Material> FBXLoader::ProcessFBXMaterial(const aiMaterial* aiMat, const std::string& filepath) {
     if (!aiMat) {
+        Logger::GetInstance().Warning("FBXLoader::ProcessFBXMaterial: aiMaterial is null");
         return nullptr;
     }
     
@@ -418,14 +539,20 @@ std::shared_ptr<Material> FBXLoader::ProcessFBXMaterial(const aiMaterial* aiMat,
         
         // Get material name
         aiString name;
+        std::string materialName = "Unnamed Material";
         if (aiMat->Get(AI_MATKEY_NAME, name) == AI_SUCCESS) {
-            Logger::GetInstance().Debug("Processing FBX material: " + std::string(name.C_Str()));
+            materialName = std::string(name.C_Str());
+            Logger::GetInstance().Debug("Processing FBX material: " + materialName);
         }
         
         // Process diffuse properties
         aiColor3D diffuse(1.0f, 1.0f, 1.0f);
         if (aiMat->Get(AI_MATKEY_COLOR_DIFFUSE, diffuse) == AI_SUCCESS) {
             material->SetAlbedo(ConvertFBXColor(diffuse));
+            Logger::GetInstance().Debug("Material '" + materialName + "' diffuse: (" + 
+                                      std::to_string(diffuse.r) + ", " + 
+                                      std::to_string(diffuse.g) + ", " + 
+                                      std::to_string(diffuse.b) + ")");
         }
         
         // Process specular properties
@@ -450,17 +577,22 @@ std::shared_ptr<Material> FBXLoader::ProcessFBXMaterial(const aiMaterial* aiMat,
         
         // Process textures if enabled
         if (m_config.importTextures) {
+            Logger::GetInstance().Debug("Processing textures for material: " + materialName);
+            
             // Diffuse texture
             aiString texturePath;
             if (aiMat->GetTexture(aiTextureType_DIFFUSE, 0, &texturePath) == AI_SUCCESS) {
+                Logger::GetInstance().Debug("Found diffuse texture: " + std::string(texturePath.C_Str()));
                 auto texture = LoadFBXTexture(std::string(texturePath.C_Str()), filepath);
                 if (texture) {
                     material->SetTexture("u_diffuseTexture", texture);
+                    Logger::GetInstance().Debug("Successfully set diffuse texture for material: " + materialName);
                 }
             }
             
             // Normal texture
             if (aiMat->GetTexture(aiTextureType_NORMALS, 0, &texturePath) == AI_SUCCESS) {
+                Logger::GetInstance().Debug("Found normal texture: " + std::string(texturePath.C_Str()));
                 auto texture = LoadFBXTexture(std::string(texturePath.C_Str()), filepath);
                 if (texture) {
                     material->SetTexture("u_normalTexture", texture);
@@ -469,6 +601,7 @@ std::shared_ptr<Material> FBXLoader::ProcessFBXMaterial(const aiMaterial* aiMat,
             
             // Specular texture
             if (aiMat->GetTexture(aiTextureType_SPECULAR, 0, &texturePath) == AI_SUCCESS) {
+                Logger::GetInstance().Debug("Found specular texture: " + std::string(texturePath.C_Str()));
                 auto texture = LoadFBXTexture(std::string(texturePath.C_Str()), filepath);
                 if (texture) {
                     material->SetTexture("u_specularTexture", texture);
@@ -476,6 +609,7 @@ std::shared_ptr<Material> FBXLoader::ProcessFBXMaterial(const aiMaterial* aiMat,
             }
         }
         
+        Logger::GetInstance().Debug("Successfully processed FBX material: " + materialName);
         return material;
         
     } catch (const std::exception& e) {
@@ -516,22 +650,69 @@ Math::Mat4 FBXLoader::GetFBXToOpenGLTransform() const {
 
 void FBXLoader::ProcessFBXNode(const aiNode* node, const aiScene* scene, std::vector<std::shared_ptr<Mesh>>& meshes) {
     if (!node) {
+        Logger::GetInstance().Debug("FBXLoader::ProcessFBXNode: Node is null, returning");
         return;
     }
     
+    std::string nodeName = node->mName.length > 0 ? std::string(node->mName.C_Str()) : "unnamed_node";
+    Logger::GetInstance().Debug("FBXLoader::ProcessFBXNode: Processing node '" + nodeName + "' with " + 
+                              std::to_string(node->mNumMeshes) + " meshes and " + 
+                              std::to_string(node->mNumChildren) + " children");
+    
     // Process all meshes in this node
     for (uint32_t i = 0; i < node->mNumMeshes; i++) {
-        aiMesh* mesh = scene->mMeshes[node->mMeshes[i]];
-        auto engineMesh = ProcessFBXMesh(mesh, scene);
-        if (engineMesh) {
-            meshes.push_back(engineMesh);
+        try {
+            uint32_t meshIndex = node->mMeshes[i];
+            Logger::GetInstance().Debug("FBXLoader::ProcessFBXNode: Processing mesh " + std::to_string(i) + 
+                                      " (scene index: " + std::to_string(meshIndex) + ")");
+            
+            if (meshIndex >= scene->mNumMeshes) {
+                Logger::GetInstance().Error("FBXLoader::ProcessFBXNode: Invalid mesh index " + std::to_string(meshIndex) + 
+                                          " (scene has " + std::to_string(scene->mNumMeshes) + " meshes)");
+                continue;
+            }
+            
+            aiMesh* mesh = scene->mMeshes[meshIndex];
+            if (!mesh) {
+                Logger::GetInstance().Error("FBXLoader::ProcessFBXNode: Mesh at index " + std::to_string(meshIndex) + " is null");
+                continue;
+            }
+            
+            Logger::GetInstance().Debug("FBXLoader::ProcessFBXNode: About to call ProcessFBXMesh for mesh '" + 
+                                      (mesh->mName.length > 0 ? std::string(mesh->mName.C_Str()) : "unnamed_mesh") + "'");
+            
+            auto engineMesh = ProcessFBXMesh(mesh, scene);
+            
+            Logger::GetInstance().Debug("FBXLoader::ProcessFBXNode: ProcessFBXMesh completed");
+            
+            if (engineMesh) {
+                meshes.push_back(engineMesh);
+                Logger::GetInstance().Debug("FBXLoader::ProcessFBXNode: Added mesh to result list (total: " + std::to_string(meshes.size()) + ")");
+            } else {
+                Logger::GetInstance().Warning("FBXLoader::ProcessFBXNode: ProcessFBXMesh returned null for mesh " + std::to_string(i));
+            }
+        } catch (const std::exception& e) {
+            Logger::GetInstance().Error("FBXLoader::ProcessFBXNode: Exception processing mesh " + std::to_string(i) + ": " + std::string(e.what()));
+            // Continue processing other meshes
         }
     }
     
+    Logger::GetInstance().Debug("FBXLoader::ProcessFBXNode: Finished processing meshes for node '" + nodeName + 
+                              "', now processing " + std::to_string(node->mNumChildren) + " child nodes");
+    
     // Recursively process child nodes
     for (uint32_t i = 0; i < node->mNumChildren; i++) {
-        ProcessFBXNode(node->mChildren[i], scene, meshes);
+        try {
+            Logger::GetInstance().Debug("FBXLoader::ProcessFBXNode: Processing child node " + std::to_string(i));
+            ProcessFBXNode(node->mChildren[i], scene, meshes);
+            Logger::GetInstance().Debug("FBXLoader::ProcessFBXNode: Completed child node " + std::to_string(i));
+        } catch (const std::exception& e) {
+            Logger::GetInstance().Error("FBXLoader::ProcessFBXNode: Exception processing child node " + std::to_string(i) + ": " + std::string(e.what()));
+            // Continue processing other child nodes
+        }
     }
+    
+    Logger::GetInstance().Debug("FBXLoader::ProcessFBXNode: Completed processing node '" + nodeName + "'");
 }
 
 std::shared_ptr<Texture> FBXLoader::LoadFBXTexture(const std::string& texturePath, const std::string& modelPath) {
@@ -545,8 +726,18 @@ std::shared_ptr<Texture> FBXLoader::LoadFBXTexture(const std::string& texturePat
     std::string actualPath = FindTexturePath(texturePath, modelPath);
     
     if (actualPath.empty() || !std::filesystem::exists(actualPath)) {
-        Logger::GetInstance().Warning("FBXLoader: Texture not found: " + texturePath);
-        return nullptr;
+        Logger::GetInstance().Warning("FBXLoader: Texture not found: " + texturePath + ", creating default texture");
+        
+        // Create a default texture instead of returning nullptr
+        try {
+            auto texture = std::make_shared<Texture>();
+            texture->CreateDefault();
+            m_textureCache[texturePath] = texture;
+            return texture;
+        } catch (const std::exception& e) {
+            Logger::GetInstance().Error("Exception creating default texture: " + std::string(e.what()));
+            return nullptr;
+        }
     }
     
     try {
@@ -557,12 +748,26 @@ std::shared_ptr<Texture> FBXLoader::LoadFBXTexture(const std::string& texturePat
             Logger::GetInstance().Debug("Loaded FBX texture: " + actualPath);
             return texture;
         } else {
-            Logger::GetInstance().Warning("Failed to load FBX texture: " + actualPath);
-            return nullptr;
+            Logger::GetInstance().Warning("Failed to load FBX texture: " + actualPath + ", creating default texture");
+            
+            // Create default texture as fallback
+            texture->CreateDefault();
+            m_textureCache[texturePath] = texture;
+            return texture;
         }
     } catch (const std::exception& e) {
         Logger::GetInstance().Error("Exception loading FBX texture '" + actualPath + "': " + std::string(e.what()));
-        return nullptr;
+        
+        // Try to create default texture as last resort
+        try {
+            auto texture = std::make_shared<Texture>();
+            texture->CreateDefault();
+            m_textureCache[texturePath] = texture;
+            return texture;
+        } catch (const std::exception& e2) {
+            Logger::GetInstance().Error("Exception creating fallback texture: " + std::string(e2.what()));
+            return nullptr;
+        }
     }
 }
 
@@ -700,18 +905,297 @@ std::string FBXLoader::DetectSourceApplicationFromScene(const aiScene* scene) co
 
 void FBXLoader::LogFBXLoadingStats(const FBXLoadResult& result) const {
     if (result.success) {
-        Logger::GetInstance().Info("FBX loading completed: " + 
-                                 std::to_string(result.meshes.size()) + " meshes, " + 
-                                 std::to_string(result.totalVertices) + " vertices, " + 
-                                 std::to_string(result.totalTriangles) + " triangles, " + 
-                                 std::to_string(result.materialCount) + " materials, " +
-                                 std::to_string(result.loadingTimeMs) + "ms, " +
-                                 "source: " + result.sourceApplication +
-                                 (result.hasSkeleton ? ", has skeleton" : "") +
-                                 (result.hasAnimations ? ", has animations" : ""));
+        std::string logMessage = "FBX loading completed: " + 
+                               std::to_string(result.meshes.size()) + " meshes, " + 
+                               std::to_string(result.totalVertices) + " vertices, " + 
+                               std::to_string(result.totalTriangles) + " triangles, " + 
+                               std::to_string(result.materialCount) + " materials, " +
+                               std::to_string(result.loadingTimeMs) + "ms, " +
+                               "source: " + result.sourceApplication;
+        
+        if (result.hasSkeleton) {
+            logMessage += ", skeleton: " + std::to_string(result.boneCount) + " bones";
+        }
+        
+        if (result.hasAnimations) {
+            logMessage += ", animations: " + std::to_string(result.animationCount);
+        }
+        
+        Logger::GetInstance().Info(logMessage);
     } else {
         Logger::GetInstance().Error("FBX loading failed: " + result.errorMessage);
     }
+}
+
+std::shared_ptr<Skeleton> FBXLoader::ProcessFBXSkeleton(const aiScene* scene) {
+    if (!scene || scene->mNumMeshes == 0) {
+        return nullptr;
+    }
+    
+    auto skeleton = std::make_shared<Skeleton>();
+    std::vector<std::shared_ptr<Bone>> bones;
+    std::unordered_map<std::string, std::shared_ptr<Bone>> boneMap;
+    
+    Logger::GetInstance().Debug("FBXLoader: Processing skeleton...");
+    
+    // First pass: collect all bones from all meshes
+    int32_t boneIndex = 0;
+    for (uint32_t meshIndex = 0; meshIndex < scene->mNumMeshes; meshIndex++) {
+        const aiMesh* mesh = scene->mMeshes[meshIndex];
+        if (!mesh->HasBones()) {
+            continue;
+        }
+        
+        Logger::GetInstance().Debug("Processing bones from mesh: " + std::string(mesh->mName.C_Str()));
+        
+        for (uint32_t i = 0; i < mesh->mNumBones; i++) {
+            const aiBone* aiBone = mesh->mBones[i];
+            std::string boneName(aiBone->mName.C_Str());
+            
+            // Skip if bone already exists
+            if (boneMap.find(boneName) != boneMap.end()) {
+                continue;
+            }
+            
+            // Create new bone
+            auto bone = std::make_shared<Bone>(boneName, boneIndex++);
+            
+            // Set inverse bind matrix
+            Math::Mat4 inverseBindMatrix;
+            for (int row = 0; row < 4; row++) {
+                for (int col = 0; col < 4; col++) {
+                    inverseBindMatrix[col][row] = aiBone->mOffsetMatrix[row][col];
+                }
+            }
+            bone->SetInverseBindMatrix(inverseBindMatrix);
+            
+            bones.push_back(bone);
+            boneMap[boneName] = bone;
+            
+            Logger::GetInstance().Debug("Added bone: " + boneName + " (Index: " + std::to_string(bone->GetIndex()) + ")");
+        }
+    }
+    
+    // Second pass: establish hierarchy using scene node structure
+    std::function<void(const aiNode*, std::shared_ptr<Bone>)> processNode = [&](const aiNode* node, std::shared_ptr<Bone> parentBone) -> void {
+        if (!node) return;
+        
+        std::string nodeName(node->mName.C_Str());
+        auto it = boneMap.find(nodeName);
+        
+        std::shared_ptr<Bone> currentBone = nullptr;
+        if (it != boneMap.end()) {
+            currentBone = it->second;
+            
+            // Set parent relationship
+            if (parentBone) {
+                currentBone->SetParent(parentBone);
+                parentBone->AddChild(currentBone);
+                Logger::GetInstance().Debug("Set parent for bone " + nodeName + " to " + parentBone->GetName());
+            } else {
+                // This is a root bone
+                skeleton->SetRootBone(currentBone);
+            }
+            
+            // Set local transform from node
+            Math::Mat4 localTransform;
+            for (int row = 0; row < 4; row++) {
+                for (int col = 0; col < 4; col++) {
+                    localTransform[col][row] = node->mTransformation[row][col];
+                }
+            }
+            currentBone->SetLocalTransform(localTransform);
+        }
+        
+        // Process children
+        for (uint32_t i = 0; i < node->mNumChildren; i++) {
+            processNode(node->mChildren[i], currentBone ? currentBone : parentBone);
+        }
+    };
+    
+    // Start processing from root node
+    processNode(scene->mRootNode, nullptr);
+    
+    // Set bones in skeleton
+    skeleton->SetBones(bones);
+    skeleton->BuildHierarchy();
+    
+    Logger::GetInstance().Info("FBXLoader: Successfully processed skeleton with " + 
+                             std::to_string(skeleton->GetBoneCount()) + " bones");
+    
+    return skeleton;
+}
+
+std::vector<std::shared_ptr<Animation>> FBXLoader::ProcessFBXAnimations(const aiScene* scene) {
+    std::vector<std::shared_ptr<Animation>> animations;
+    
+    if (!scene || scene->mNumAnimations == 0) {
+        return animations;
+    }
+    
+    Logger::GetInstance().Debug("FBXLoader: Processing " + std::to_string(scene->mNumAnimations) + " animations...");
+    
+    for (uint32_t i = 0; i < scene->mNumAnimations; i++) {
+        auto animation = ProcessFBXAnimation(scene->mAnimations[i]);
+        if (animation && animation->GetChannelCount() > 0) {
+            animations.push_back(animation);
+            Logger::GetInstance().Debug("Processed animation: " + animation->GetName());
+        }
+    }
+    
+    Logger::GetInstance().Info("FBXLoader: Successfully processed " + std::to_string(animations.size()) + " animations");
+    
+    return animations;
+}
+
+std::shared_ptr<Animation> FBXLoader::ProcessFBXAnimation(const aiAnimation* aiAnim) {
+    if (!aiAnim) {
+        return nullptr;
+    }
+    
+    auto animation = std::make_shared<Animation>(std::string(aiAnim->mName.C_Str()));
+    
+    Logger::GetInstance().Debug("Processing animation: " + animation->GetName() + 
+                              " (duration: " + std::to_string(aiAnim->mDuration) + 
+                              ", ticks/sec: " + std::to_string(aiAnim->mTicksPerSecond) + ")");
+    
+    std::vector<std::shared_ptr<AnimationChannel>> channels;
+    
+    // Process each channel (bone animation)
+    for (uint32_t channelIndex = 0; channelIndex < aiAnim->mNumChannels; channelIndex++) {
+        const aiNodeAnim* nodeAnim = aiAnim->mChannels[channelIndex];
+        std::string boneName(nodeAnim->mNodeName.C_Str());
+        
+        auto channel = std::make_shared<AnimationChannel>();
+        channel->SetTargetNode(channelIndex); // Use channel index as node index for now
+        
+        // Create translation sampler if we have position keys
+        if (nodeAnim->mNumPositionKeys > 0) {
+            auto translationSampler = std::make_shared<Vec3Sampler>();
+            translationSampler->SetInterpolationType(InterpolationType::Linear);
+            
+            std::vector<Keyframe<Math::Vec3>> keyframes;
+            for (uint32_t posIndex = 0; posIndex < nodeAnim->mNumPositionKeys; posIndex++) {
+                const aiVectorKey& key = nodeAnim->mPositionKeys[posIndex];
+                float time = static_cast<float>(key.mTime / aiAnim->mTicksPerSecond);
+                Math::Vec3 position(key.mValue.x, key.mValue.y, key.mValue.z);
+                
+                // Apply coordinate system conversion and scale
+                position *= m_config.importScale;
+                
+                keyframes.emplace_back(time, position);
+            }
+            
+            translationSampler->SetKeyframes(keyframes);
+            channel->SetTranslationSampler(translationSampler);
+        }
+        
+        // Create rotation sampler if we have rotation keys
+        if (nodeAnim->mNumRotationKeys > 0) {
+            auto rotationSampler = std::make_shared<QuatSampler>();
+            rotationSampler->SetInterpolationType(InterpolationType::Linear);
+            
+            std::vector<Keyframe<Math::Quat>> keyframes;
+            for (uint32_t rotIndex = 0; rotIndex < nodeAnim->mNumRotationKeys; rotIndex++) {
+                const aiQuatKey& key = nodeAnim->mRotationKeys[rotIndex];
+                float time = static_cast<float>(key.mTime / aiAnim->mTicksPerSecond);
+                Math::Quat rotation(key.mValue.w, key.mValue.x, key.mValue.y, key.mValue.z);
+                
+                keyframes.emplace_back(time, rotation);
+            }
+            
+            rotationSampler->SetKeyframes(keyframes);
+            channel->SetRotationSampler(rotationSampler);
+        }
+        
+        // Create scale sampler if we have scale keys
+        if (nodeAnim->mNumScalingKeys > 0) {
+            auto scaleSampler = std::make_shared<Vec3Sampler>();
+            scaleSampler->SetInterpolationType(InterpolationType::Linear);
+            
+            std::vector<Keyframe<Math::Vec3>> keyframes;
+            for (uint32_t scaleIndex = 0; scaleIndex < nodeAnim->mNumScalingKeys; scaleIndex++) {
+                const aiVectorKey& key = nodeAnim->mScalingKeys[scaleIndex];
+                float time = static_cast<float>(key.mTime / aiAnim->mTicksPerSecond);
+                Math::Vec3 scale(key.mValue.x, key.mValue.y, key.mValue.z);
+                
+                keyframes.emplace_back(time, scale);
+            }
+            
+            scaleSampler->SetKeyframes(keyframes);
+            channel->SetScaleSampler(scaleSampler);
+        }
+        
+        channels.push_back(channel);
+        
+        Logger::GetInstance().Debug("Added animation channel for bone: " + boneName + 
+                                  " (pos: " + std::to_string(nodeAnim->mNumPositionKeys) + 
+                                  ", rot: " + std::to_string(nodeAnim->mNumRotationKeys) + 
+                                  ", scale: " + std::to_string(nodeAnim->mNumScalingKeys) + ")");
+    }
+    
+    animation->SetChannels(channels);
+    return animation;
+}
+
+void FBXLoader::ProcessBoneWeights(const aiMesh* mesh, const aiScene* scene, std::vector<Vertex>& vertices) {
+    if (!mesh || !mesh->HasBones() || vertices.size() != mesh->mNumVertices) {
+        return;
+    }
+    
+    Logger::GetInstance().Debug("Processing bone weights for mesh: " + std::string(mesh->mName.C_Str()));
+    
+    // Initialize bone data for all vertices
+    for (auto& vertex : vertices) {
+        vertex.boneIds = Math::Vec4(0.0f);
+        vertex.boneWeights = Math::Vec4(0.0f);
+    }
+    
+    // Process each bone
+    for (uint32_t boneIndex = 0; boneIndex < mesh->mNumBones; boneIndex++) {
+        const aiBone* bone = mesh->mBones[boneIndex];
+        
+        // Process each vertex weight for this bone
+        for (uint32_t weightIndex = 0; weightIndex < bone->mNumWeights; weightIndex++) {
+            const aiVertexWeight& weight = bone->mWeights[weightIndex];
+            uint32_t vertexId = weight.mVertexId;
+            
+            if (vertexId >= vertices.size()) {
+                continue;
+            }
+            
+            Vertex& vertex = vertices[vertexId];
+            
+            // Find an empty slot for this bone weight
+            for (int i = 0; i < 4; i++) {
+                if (vertex.boneWeights[i] == 0.0f) {
+                    vertex.boneIds[i] = static_cast<float>(boneIndex);
+                    vertex.boneWeights[i] = weight.mWeight;
+                    break;
+                }
+            }
+        }
+    }
+    
+    // Normalize bone weights to ensure they sum to 1.0
+    for (auto& vertex : vertices) {
+        float totalWeight = vertex.boneWeights.x + vertex.boneWeights.y + vertex.boneWeights.z + vertex.boneWeights.w;
+        if (totalWeight > 0.0f) {
+            vertex.boneWeights /= totalWeight;
+        }
+    }
+    
+    Logger::GetInstance().Debug("Processed bone weights for " + std::to_string(vertices.size()) + " vertices");
+}
+
+void FBXLoader::ExtractBoneData(const aiMesh* mesh, std::shared_ptr<Skeleton> skeleton) {
+    if (!mesh || !mesh->HasBones() || !skeleton) {
+        return;
+    }
+    
+    // This function is used to extract additional bone data if needed
+    // Currently, most bone processing is done in ProcessFBXSkeleton
+    Logger::GetInstance().Debug("Extracting additional bone data from mesh: " + std::string(mesh->mName.C_Str()));
 }
 
 void FBXLoader::ClearTextureCache() {

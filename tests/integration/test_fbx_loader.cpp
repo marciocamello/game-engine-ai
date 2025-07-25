@@ -6,6 +6,7 @@
 #include <iostream>
 
 using namespace GameEngine;
+using namespace GameEngine::Testing;
 
 bool TestFBXLoaderInitialization() {
     TestOutput::PrintTestStart("FBX loader initialization");
@@ -239,20 +240,35 @@ bool TestFBXErrorHandling() {
 }
 
 int main() {
-    TestOutput::PrintHeader("FBX Loader Integration Tests");
+    TestOutput::PrintHeader("FBX Loader Integration");
 
-    bool allTestsPassed = true;
+    bool allPassed = true;
 
-    allTestsPassed &= TestFBXLoaderInitialization();
-    allTestsPassed &= TestFBXFileDetection();
-    allTestsPassed &= TestFBXLoadingConfiguration();
-    allTestsPassed &= TestFBXModelLoading();
-    allTestsPassed &= TestFBXModelLoadingWithMaterials();
-    allTestsPassed &= TestFBXModelLoadingThroughModelLoader();
-    allTestsPassed &= TestFBXIdleAnimationModel();
-    allTestsPassed &= TestFBXErrorHandling();
+    try {
+        // Create test suite for result tracking
+        TestSuite suite("FBX Loader Integration Tests");
 
-    TestOutput::PrintSummary(allTestsPassed);
+        // Run all tests
+        allPassed &= suite.RunTest("FBX Loader Initialization", TestFBXLoaderInitialization);
+        allPassed &= suite.RunTest("FBX File Detection", TestFBXFileDetection);
+        allPassed &= suite.RunTest("FBX Loading Configuration", TestFBXLoadingConfiguration);
+        allPassed &= suite.RunTest("FBX Model Loading", TestFBXModelLoading);
+        allPassed &= suite.RunTest("FBX Model Loading with Materials", TestFBXModelLoadingWithMaterials);
+        allPassed &= suite.RunTest("FBX Model Loading through ModelLoader", TestFBXModelLoadingThroughModelLoader);
+        allPassed &= suite.RunTest("FBX Idle Animation Model", TestFBXIdleAnimationModel);
+        allPassed &= suite.RunTest("FBX Error Handling", TestFBXErrorHandling);
 
-    return allTestsPassed ? 0 : 1;
+        // Print detailed summary
+        suite.PrintSummary();
+
+        TestOutput::PrintFooter(allPassed);
+        return allPassed ? 0 : 1;
+
+    } catch (const std::exception& e) {
+        TestOutput::PrintError("TEST EXCEPTION: " + std::string(e.what()));
+        return 1;
+    } catch (...) {
+        TestOutput::PrintError("UNKNOWN TEST ERROR!");
+        return 1;
+    }
 }

@@ -26,6 +26,37 @@ namespace GameEngine {
         CalculateStride();
     }
     
+    void VertexLayout::CalculateStride() {
+        stride = 0;
+        for (auto& attr : attributes) {
+            attr.offset = stride;
+            if (attr.enabled) {
+                uint32_t attributeSize = 0;
+                switch (attr.dataType) {
+                    case GL_FLOAT:
+                        attributeSize = attr.size * sizeof(float);
+                        break;
+                    case GL_INT:
+                        attributeSize = attr.size * sizeof(int);
+                        break;
+                    case GL_UNSIGNED_INT:
+                        attributeSize = attr.size * sizeof(unsigned int);
+                        break;
+                    case GL_BYTE:
+                        attributeSize = attr.size * sizeof(char);
+                        break;
+                    case GL_UNSIGNED_BYTE:
+                        attributeSize = attr.size * sizeof(unsigned char);
+                        break;
+                    default:
+                        attributeSize = attr.size * sizeof(float); // Default to float
+                        break;
+                }
+                stride += attributeSize;
+            }
+        }
+    }
+    
     void VertexLayout::AddAttribute(VertexAttribute type, uint32_t size, uint32_t dataType, bool normalized) {
         Attribute attr;
         attr.type = type;
@@ -82,23 +113,6 @@ namespace GameEngine {
             }
         }
         return false;
-    }
-    
-    void VertexLayout::CalculateStride() {
-        stride = 0;
-        for (auto& attr : attributes) {
-            attr.offset = stride;
-            uint32_t typeSize = 0;
-            switch (attr.dataType) {
-                case GL_FLOAT: typeSize = sizeof(float); break;
-                case GL_INT: typeSize = sizeof(int); break;
-                case GL_UNSIGNED_INT: typeSize = sizeof(unsigned int); break;
-                case GL_BYTE: typeSize = sizeof(char); break;
-                case GL_UNSIGNED_BYTE: typeSize = sizeof(unsigned char); break;
-                default: typeSize = sizeof(float); break;
-            }
-            stride += attr.size * typeSize;
-        }
     }
     
     // Vertex implementation

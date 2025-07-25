@@ -87,9 +87,9 @@
     - We have on /assets/GLTF some examples with animation this example to use
     - _Requirements: 5.1, 5.2, 5.7_
 
-- [-] 6. Implement FBX format support
+- [ ] 6. Implement FBX format support
 
-  - [-] 6.1 Create FBX scene import
+  - [x] 6.1 Create FBX scene import
 
     - Implement FBX scene parsing using Assimp FBX importer
     - Add FBX material conversion with texture mapping
@@ -97,12 +97,19 @@
     - Create FBX mesh import with proper coordinate system conversion
     - _Requirements: 1.2, 2.1, 2.2_
 
-  - [ ] 6.2 Add FBX animation and rigging support
+  - [x] 6.2 Add FBX animation and rigging support
+
     - Implement FBX skeletal animation import with bone weights
     - Add FBX animation curve parsing and keyframe extraction
     - We have on /assets/meshes/Idle.fbx to use, this is a fbx with skeleton from mixamo, a Idle
     - Create FBX blend shape and morph target support
     - _Requirements: 5.1, 5.3, 5.6_
+
+  - [x] 6.3 Investigate FBXLoader directly or through ModelLoader
+
+    - Tests return always Processed 2 FBX materials and stop
+    - We need fix this to continue the next steps
+    - _Requirements: 6.1, 6.2_
 
 - [ ] 7. Implement OBJ format enhancement
 

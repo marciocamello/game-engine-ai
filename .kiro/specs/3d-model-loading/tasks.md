@@ -211,14 +211,15 @@
 
 - [ ] 13. Create comprehensive testing suite
 
-  - [ ] 13.1 Implement unit tests for model loading components
+  - [x] 13.1 Implement unit tests for model loading components
 
     - Create tests for ModelLoader initialization and format support
     - Add tests for Mesh optimization algorithms and validation
     - Implement tests for MaterialImporter with various material types
     - _Requirements: 1.5, 4.1, 2.1_
 
-  - [ ] 13.2 Add integration tests for complete loading pipeline
+  - [x] 13.2 Add integration tests for complete loading pipeline
+
     - Create tests for full model loading with materials and textures
     - Add tests for asynchronous loading with progress tracking
     - Implement tests for scene graph hierarchy and traversal

@@ -2,6 +2,7 @@
 #include "Graphics/Model.h"
 #include "Resource/GLTFLoader.h"
 #include "Resource/FBXLoader.h"
+#include "Resource/ModelLoadingException.h"
 #include "Core/Logger.h"
 #include <filesystem>
 #include <chrono>
@@ -104,80 +105,72 @@ void ModelLoader::Shutdown() {
 
 ModelLoader::LoadResult ModelLoader::LoadModel(const std::string& filepath) {
     LoadResult result;
+    auto startTime = std::chrono::high_resolution_clock::now();
     
-    if (!m_initialized) {
-        result.errorMessage = "ModelLoader not initialized";
-        Logger::GetInstance().Error("ModelLoader::LoadModel: " + result.errorMessage);
-        return result;
-    }
-
-    if (!std::filesystem::exists(filepath)) {
-        result.errorMessage = "File not found: " + filepath;
-        Logger::GetInstance().Error("ModelLoader::LoadModel: " + result.errorMessage);
-        return result;
-    }
-
-    // Check if it's an FBX file and use specialized loader
-    if (FBXLoader::IsFBXFile(filepath) && m_fbxLoader) {
-        auto fbxResult = m_fbxLoader->LoadFBX(filepath);
-        
-        // Convert FBX result to ModelLoader result
-        if (fbxResult.success) {
-            result.success = true;
-            result.meshes = fbxResult.meshes;
-            result.totalVertices = fbxResult.totalVertices;
-            result.totalTriangles = fbxResult.totalTriangles;
-            result.loadingTimeMs = fbxResult.loadingTimeMs;
-            result.formatUsed = "fbx";
-            
-            LogLoadingStats(result);
-            return result;
-        } else {
-            result.errorMessage = "FBX loading failed: " + fbxResult.errorMessage;
-            Logger::GetInstance().Error("ModelLoader::LoadModel: " + result.errorMessage);
-            return result;
+    try {
+        if (!m_initialized) {
+            throw ModelLoadingException(ModelLoadingException::ErrorType::UnknownError, 
+                                      "ModelLoader not initialized", filepath);
         }
-    }
-    
-    // Check if it's a GLTF file and use specialized loader
-    if (GLTFLoader::IsGLTFFile(filepath) || GLTFLoader::IsGLBFile(filepath)) {
-        if (m_gltfLoader) {
-            auto gltfResult = m_gltfLoader->LoadGLTF(filepath);
+
+        // Validate file existence and accessibility
+        ValidateModelFile(filepath);
+        
+        // Detect potential file corruption
+        DetectFileCorruption(filepath);
+
+        // Check if it's an FBX file and use specialized loader
+        if (FBXLoader::IsFBXFile(filepath) && m_fbxLoader) {
+            auto fbxResult = m_fbxLoader->LoadFBX(filepath);
             
-            // Convert GLTF result to ModelLoader result
-            if (gltfResult.success && gltfResult.model) {
+            // Convert FBX result to ModelLoader result
+            if (fbxResult.success) {
                 result.success = true;
-                result.meshes = gltfResult.model->GetMeshes();
-                result.totalVertices = gltfResult.totalVertices;
-                result.totalTriangles = gltfResult.totalTriangles;
-                result.loadingTimeMs = gltfResult.loadingTimeMs;
-                result.formatUsed = GLTFLoader::IsGLBFile(filepath) ? "glb" : "gltf";
+                result.meshes = fbxResult.meshes;
+                result.totalVertices = fbxResult.totalVertices;
+                result.totalTriangles = fbxResult.totalTriangles;
+                result.loadingTimeMs = fbxResult.loadingTimeMs;
+                result.formatUsed = "fbx";
                 
                 LogLoadingStats(result);
                 return result;
             } else {
-                result.errorMessage = "GLTF loading failed: " + gltfResult.errorMessage;
-                Logger::GetInstance().Error("ModelLoader::LoadModel: " + result.errorMessage);
-                return result;
+                throw ModelExceptionFactory::CreateImporterError(filepath, fbxResult.errorMessage);
             }
-        } else {
-            result.errorMessage = "GLTF loader not available";
-            Logger::GetInstance().Error("ModelLoader::LoadModel: " + result.errorMessage);
-            return result;
         }
-    }
+    
+        // Check if it's a GLTF file and use specialized loader
+        if (GLTFLoader::IsGLTFFile(filepath) || GLTFLoader::IsGLBFile(filepath)) {
+            if (m_gltfLoader) {
+                auto gltfResult = m_gltfLoader->LoadGLTF(filepath);
+                
+                // Convert GLTF result to ModelLoader result
+                if (gltfResult.success && gltfResult.model) {
+                    result.success = true;
+                    result.meshes = gltfResult.model->GetMeshes();
+                    result.totalVertices = gltfResult.totalVertices;
+                    result.totalTriangles = gltfResult.totalTriangles;
+                    result.loadingTimeMs = gltfResult.loadingTimeMs;
+                    result.formatUsed = GLTFLoader::IsGLBFile(filepath) ? "glb" : "gltf";
+                    
+                    LogLoadingStats(result);
+                    return result;
+                } else {
+                    throw ModelExceptionFactory::CreateImporterError(filepath, gltfResult.errorMessage);
+                }
+            } else {
+                throw ModelLoadingException(ModelLoadingException::ErrorType::DependencyError,
+                                          "GLTF loader not available", filepath);
+            }
+        }
 
 #ifdef GAMEENGINE_HAS_ASSIMP
-    auto startTime = std::chrono::high_resolution_clock::now();
-    
-    try {
-        // Load the scene
+        // Load the scene using Assimp
         const aiScene* scene = m_importer->ReadFile(filepath, GetAssimpPostProcessFlags());
         
         if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode) {
-            result.errorMessage = "Assimp error: " + std::string(m_importer->GetErrorString());
-            Logger::GetInstance().Error("ModelLoader::LoadModel: " + result.errorMessage);
-            return result;
+            std::string assimpError = m_importer->GetErrorString();
+            throw ModelExceptionFactory::CreateImporterError(filepath, assimpError);
         }
 
         // Validate the scene
@@ -196,14 +189,51 @@ ModelLoader::LoadResult ModelLoader::LoadModel(const std::string& filepath) {
         // Log statistics
         LogLoadingStats(result);
         
-    } catch (const std::exception& e) {
-        result.errorMessage = "Exception during model loading: " + std::string(e.what());
-        Logger::GetInstance().Error("ModelLoader::LoadModel: " + result.errorMessage);
-    }
 #else
-    result.errorMessage = "Assimp not available and file is not GLTF format";
-    Logger::GetInstance().Error("ModelLoader::LoadModel: " + result.errorMessage);
+        std::string format = DetectFormat(filepath);
+        throw ModelExceptionFactory::CreateUnsupportedFormatError(filepath, format);
 #endif
+
+    } catch (const ModelLoadingException& e) {
+        // Try graceful recovery if possible
+        if (AttemptGracefulRecovery(e, result)) {
+            auto endTime = std::chrono::high_resolution_clock::now();
+            result.loadingTimeMs = std::chrono::duration<float, std::milli>(endTime - startTime).count();
+            Logger::GetInstance().Warning("Model loading recovered from error: " + e.GetDetailedMessage());
+            return result;
+        }
+        
+        // Recovery failed, populate error result
+        result.success = false;
+        result.errorMessage = e.GetDetailedMessage();
+        
+        auto endTime = std::chrono::high_resolution_clock::now();
+        auto loadingTime = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
+        
+        // Create enhanced exception with timing info
+        ModelLoadingException enhancedException(e.GetErrorType(), e.what(), e.GetFilePath(), e.GetSeverity());
+        enhancedException.GetContext() = e.GetContext(); // Copy context
+        ModelExceptionFactory::EnhanceWithTimingInfo(enhancedException, loadingTime);
+        ModelExceptionFactory::EnhanceWithSystemInfo(enhancedException);
+        
+        Logger::GetInstance().Error("ModelLoader::LoadModel failed: " + enhancedException.GetDetailedMessage());
+        
+    } catch (const std::exception& e) {
+        // Handle unexpected exceptions
+        auto endTime = std::chrono::high_resolution_clock::now();
+        auto loadingTime = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
+        
+        ModelLoadingException exception(ModelLoadingException::ErrorType::UnknownError,
+                                      "Unexpected exception: " + std::string(e.what()),
+                                      filepath);
+        ModelExceptionFactory::EnhanceWithTimingInfo(exception, loadingTime);
+        ModelExceptionFactory::EnhanceWithSystemInfo(exception);
+        
+        result.success = false;
+        result.errorMessage = exception.GetDetailedMessage();
+        
+        Logger::GetInstance().Error("ModelLoader::LoadModel unexpected exception: " + exception.GetDetailedMessage());
+    }
 
     return result;
 }
@@ -691,6 +721,153 @@ std::string ModelLoader::NormalizeExtension(const std::string& extension) const 
     std::transform(normalized.begin(), normalized.end(), normalized.begin(), ::tolower);
     
     return normalized;
+}
+
+void ModelLoader::ValidateModelFile(const std::string& filepath) const {
+    if (!std::filesystem::exists(filepath)) {
+        throw ModelExceptionFactory::CreateFileNotFoundError(filepath);
+    }
+    
+    // Check file permissions
+    try {
+        std::ifstream file(filepath, std::ios::binary);
+        if (!file.is_open()) {
+            throw ModelLoadingException(ModelLoadingException::ErrorType::PermissionDenied,
+                                      "Cannot open file for reading", filepath);
+        }
+        file.close();
+    } catch (const std::exception& e) {
+        throw ModelLoadingException(ModelLoadingException::ErrorType::PermissionDenied,
+                                  "File access error: " + std::string(e.what()), filepath);
+    }
+    
+    // Check if file is empty
+    try {
+        auto fileSize = std::filesystem::file_size(filepath);
+        if (fileSize == 0) {
+            throw ModelLoadingException(ModelLoadingException::ErrorType::InvalidData,
+                                      "File is empty", filepath);
+        }
+        
+        // Check for unusually large files that might cause memory issues
+        const size_t maxReasonableSize = 500 * 1024 * 1024; // 500MB
+        if (fileSize > maxReasonableSize) {
+            Logger::GetInstance().Warning("ModelLoader: File is very large (" + 
+                                        std::to_string(fileSize / 1024 / 1024) + " MB): " + filepath);
+        }
+    } catch (const std::filesystem::filesystem_error& e) {
+        throw ModelLoadingException(ModelLoadingException::ErrorType::UnknownError,
+                                  "Cannot get file size: " + std::string(e.what()), filepath);
+    }
+    
+    // Check format support
+    std::string extension = GetFileExtension(filepath);
+    if (!IsFormatSupported(extension)) {
+        throw ModelExceptionFactory::CreateUnsupportedFormatError(filepath, extension);
+    }
+}
+
+void ModelLoader::DetectFileCorruption(const std::string& filepath) const {
+    try {
+        std::ifstream file(filepath, std::ios::binary);
+        if (!file.is_open()) {
+            return; // Already handled by ValidateModelFile
+        }
+        
+        // Read first few bytes to check for valid headers
+        std::vector<char> header(16);
+        file.read(header.data(), header.size());
+        size_t bytesRead = file.gcount();
+        
+        if (bytesRead < 4) {
+            throw ModelExceptionFactory::CreateCorruptionError(filepath, 
+                ModelCorruptionException::CorruptionType::TruncatedFile);
+        }
+        
+        std::string extension = GetFileExtension(filepath);
+        std::transform(extension.begin(), extension.end(), extension.begin(), ::tolower);
+        
+        // Check for format-specific headers
+        if (extension == "fbx") {
+            // FBX files should start with "Kaydara FBX Binary" or have specific binary signature
+            size_t headerLength = std::min(bytesRead, size_t(7));
+            std::string headerStr;
+            headerStr.assign(header.begin(), header.begin() + static_cast<std::ptrdiff_t>(headerLength));
+            if (headerStr != "Kaydara" && 
+                !(header[0] == 0x1A && header[1] == 0x00)) { // Binary FBX signature
+                Logger::GetInstance().Warning("ModelLoader: FBX file may have invalid header: " + filepath);
+            }
+        } else if (extension == "gltf") {
+            // GLTF files should start with '{'
+            if (header[0] != '{') {
+                throw ModelExceptionFactory::CreateCorruptionError(filepath,
+                    ModelCorruptionException::CorruptionType::InvalidHeader);
+            }
+        } else if (extension == "glb") {
+            // GLB files should start with "glTF" magic number
+            if (bytesRead >= 4 && 
+                !(header[0] == 'g' && header[1] == 'l' && header[2] == 'T' && header[3] == 'F')) {
+                throw ModelExceptionFactory::CreateCorruptionError(filepath,
+                    ModelCorruptionException::CorruptionType::InvalidHeader);
+            }
+        }
+        
+        // Check if file appears to be truncated by seeking to end
+        file.seekg(0, std::ios::end);
+        auto actualSize = file.tellg();
+        auto expectedSize = std::filesystem::file_size(filepath);
+        
+        if (actualSize != static_cast<std::streampos>(expectedSize)) {
+            throw ModelExceptionFactory::CreateCorruptionError(filepath,
+                ModelCorruptionException::CorruptionType::TruncatedFile);
+        }
+        
+    } catch (const ModelLoadingException&) {
+        throw; // Re-throw model loading exceptions
+    } catch (const std::exception& e) {
+        Logger::GetInstance().Warning("ModelLoader: Could not check file corruption for " + filepath + 
+                                    ": " + e.what());
+    }
+}
+
+bool ModelLoader::AttemptGracefulRecovery(const ModelLoadingException& exception, LoadResult& result) {
+    auto recoveryStrategies = ModelErrorRecovery::GetRecoveryStrategies(exception);
+    
+    for (auto strategy : recoveryStrategies) {
+        Logger::GetInstance().Info("ModelLoader: Attempting recovery strategy: " + 
+                                 ModelErrorRecovery::GetRecoveryStrategyDescription(strategy));
+        
+        auto recoveryResult = ModelErrorRecovery::AttemptRecovery(exception, strategy);
+        
+        if (recoveryResult.success) {
+            Logger::GetInstance().Info("ModelLoader: Recovery successful using " + 
+                                     ModelErrorRecovery::GetRecoveryStrategyDescription(strategy));
+            
+            // For now, we only support fallback to default
+            if (strategy == ModelErrorRecovery::RecoveryStrategy::FallbackToDefault) {
+                // Create a simple default cube mesh as fallback
+                try {
+                    auto defaultMesh = std::make_shared<Mesh>();
+                    defaultMesh->CreateDefault(); // This should create a basic cube
+                    defaultMesh->SetName("fallback_model");
+                    
+                    result.success = true;
+                    result.meshes = { defaultMesh };
+                    result.totalVertices = defaultMesh->GetVertexCount();
+                    result.totalTriangles = defaultMesh->GetTriangleCount();
+                    result.formatUsed = "fallback";
+                    result.errorMessage = "Loaded fallback model due to: " + std::string(exception.what());
+                    
+                    return true;
+                } catch (const std::exception& e) {
+                    Logger::GetInstance().Error("ModelLoader: Failed to create fallback model: " + std::string(e.what()));
+                    return false;
+                }
+            }
+        }
+    }
+    
+    return false; // No recovery strategy succeeded
 }
 
 void ModelLoader::LogLoadingStats(const LoadResult& result) const {

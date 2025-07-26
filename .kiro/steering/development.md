@@ -57,7 +57,7 @@ bool TestFunctionName() {
         TestOutput::PrintTestPass("Test description");
         return true;
     } else {
-        TestOutput::PrintTestFail("Test description", "Expected vs Actual");
+        TestOutput::PrintTestFail("Test description", "expected_value", "actual_value");
         return false;
     }
 }
@@ -73,10 +73,10 @@ int main() {
         // Add more tests...
 
         suite.PrintSummary();
-        return suite.AllTestsPassed() ? 1 : 0;
+        return suite.AllTestsPassed() ? 0 : 1;
 
     } catch (const std::exception& e) {
-        TestOutput::PrintTestFail("Exception: " + std::string(e.what()));
+        TestOutput::PrintError("Exception: " + std::string(e.what()));
         return 1;
     }
 }
@@ -86,8 +86,10 @@ int main() {
 
 - Use `TestOutput::PrintInfo()` for informational messages
 - Use `TestOutput::PrintTestPass()` for successful tests
-- Use `TestOutput::PrintTestFail()` for failed tests with details
-- Use `TestOutput::PrintError()` for errors
+- Use `TestOutput::PrintTestFail()` for failed tests:
+  - `PrintTestFail(testName)` - simple failure message
+  - `PrintTestFail(testName, expected, actual)` - detailed failure with expected vs actual values
+- Use `TestOutput::PrintError()` for errors and exceptions
 - Always include try/catch blocks in main functions
 - Return proper exit codes (0 for success, 1 for failure)
 
@@ -103,7 +105,8 @@ int main() {
 
 ```cpp
 // Correct include for TestUtils
-#include "TestUtils.h"  // From tests/ directory
+#include "../TestUtils.h"  // For integration tests in tests/integration/
+#include "TestUtils.h"     // For unit tests in tests/unit/
 
 // Engine includes
 #include "Core/Engine.h"

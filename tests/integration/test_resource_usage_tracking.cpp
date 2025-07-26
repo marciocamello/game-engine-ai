@@ -31,7 +31,7 @@ bool TestBasicResourceTracking() {
         auto stats = tracker.GetUsageStatistics();
         
         if (stats.totalResources != 3) {
-            TestOutput::PrintTestFail("Basic resource tracking");
+            TestOutput::PrintTestFail("Basic resource tracking", "3", std::to_string(stats.totalResources));
             return false;
         }
         
@@ -41,12 +41,12 @@ bool TestBasicResourceTracking() {
         }
         
         if (stats.resourcesByType["Model"] != 2) {
-            TestOutput::PrintTestFail("Basic resource tracking");
+            TestOutput::PrintTestFail("Basic resource tracking", "2 Model resources", std::to_string(stats.resourcesByType["Model"]) + " Model resources");
             return false;
         }
         
         if (stats.resourcesByType["Texture"] != 1) {
-            TestOutput::PrintTestFail("Basic resource tracking");
+            TestOutput::PrintTestFail("Basic resource tracking", "1 Texture resource", std::to_string(stats.resourcesByType["Texture"]) + " Texture resources");
             return false;
         }
         
@@ -138,7 +138,7 @@ bool TestMemoryHeavyResourceIdentification() {
         auto heavyResources = tracker.GetMemoryHeavyResources(2);
         
         if (heavyResources.size() != 2) {
-            TestOutput::PrintTestFail("Memory heavy resource identification");
+            TestOutput::PrintTestFail("Memory heavy resource identification", "2 heavy resources", std::to_string(heavyResources.size()) + " heavy resources");
             return false;
         }
         

@@ -2,6 +2,7 @@
 
 #include "Graphics/Mesh.h"
 #include "Resource/ResourceManager.h"
+#include "Resource/ModelLoadingException.h"
 #include "Core/Math.h"
 #include <string>
 #include <memory>
@@ -111,6 +112,11 @@ namespace GameEngine {
         LoadingFlags GetLoadingFlags() const { return m_loadingFlags; }
         void SetImportScale(float scale);
         float GetImportScale() const { return m_importScale; }
+
+        // Error handling and validation
+        void ValidateModelFile(const std::string& filepath) const;
+        void DetectFileCorruption(const std::string& filepath) const;
+        bool AttemptGracefulRecovery(const ModelLoadingException& exception, LoadResult& result);
 
         // Utility methods
         static bool IsModelFile(const std::string& filepath);

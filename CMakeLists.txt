@@ -462,6 +462,9 @@ add_integration_test(ModelResourceIntegrationTest tests/integration/test_model_r
 # Resource Usage Tracking test
 add_integration_test(ResourceUsageTrackingTest tests/integration/test_resource_usage_tracking.cpp)
 
+# Model Debugger integration test
+add_integration_test(ModelDebuggerTest tests/integration/test_model_debugger.cpp)
+
 # Simple FBX test
 add_executable(FBXSimpleTest
     test_fbx_simple.cpp

@@ -1116,21 +1116,6 @@ float ModelValidator::CalculateCacheEfficiency(std::shared_ptr<Mesh> mesh) {
     return static_cast<float>(cacheHits) / indices.size();
 }
 
-// Add missing ModelDiagnosticLogger methods
-void ModelDiagnosticLogger::SetLogLevel(LogLevel minLevel) {
-    m_minLevel = minLevel;
-}
-
-std::vector<ModelDiagnosticLogger::LogEntry> ModelDiagnosticLogger::GetRecentEntries(size_t count) {
-    std::lock_guard<std::mutex> lock(m_logMutex);
-    
-    if (count >= m_entries.size()) {
-        return m_entries;
-    }
-    
-    return std::vector<LogEntry>(m_entries.end() - count, m_entries.end());
-}
-
 // Stub implementations for format-specific validation
 std::vector<ModelValidator::ValidationIssue> ModelValidator::ValidateOBJFile(const std::string& filepath) {
     std::vector<ValidationIssue> issues;
@@ -1150,7 +1135,7 @@ std::vector<ModelValidator::ValidationIssue> ModelValidator::ValidateGLTFFile(co
     return issues;
 }
 
-// ModelDiagnosticLogger Implementation
+// Enhanced ModelDiagnosticLogger Implementation
 
 ModelDiagnosticLogger& ModelDiagnosticLogger::GetInstance() {
     static ModelDiagnosticLogger instance;
@@ -1158,124 +1143,126 @@ ModelDiagnosticLogger& ModelDiagnosticLogger::GetInstance() {
 }
 
 void ModelDiagnosticLogger::LogTrace(const std::string& message, const std::string& component, const std::string& filepath) {
-    if (m_minLevel <= LogLevel::Trace) {
-        LogEntry entry;
-        entry.level = LogLevel::Trace;
-        entry.timestamp = std::chrono::system_clock::now();
-        entry.message = message;
-        entry.component = component;
-        entry.filepath = filepath;
-        WriteLogEntry(entry);
-    }
+    LogWithContext(LogLevel::Trace, message, {{"component", component}, {"filepath", filepath}});
 }
 
 void ModelDiagnosticLogger::LogDebug(const std::string& message, const std::string& component, const std::string& filepath) {
-    if (m_minLevel <= LogLevel::Debug) {
-        LogEntry entry;
-        entry.level = LogLevel::Debug;
-        entry.timestamp = std::chrono::system_clock::now();
-        entry.message = message;
-        entry.component = component;
-        entry.filepath = filepath;
-        WriteLogEntry(entry);
-    }
+    LogWithContext(LogLevel::Debug, message, {{"component", component}, {"filepath", filepath}});
 }
 
 void ModelDiagnosticLogger::LogInfo(const std::string& message, const std::string& component, const std::string& filepath) {
-    if (m_minLevel <= LogLevel::Info) {
-        LogEntry entry;
-        entry.level = LogLevel::Info;
-        entry.timestamp = std::chrono::system_clock::now();
-        entry.message = message;
-        entry.component = component;
-        entry.filepath = filepath;
-        WriteLogEntry(entry);
-    }
+    LogWithContext(LogLevel::Info, message, {{"component", component}, {"filepath", filepath}});
 }
 
 void ModelDiagnosticLogger::LogWarning(const std::string& message, const std::string& component, const std::string& filepath) {
-    if (m_minLevel <= LogLevel::Warning) {
-        LogEntry entry;
-        entry.level = LogLevel::Warning;
-        entry.timestamp = std::chrono::system_clock::now();
-        entry.message = message;
-        entry.component = component;
-        entry.filepath = filepath;
-        WriteLogEntry(entry);
-    }
+    LogWithContext(LogLevel::Warning, message, {{"component", component}, {"filepath", filepath}});
 }
 
 void ModelDiagnosticLogger::LogError(const std::string& message, const std::string& component, const std::string& filepath) {
-    if (m_minLevel <= LogLevel::Error) {
-        LogEntry entry;
-        entry.level = LogLevel::Error;
-        entry.timestamp = std::chrono::system_clock::now();
-        entry.message = message;
-        entry.component = component;
-        entry.filepath = filepath;
-        WriteLogEntry(entry);
-    }
+    LogWithContext(LogLevel::Error, message, {{"component", component}, {"filepath", filepath}});
 }
 
 void ModelDiagnosticLogger::LogCritical(const std::string& message, const std::string& component, const std::string& filepath) {
-    if (m_minLevel <= LogLevel::Critical) {
-        LogEntry entry;
-        entry.level = LogLevel::Critical;
-        entry.timestamp = std::chrono::system_clock::now();
-        entry.message = message;
-        entry.component = component;
-        entry.filepath = filepath;
-        WriteLogEntry(entry);
-    }
+    LogWithContext(LogLevel::Critical, message, {{"component", component}, {"filepath", filepath}});
 }
 
-void ModelDiagnosticLogger::WriteLogEntry(const LogEntry& entry) {
+void ModelDiagnosticLogger::LogWithContext(LogLevel level, const std::string& message, const std::unordered_map<std::string, std::string>& context) {
+    if (static_cast<int>(level) < static_cast<int>(m_minLevel)) {
+        return;
+    }
+    
+    LogEntry entry;
+    entry.level = level;
+    entry.timestamp = std::chrono::system_clock::now();
+    entry.message = message;
+    entry.context = context;
+    
+    // Extract component and filepath from context
+    auto componentIt = context.find("component");
+    if (componentIt != context.end()) {
+        entry.component = componentIt->second;
+    }
+    
+    auto filepathIt = context.find("filepath");
+    if (filepathIt != context.end()) {
+        entry.filepath = filepathIt->second;
+    }
+    
+    WriteLogEntry(entry);
+}
+
+void ModelDiagnosticLogger::LogException(const ModelLoadingException& exception) {
+    std::unordered_map<std::string, std::string> context;
+    context["filepath"] = exception.GetFilePath();
+    context["error_type"] = "ModelLoadingException";
+    context["severity"] = "Error";
+    
+    LogWithContext(LogLevel::Error, exception.GetDetailedMessage(), context);
+}
+
+void ModelDiagnosticLogger::LogValidationIssue(const ModelValidator::ValidationIssue& issue) {
+    LogLevel level;
+    switch (issue.severity) {
+        case ModelValidator::ValidationSeverity::Info:
+            level = LogLevel::Info;
+            break;
+        case ModelValidator::ValidationSeverity::Warning:
+            level = LogLevel::Warning;
+            break;
+        case ModelValidator::ValidationSeverity::Error:
+            level = LogLevel::Error;
+            break;
+        case ModelValidator::ValidationSeverity::Critical:
+            level = LogLevel::Critical;
+            break;
+        default:
+            level = LogLevel::Info;
+            break;
+    }
+    
+    std::unordered_map<std::string, std::string> context;
+    context["component"] = issue.component;
+    context["validation_type"] = ModelValidator::GetValidationTypeString(issue.type);
+    context["location"] = issue.location;
+    context["suggestion"] = issue.suggestion;
+    
+    LogWithContext(level, issue.description, context);
+}
+
+void ModelDiagnosticLogger::SetLogLevel(LogLevel minLevel) {
+    m_minLevel = minLevel;
+}
+
+void ModelDiagnosticLogger::SetOutputFile(const std::string& filepath) {
+    m_outputFile = filepath;
+}
+
+void ModelDiagnosticLogger::EnableConsoleOutput(bool enabled) {
+    m_consoleOutput = enabled;
+}
+
+void ModelDiagnosticLogger::EnableFileOutput(bool enabled) {
+    m_fileOutput = enabled;
+}
+
+std::vector<ModelDiagnosticLogger::LogEntry> ModelDiagnosticLogger::GetRecentEntries(size_t count) {
     std::lock_guard<std::mutex> lock(m_logMutex);
     
-    m_entries.push_back(entry);
-    
-    // Keep only recent entries to prevent memory growth
-    if (m_entries.size() > 1000) {
-        m_entries.erase(m_entries.begin(), m_entries.begin() + 100);
+    if (m_entries.size() <= count) {
+        return m_entries;
     }
     
-    std::string formatted = FormatLogEntry(entry);
-    
-    if (m_consoleOutput) {
-        Logger::GetInstance().Info("[ModelDiag] " + formatted);
-    }
-    
-    if (m_fileOutput && !m_outputFile.empty()) {
-        try {
-            std::ofstream file(m_outputFile, std::ios::app);
-            if (file.is_open()) {
-                file << formatted << std::endl;
-            }
-        } catch (const std::exception&) {
-            // Ignore file output errors
-        }
-    }
+    return std::vector<LogEntry>(m_entries.end() - count, m_entries.end());
 }
 
-std::string ModelDiagnosticLogger::FormatLogEntry(const LogEntry& entry) {
-    std::stringstream ss;
-    
-    auto timeT = std::chrono::system_clock::to_time_t(entry.timestamp);
-    ss << std::put_time(std::localtime(&timeT), "%H:%M:%S");
-    
-    ss << " [" << GetLogLevelString(entry.level) << "]";
-    
-    if (!entry.component.empty()) {
-        ss << " [" << entry.component << "]";
-    }
-    
-    ss << " " << entry.message;
-    
-    if (!entry.filepath.empty()) {
-        ss << " (File: " << entry.filepath << ")";
-    }
-    
-    return ss.str();
+void ModelDiagnosticLogger::ClearLog() {
+    std::lock_guard<std::mutex> lock(m_logMutex);
+    m_entries.clear();
+}
+
+void ModelDiagnosticLogger::FlushLog() {
+    // For file output, this would flush the file buffer
+    // For now, this is a no-op since we write immediately
 }
 
 std::string ModelDiagnosticLogger::GetLogLevelString(LogLevel level) {
@@ -1283,11 +1270,79 @@ std::string ModelDiagnosticLogger::GetLogLevelString(LogLevel level) {
         case LogLevel::Trace: return "TRACE";
         case LogLevel::Debug: return "DEBUG";
         case LogLevel::Info: return "INFO";
-        case LogLevel::Warning: return "WARN";
+        case LogLevel::Warning: return "WARNING";
         case LogLevel::Error: return "ERROR";
-        case LogLevel::Critical: return "CRIT";
+        case LogLevel::Critical: return "CRITICAL";
         default: return "UNKNOWN";
     }
+}
+
+void ModelDiagnosticLogger::WriteLogEntry(const LogEntry& entry) {
+    std::lock_guard<std::mutex> lock(m_logMutex);
+    
+    // Store entry
+    m_entries.push_back(entry);
+    
+    // Keep only recent entries to prevent memory growth
+    const size_t maxEntries = 1000;
+    if (m_entries.size() > maxEntries) {
+        m_entries.erase(m_entries.begin(), m_entries.begin() + (m_entries.size() - maxEntries));
+    }
+    
+    // Format and output
+    std::string formattedEntry = FormatLogEntry(entry);
+    
+    // Console output
+    if (m_consoleOutput) {
+        Logger::GetInstance().Info("[ModelDiagnostic] " + formattedEntry);
+    }
+    
+    // File output
+    if (m_fileOutput && !m_outputFile.empty()) {
+        try {
+            std::ofstream file(m_outputFile, std::ios::app);
+            if (file.is_open()) {
+                file << formattedEntry << std::endl;
+                file.close();
+            }
+        } catch (const std::exception& e) {
+            // Fallback to console if file output fails
+            Logger::GetInstance().Error("Failed to write to diagnostic log file: " + std::string(e.what()));
+        }
+    }
+}
+
+std::string ModelDiagnosticLogger::FormatLogEntry(const LogEntry& entry) {
+    std::stringstream ss;
+    
+    // Timestamp
+    auto timeT = std::chrono::system_clock::to_time_t(entry.timestamp);
+    ss << std::put_time(std::localtime(&timeT), "%Y-%m-%d %H:%M:%S");
+    
+    // Level
+    ss << " [" << GetLogLevelString(entry.level) << "]";
+    
+    // Component
+    if (!entry.component.empty()) {
+        ss << " [" << entry.component << "]";
+    }
+    
+    // Message
+    ss << " " << entry.message;
+    
+    // Context
+    if (!entry.context.empty()) {
+        ss << " {";
+        bool first = true;
+        for (const auto& pair : entry.context) {
+            if (!first) ss << ", ";
+            ss << pair.first << "=" << pair.second;
+            first = false;
+        }
+        ss << "}";
+    }
+    
+    return ss.str();
 }
 
 } // namespace GameEngine

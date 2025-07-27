@@ -3,6 +3,7 @@
 #include "Graphics/Mesh.h"
 #include "Resource/ResourceManager.h"
 #include "Resource/ModelLoadingException.h"
+#include "Resource/ModelCache.h"
 #include "Core/Math.h"
 #include <string>
 #include <memory>
@@ -112,6 +113,12 @@ namespace GameEngine {
         LoadingFlags GetLoadingFlags() const { return m_loadingFlags; }
         void SetImportScale(float scale);
         float GetImportScale() const { return m_importScale; }
+        
+        // Cache configuration
+        void SetCacheEnabled(bool enabled);
+        bool IsCacheEnabled() const { return m_cacheEnabled; }
+        void InvalidateCache(const std::string& filepath);
+        void ClearAllCache();
 
         // Error handling and validation
         void ValidateModelFile(const std::string& filepath) const;
@@ -148,6 +155,7 @@ namespace GameEngine {
         LoadingFlags m_loadingFlags = LoadingFlags::None;
         float m_importScale = 1.0f;
         bool m_initialized = false;
+        bool m_cacheEnabled = true;
 
         // Supported formats cache
         mutable std::unordered_set<std::string> m_supportedExtensions;

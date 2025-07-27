@@ -560,4 +560,3 @@ add_custom_command(TARGET GameExample POST_BUILD
     ${CMAKE_SOURCE_DIR}/assets $<TARGET_FILE_DIR:GameExample>/assets
     COMMENT "Copying assets to build directory"
 )
-

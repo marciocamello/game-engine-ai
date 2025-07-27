@@ -378,6 +378,12 @@ add_executable(DebugMeshDirect
 
 target_link_libraries(DebugMeshDirect PRIVATE GameEngineKiro)
 
+# Model Hot Reload example
+add_executable(ModelHotReloadExample
+    examples/model_hot_reload_example.cpp
+)
+target_link_libraries(ModelHotReloadExample PRIVATE GameEngineKiro)
+
 # Integration test for Bullet Physics
 add_executable(BulletIntegrationTest
     tests/integration/test_bullet_integration.cpp
@@ -458,6 +464,9 @@ add_integration_test(FBXLoaderTest tests/integration/test_fbx_loader.cpp)
 
 # Model Resource Integration test
 add_integration_test(ModelResourceIntegrationTest tests/integration/test_model_resource_integration.cpp)
+
+# Model Hot Reload integration test
+add_integration_test(ModelHotReloadTest tests/integration/test_model_hot_reload.cpp)
 
 # Resource Usage Tracking test
 add_integration_test(ResourceUsageTrackingTest tests/integration/test_resource_usage_tracking.cpp)

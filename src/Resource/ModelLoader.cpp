@@ -3,6 +3,7 @@
 #include "Resource/GLTFLoader.h"
 #include "Resource/FBXLoader.h"
 #include "Resource/ModelLoadingException.h"
+#include "Resource/ModelCache.h"
 #include "Core/Logger.h"
 #include <filesystem>
 #include <chrono>
@@ -33,6 +34,14 @@ ModelLoader::~ModelLoader() {
 bool ModelLoader::Initialize() {
     if (m_initialized) {
         return true;
+    }
+
+    // Initialize model cache
+    if (m_cacheEnabled) {
+        if (!GlobalModelCache::GetInstance().Initialize()) {
+            Logger::GetInstance().Warning("Failed to initialize model cache, disabling caching");
+            m_cacheEnabled = false;
+        }
     }
 
     // Initialize specialized loaders
@@ -244,6 +253,18 @@ std::shared_ptr<Model> ModelLoader::LoadModelAsResource(const std::string& filep
         return nullptr;
     }
 
+    // Try to load from cache first
+    if (m_cacheEnabled) {
+        auto& cache = GlobalModelCache::GetInstance();
+        if (cache.IsValidCache(filepath)) {
+            auto cachedModel = cache.LoadFromCache(filepath);
+            if (cachedModel) {
+                LOG_INFO("Successfully loaded model from cache: " + filepath);
+                return cachedModel;
+            }
+        }
+    }
+
     // Create a new Model resource
     auto model = std::make_shared<Model>(filepath);
     
@@ -263,6 +284,14 @@ std::shared_ptr<Model> ModelLoader::LoadModelAsResource(const std::string& filep
     // Extract filename as model name
     std::filesystem::path path(filepath);
     model->SetName(path.stem().string());
+    
+    // Save to cache if caching is enabled
+    if (m_cacheEnabled) {
+        auto& cache = GlobalModelCache::GetInstance();
+        if (!cache.SaveToCache(filepath, model)) {
+            LOG_WARNING("Failed to save model to cache: " + filepath);
+        }
+    }
     
     LOG_INFO("Successfully loaded model as resource: " + filepath + 
              " (" + std::to_string(result.meshes.size()) + " meshes)");
@@ -428,6 +457,36 @@ void ModelLoader::SetImportScale(float scale) {
         m_importScale = scale;
     } else {
         Logger::GetInstance().Warning("ModelLoader::SetImportScale: Invalid scale " + std::to_string(scale) + ", keeping current value " + std::to_string(m_importScale));
+    }
+}
+
+void ModelLoader::SetCacheEnabled(bool enabled) {
+    m_cacheEnabled = enabled;
+    
+    if (enabled && m_initialized) {
+        // Initialize cache if not already done
+        if (!GlobalModelCache::GetInstance().IsInitialized()) {
+            if (!GlobalModelCache::GetInstance().Initialize()) {
+                Logger::GetInstance().Warning("Failed to initialize model cache");
+                m_cacheEnabled = false;
+            }
+        }
+    }
+    
+    Logger::GetInstance().Info("Model caching " + std::string(m_cacheEnabled ? "enabled" : "disabled"));
+}
+
+void ModelLoader::InvalidateCache(const std::string& filepath) {
+    if (m_cacheEnabled) {
+        GlobalModelCache::GetInstance().InvalidateCache(filepath);
+        Logger::GetInstance().Info("Invalidated cache for: " + filepath);
+    }
+}
+
+void ModelLoader::ClearAllCache() {
+    if (m_cacheEnabled) {
+        GlobalModelCache::GetInstance().InvalidateAllCache();
+        Logger::GetInstance().Info("Cleared all model cache entries");
     }
 }
 

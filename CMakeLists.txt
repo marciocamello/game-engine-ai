@@ -477,11 +477,7 @@ add_integration_test(ResourceUsageTrackingTest tests/integration/test_resource_u
 # Model Debugger integration test
 add_integration_test(ModelDebuggerTest tests/integration/test_model_debugger.cpp)
 
-# Simple FBX test
-add_executable(FBXSimpleTest
-    test_fbx_simple.cpp
-)
-target_link_libraries(FBXSimpleTest PRIVATE GameEngineKiro)
+# Simple FBX test - removed (redundant with integration tests)
 
 # Discover and add unit tests automatically
 discover_and_add_tests("tests/unit" "unit")

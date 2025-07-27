@@ -9,12 +9,17 @@ GameEngineKiro/
 ├── examples/        # Sample applications and demos
 ├── assets/          # Game assets (shaders, textures, models)
 ├── docs/            # Documentation and guides
-├── tests/           # Integration tests
+├── tests/           # Unit and integration tests
+├── scripts/         # Build and development scripts
 ├── build/           # Generated build files (CMake output)
 ├── logs/            # Runtime log files
+├── cache/           # Model cache and temporary files
+├── coverage_reports/ # Code coverage analysis reports
 ├── vcpkg/           # Dependency management (auto-generated)
 ├── vcpkg_installed/ # Installed packages (auto-generated)
-└── .kiro/           # Kiro IDE configuration and specs
+├── .kiro/           # Kiro IDE configuration and specs
+├── .vscode/         # VS Code configuration
+└── .git/            # Git version control
 ```
 
 ## Header Organization (include/)
@@ -23,10 +28,18 @@ Headers are organized by engine subsystem with clear separation of concerns:
 
 ```
 include/
+├── Animation/       # Animation system
+├── Audio/           # Audio system
+│   └── AudioEngine.h         # 3D spatial audio
 ├── Core/            # Engine foundation
 │   ├── Engine.h     # Main engine class
 │   ├── Logger.h     # Logging system
 │   └── Math.h       # Mathematics utilities
+├── Game/            # Game-specific components
+│   ├── Character.h           # Character controller
+│   ├── ThirdPersonCamera.h   # Specialized camera
+│   ├── ThirdPersonCameraSystem.h # Camera management
+│   └── SpringArm.h           # Camera spring arm component
 ├── Graphics/        # Rendering system
 │   ├── GraphicsRenderer.h    # Abstract renderer interface
 │   ├── OpenGLRenderer.h      # OpenGL implementation
@@ -36,21 +49,14 @@ include/
 │   ├── Texture.h             # Texture handling
 │   ├── Material.h            # Material system
 │   └── Mesh.h                # Mesh data structures
+├── Input/           # Input handling
+│   └── InputManager.h        # Keyboard, mouse, gamepad
 ├── Physics/         # Physics simulation
 │   ├── PhysicsEngine.h       # Main physics interface
 │   ├── BulletUtils.h         # Bullet Physics utilities
 │   └── CollisionShapeFactory.h # Shape creation
-├── Audio/           # Audio system
-│   └── AudioEngine.h         # 3D spatial audio
-├── Input/           # Input handling
-│   └── InputManager.h        # Keyboard, mouse, gamepad
 ├── Resource/        # Asset management
 │   └── ResourceManager.h     # Loading and caching
-├── Game/            # Game-specific components
-│   ├── Character.h           # Character controller
-│   ├── ThirdPersonCamera.h   # Specialized camera
-│   ├── ThirdPersonCameraSystem.h # Camera management
-│   └── SpringArm.h           # Camera spring arm component
 └── Scripting/       # Scripting integration
     └── ScriptingEngine.h     # Lua scripting support
 ```
@@ -61,13 +67,14 @@ Implementation files mirror the header structure exactly:
 
 ```
 src/
-├── Core/            # Engine core implementation
-├── Graphics/        # Rendering implementation
-├── Physics/         # Physics implementation
+├── Animation/       # Animation system implementation
 ├── Audio/           # Audio implementation
-├── Input/           # Input implementation
-├── Resource/        # Resource management implementation
+├── Core/            # Engine core implementation
 ├── Game/            # Game components implementation
+├── Graphics/        # Rendering implementation
+├── Input/           # Input implementation
+├── Physics/         # Physics implementation
+├── Resource/        # Resource management implementation
 └── Scripting/       # Scripting implementation
 ```
 
@@ -77,37 +84,87 @@ src/
 tests/
 ├── integration/     # Integration tests (system interaction testing)
 │   ├── test_bullet_integration.cpp
-│   └── test_physics_queries.cpp
-└── integration/     # Integration tests (system interaction)
-    ├── test_bullet_integration.cpp
-    ├── test_bullet_conversion.cpp
-    ├── test_bullet_utils_simple.cpp
-    └── test_collision_shape_factory_simple.cpp
+│   ├── test_physics_queries.cpp
+│   ├── test_model_loader_assimp.cpp
+│   ├── test_audio_camera_integration.cpp
+│   └── test_final_v1_validation.cpp
+├── unit/           # Unit tests (individual component testing)
+│   ├── test_math.cpp
+│   ├── test_matrix.cpp
+│   ├── test_quaternion.cpp
+│   ├── test_audio_engine.cpp
+│   └── test_resource_manager.cpp
+├── templates/      # Test template files
+└── TestUtils.h     # Shared testing utilities
 ```
 
 ## Asset Organization (assets/)
 
 ```
 assets/
-└── shaders/         # GLSL shader files
-    ├── vertex/      # Vertex shaders
-    ├── fragment/    # Fragment shaders
-    └── compute/     # Compute shaders (future)
+├── audio/           # Audio files and sound effects
+├── GLTF/           # GLTF 3D model files
+├── materials/      # Material definition files
+├── meshes/         # 3D mesh files (OBJ, FBX, etc.)
+├── shaders/        # GLSL shader files
+│   ├── vertex/     # Vertex shaders
+│   ├── fragment/   # Fragment shaders
+│   └── compute/    # Compute shaders (future)
+├── textures/       # Texture image files
+└── README.md       # Asset documentation
+```
+
+## Scripts Structure (scripts/)
+
+```
+scripts/
+├── build.bat                    # Main build script (ONLY permitted build command)
+├── build_coverage.bat           # Code coverage build
+├── debug.bat                    # Debug build script
+├── dev.bat                      # Development console
+├── monitor.bat                  # Log monitoring script
+├── quick_test.bat               # Quick test execution
+├── run_coverage_analysis.bat    # Coverage analysis runner
+├── run_final_validation.bat     # Final validation tests
+├── run_physics_tests.bat        # Physics-specific tests
+├── run_tests.bat                # All tests runner (MANDATORY before task completion)
+├── setup_dependencies.bat       # Dependency setup
+├── start.bat                    # Application launcher
+├── test_runner.bat              # Test execution utility
+└── README.md                    # Scripts documentation
 ```
 
 ## Documentation Structure (docs/)
 
 ```
 docs/
-├── setup.md         # Installation and setup guide
-├── quickstart.md    # Getting started tutorial
-├── architecture.md  # Engine architecture overview
-├── physics-strategy.md # Dual physics backend strategy
-├── api-reference.md # Complete API documentation
-└── ide.md          # IDE integration guide
+├── 3d-model-loading.md           # 3D model loading system
+├── advanced-shader-system.md     # Advanced shader features
+├── animation-system.md           # Animation system documentation
+├── api-reference.md              # Complete API documentation
+├── architecture.md               # Engine architecture overview
+├── audio-system.md               # Audio system documentation
+├── coding-standards.md           # Code style and standards
+├── coverage-setup.md             # Code coverage configuration
+├── deterministic-physics.md      # Deterministic physics implementation
+├── ide.md                        # IDE integration guide
+├── model-hot-reloading.md        # Model hot-reloading system
+├── nvidia-physx-integration.md   # PhysX integration guide
+├── particle-effects.md           # Particle system documentation
+├── physics-strategy.md           # Dual physics backend strategy
+├── quickstart.md                 # Getting started tutorial
+├── roadmap.md                    # Project roadmap and milestones
+├── setup.md                      # Installation and setup guide
+├── testing-*.md                  # Various testing documentation
+└── validate-links.py             # Documentation link validator
 ```
 
 ## Naming Conventions
+
+### CRITICAL RULE: English Only
+
+- **ALL names, comments, and documentation MUST be in English**
+- **NO Portuguese or other languages in any part of the codebase**
 
 ### Files and Directories
 
@@ -123,6 +180,8 @@ docs/
 - **Member variables**: m\_ prefix with camelCase (e.g., `m_renderer`, `m_isRunning`)
 - **Constants**: UPPER_SNAKE_CASE (e.g., `MAX_RIGID_BODIES`)
 - **Namespaces**: PascalCase (e.g., `GameEngine`, `Math`)
+- **Comments**: English only, technical and professional
+- **Variable names**: Descriptive English names
 
 ### CMake Conventions
 

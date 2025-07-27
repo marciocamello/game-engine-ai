@@ -4,7 +4,7 @@
 #include "Graphics/PrimitiveRenderer.h"
 #include "Input/InputManager.h"
 #include "Physics/PhysicsEngine.h"
-#include "Audio/AudioEngine.h"
+
 #include "Core/Logger.h"
 
 namespace GameEngine {
@@ -17,20 +17,16 @@ namespace GameEngine {
         // Movement component cleanup is handled automatically by unique_ptr
     }
 
-    bool Character::Initialize(PhysicsEngine* physicsEngine, AudioEngine* audioEngine) {
+    bool Character::Initialize(PhysicsEngine* physicsEngine) {
         m_physicsEngine = physicsEngine;
-        m_audioEngine = audioEngine;
         
-        // Initialize default movement component (DeterministicMovementComponent)
+        // Initialize default movement component (HybridMovementComponent)
         InitializeDefaultMovementComponent(physicsEngine);
         
         if (!m_movementComponent) {
             LOG_ERROR("Failed to initialize movement component for Character");
             return false;
         }
-        
-        // Initialize audio system
-        InitializeAudio(audioEngine);
         
         LOG_INFO("Character initialized with component-based movement system (" + 
                 std::string(GetMovementTypeName()) + ")");
@@ -39,27 +35,8 @@ namespace GameEngine {
 
     void Character::Update(float deltaTime, InputManager* input, ThirdPersonCameraSystem* camera) {
         if (m_movementComponent) {
-            // Store previous state for audio event detection
-            bool wasGrounded = m_wasGrounded;
-            bool wasJumping = m_wasJumping;
-            
             // Update movement
             m_movementComponent->Update(deltaTime, input, camera);
-            
-            // Update current state
-            m_wasGrounded = IsGrounded();
-            m_wasJumping = IsJumping();
-            
-            // Update audio based on movement state changes
-            UpdateAudio(deltaTime);
-            
-            // Detect jump event (transition from grounded to jumping)
-            if (wasGrounded && !wasJumping && m_wasJumping) {
-                PlayJumpSound();
-                LOG_DEBUG("Jump detected: wasGrounded=" + std::to_string(wasGrounded) + 
-                         ", wasJumping=" + std::to_string(wasJumping) + 
-                         ", isJumping=" + std::to_string(m_wasJumping));
-            }
         }
     }
 
@@ -272,119 +249,5 @@ namespace GameEngine {
         }
     }
 
-    void Character::InitializeAudio(AudioEngine* audioEngine) {
-        if (!audioEngine || !m_audioEnabled) {
-            LOG_INFO("Character audio disabled or AudioEngine not available");
-            return;
-        }
 
-        // Create audio sources for character sounds
-        m_jumpAudioSource = audioEngine->CreateAudioSource();
-        m_footstepAudioSource = audioEngine->CreateAudioSource();
-
-        // Load audio clips
-        m_jumpSound = audioEngine->LoadAudioClip("assets/audio/file_example_WAV_5MG.wav");
-        m_footstepSound = audioEngine->LoadAudioClip("assets/audio/file_example_OOG_1MG.ogg");
-
-        if (!m_jumpSound) {
-            LOG_WARNING("Failed to load jump sound for Character");
-        }
-        if (!m_footstepSound) {
-            LOG_WARNING("Failed to load footstep sound for Character");
-        }
-
-        // Configure audio sources for 3D positioning
-        if (m_jumpAudioSource != 0) {
-            audioEngine->SetAudioSourceVolume(m_jumpAudioSource, 0.7f);
-            audioEngine->SetAudioSourcePitch(m_jumpAudioSource, 1.2f); // Slightly higher pitch for jump
-        }
-        
-        if (m_footstepAudioSource != 0) {
-            audioEngine->SetAudioSourceVolume(m_footstepAudioSource, 0.4f);
-            audioEngine->SetAudioSourcePitch(m_footstepAudioSource, 0.9f); // Slightly lower pitch for footsteps
-        }
-
-        LOG_INFO("Character audio initialized with jump and footstep sounds");
-    }
-
-    void Character::UpdateAudio(float deltaTime) {
-        if (!m_audioEngine || !m_audioEnabled) {
-            return;
-        }
-
-        // Update 3D audio positions for all character audio sources
-        Math::Vec3 characterPosition = GetPosition();
-        
-        if (m_jumpAudioSource != 0) {
-            m_audioEngine->SetAudioSourcePosition(m_jumpAudioSource, characterPosition);
-        }
-        
-        if (m_footstepAudioSource != 0) {
-            m_audioEngine->SetAudioSourcePosition(m_footstepAudioSource, characterPosition);
-        }
-
-        // Update footstep audio
-        UpdateFootsteps(deltaTime);
-    }
-
-    void Character::PlayJumpSound() {
-        if (!m_audioEngine || !m_audioEnabled || m_jumpAudioSource == 0 || !m_jumpSound) {
-            return;
-        }
-
-        // Stop any currently playing jump sound
-        m_audioEngine->StopAudioSource(m_jumpAudioSource);
-        
-        // Play jump sound at character position
-        m_audioEngine->PlayAudioSource(m_jumpAudioSource, m_jumpSound);
-        
-        LOG_DEBUG("Character played jump sound at position (" + 
-                 std::to_string(GetPosition().x) + ", " + 
-                 std::to_string(GetPosition().y) + ", " + 
-                 std::to_string(GetPosition().z) + ")");
-    }
-
-    void Character::UpdateFootsteps(float deltaTime) {
-        if (!m_audioEngine || !m_audioEnabled || m_footstepAudioSource == 0 || !m_footstepSound) {
-            return;
-        }
-
-        // Only play footsteps when grounded and moving
-        if (!IsGrounded() || IsJumping()) {
-            return;
-        }
-
-        Math::Vec3 currentVelocity = GetVelocity();
-        Math::Vec3 horizontalVelocity(currentVelocity.x, 0.0f, currentVelocity.z);
-        float speed = glm::length(horizontalVelocity);
-
-        // Only play footsteps if moving fast enough
-        const float minSpeedForFootsteps = 1.0f; // m/s
-        if (speed < minSpeedForFootsteps) {
-            return;
-        }
-
-        // Update footstep timer
-        m_footstepTimer += deltaTime;
-
-        // Calculate dynamic footstep interval based on movement speed
-        float dynamicInterval = m_footstepInterval * (6.0f / glm::max(speed, 1.0f)); // Faster movement = faster footsteps
-        dynamicInterval = Math::Clamp(dynamicInterval, 0.2f, 1.0f); // Clamp between 0.2s and 1.0s
-
-        // Check if enough time has passed and character has moved enough distance
-        Math::Vec3 currentPosition = GetPosition();
-        float distanceTraveled = glm::length(currentPosition - m_lastFootstepPosition);
-
-        if (m_footstepTimer >= dynamicInterval && distanceTraveled >= m_footstepMinDistance) {
-            // Play footstep sound
-            m_audioEngine->StopAudioSource(m_footstepAudioSource); // Stop previous footstep if still playing
-            m_audioEngine->PlayAudioSource(m_footstepAudioSource, m_footstepSound);
-            
-            // Reset timer and position
-            m_footstepTimer = 0.0f;
-            m_lastFootstepPosition = currentPosition;
-            
-            LOG_DEBUG("Character played footstep sound at speed " + std::to_string(speed) + " m/s");
-        }
-    }
 }

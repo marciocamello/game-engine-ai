@@ -31,35 +31,35 @@
 
 ## Primary Build Commands
 
-```cmd
-# Windows - Primary build command
-scripts\build.bat
+```powershell
+# Windows - ONLY permitted build command (NEVER use cmake directly)
+.\scripts\build.bat
 
-# Clean build (when needed)
-rmdir /s /q build
-scripts\build.bat
+# Clean build - ONLY permitted cleanup command
+Remove-Item -Recurse -Force build -ErrorAction SilentlyContinue
+.\scripts\build.bat
 
 # Development console with multiple options
-scripts\dev.bat
+.\scripts\dev.bat
 
 # Run with logging
-scripts\start.bat
+.\scripts\start.bat
 
 # Monitor logs in real-time
-scripts\monitor.bat
+.\scripts\monitor.bat
 
 # Debug session
-scripts\debug.bat
+.\scripts\debug.bat
 ```
 
 ### Test Execution
 
-```cmd
+```powershell
 # Run all tests after build
-scripts\run_tests.bat
+.\scripts\run_tests.bat
 
 # Individual test execution
-build\Release\[TestName].exe
+.\build\Release\[TestName].exe
 
 # Tests are automatically discovered by CMake from:
 # - tests/unit/test_*.cpp -> Unit tests (13 tests)

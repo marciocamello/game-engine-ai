@@ -325,6 +325,11 @@ namespace GameEngine {
     }
 
     void PrimitiveRenderer::DrawPrimitive(std::shared_ptr<Mesh> mesh, const Math::Vec3& position, const Math::Vec3& scale, const Math::Vec4& color, std::shared_ptr<Texture> texture) {
+        // Use identity rotation for backward compatibility
+        DrawPrimitive(mesh, position, Math::Quat(1,0,0,0), scale, color, texture);
+    }
+
+    void PrimitiveRenderer::DrawPrimitive(std::shared_ptr<Mesh> mesh, const Math::Vec3& position, const Math::Quat& rotation, const Math::Vec3& scale, const Math::Vec4& color, std::shared_ptr<Texture> texture) {
         if (!mesh) return;
 
         std::shared_ptr<Shader> shader = texture ? m_texturedShader : m_colorShader;
@@ -332,8 +337,8 @@ namespace GameEngine {
 
         shader->Use();
         
-        // Create model matrix
-        Math::Mat4 model = Math::CreateTransform(position, Math::Quat(1,0,0,0), scale);
+        // Create model matrix with rotation
+        Math::Mat4 model = Math::CreateTransform(position, rotation, scale);
         Math::Mat4 mvp = m_viewProjectionMatrix * model;
         Math::Mat3 normalMatrix = Math::Mat3(glm::transpose(glm::inverse(model)));
         
@@ -409,5 +414,14 @@ namespace GameEngine {
 
     void PrimitiveRenderer::DrawMesh(std::shared_ptr<Mesh> mesh, const Math::Vec3& position, const Math::Vec3& scale, std::shared_ptr<Texture> texture) {
         DrawPrimitive(mesh, position, scale, Math::Vec4(1.0f), texture);
+    }
+
+    // Mesh drawing methods with rotation
+    void PrimitiveRenderer::DrawMesh(std::shared_ptr<Mesh> mesh, const Math::Vec3& position, const Math::Quat& rotation, const Math::Vec3& scale, const Math::Vec4& color) {
+        DrawPrimitive(mesh, position, rotation, scale, color);
+    }
+
+    void PrimitiveRenderer::DrawMesh(std::shared_ptr<Mesh> mesh, const Math::Vec3& position, const Math::Quat& rotation, const Math::Vec3& scale, std::shared_ptr<Texture> texture) {
+        DrawPrimitive(mesh, position, rotation, scale, Math::Vec4(1.0f), texture);
     }
 }

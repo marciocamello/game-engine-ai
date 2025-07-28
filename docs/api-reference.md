@@ -544,54 +544,57 @@ audioEngine->DestroyAudioSource(musicSourceId);
 audioEngine->Shutdown();
 ```
 
-**Integration with Character System:**
+**Integration with Game Application:**
 
 ```cpp
-// Character audio integration example
-class Character {
+// Audio integration should be handled at the game application level
+class GameApplication {
 private:
+    std::unique_ptr<Character> m_character;
+    std::unique_ptr<AudioEngine> m_audioEngine;
     uint32_t m_jumpSoundSource = 0;
     uint32_t m_footstepSoundSource = 0;
     std::shared_ptr<AudioClip> m_jumpSound;
     std::shared_ptr<AudioClip> m_footstepSound;
 
 public:
-    bool Initialize(PhysicsEngine* physics, AudioEngine* audio) {
-        if (audio && audio->IsAudioAvailable()) {
+    bool Initialize() {
+        // Initialize character without audio dependencies
+        m_character = std::make_unique<Character>();
+        m_character->Initialize(m_engine.GetPhysics());
+
+        // Initialize audio system separately
+        if (m_audioEngine && m_audioEngine->IsAudioAvailable()) {
             // Load character sounds
-            m_jumpSound = audio->LoadAudioClip("assets/audio/jump.wav");
-            m_footstepSound = audio->LoadAudioClip("assets/audio/footstep.wav");
+            m_jumpSound = m_audioEngine->LoadAudioClip("assets/audio/jump.wav");
+            m_footstepSound = m_audioEngine->LoadAudioClip("assets/audio/footstep.wav");
 
             // Create audio sources
-            m_jumpSoundSource = audio->CreateAudioSource();
-            m_footstepSoundSource = audio->CreateAudioSource();
+            m_jumpSoundSource = m_audioEngine->CreateAudioSource();
+            m_footstepSoundSource = m_audioEngine->CreateAudioSource();
 
             // Configure sources
-            audio->SetAudioSourceVolume(m_jumpSoundSource, 0.7f);
-            audio->SetAudioSourceVolume(m_footstepSoundSource, 0.5f);
+            m_audioEngine->SetAudioSourceVolume(m_jumpSoundSource, 0.7f);
+            m_audioEngine->SetAudioSourceVolume(m_footstepSoundSource, 0.5f);
         }
         return true;
     }
 
-    void Jump() {
-        // Physics jump logic...
-
-        // Play jump sound at character position
-        if (m_jumpSoundSource != 0 && m_jumpSound) {
-            auto* audio = Engine::GetInstance().GetAudio();
-            audio->SetAudioSourcePosition(m_jumpSoundSource, GetPosition());
-            audio->PlayAudioSource(m_jumpSoundSource, m_jumpSound);
-        }
-    }
-
     void Update(float deltaTime) {
-        // Update character logic...
+        // Update character logic
+        m_character->Update(deltaTime, input, camera);
 
-        // Update audio source positions
-        if (m_jumpSoundSource != 0) {
-            auto* audio = Engine::GetInstance().GetAudio();
-            audio->SetAudioSourcePosition(m_jumpSoundSource, GetPosition());
-            audio->SetAudioSourcePosition(m_footstepSoundSource, GetPosition());
+        // Handle audio feedback based on character state
+        if (m_audioEngine && m_jumpSoundSource != 0) {
+            // Update audio source positions based on character position
+            Math::Vec3 characterPos = m_character->GetPosition();
+            m_audioEngine->SetAudioSourcePosition(m_jumpSoundSource, characterPos);
+            m_audioEngine->SetAudioSourcePosition(m_footstepSoundSource, characterPos);
+
+            // Play jump sound when character jumps
+            if (m_character->IsJumping() && m_jumpSound) {
+                m_audioEngine->PlayAudioSource(m_jumpSoundSource, m_jumpSound);
+            }
         }
     }
 };
@@ -1550,9 +1553,9 @@ public:
             LOG_INFO("Audio system initialized with background music");
         }
 
-        // Setup character with audio integration
+        // Setup character without audio dependencies
         m_character = std::make_unique<Character>();
-        m_character->Initialize(m_engine.GetPhysics(), m_engine.GetAudio());
+        m_character->Initialize(m_engine.GetPhysics());
 
         // Setup camera
         m_camera = std::make_unique<ThirdPersonCameraSystem>();

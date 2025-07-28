@@ -98,7 +98,7 @@ namespace GameEngine {
     }
 
     void PhysicsMovementComponent::StopJumping() {
-        m_jumpRequested = false;
+        // Stop jumping logic - currently not needed for physics-based jumping
     }
 
     void PhysicsMovementComponent::AddMovementInput(const Math::Vec3& worldDirection, float scaleValue) {

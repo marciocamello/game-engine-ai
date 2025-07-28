@@ -2,6 +2,8 @@
 #include "Game/MovementComponentFactory.h"
 #include "Game/ThirdPersonCameraSystem.h"
 #include "Graphics/PrimitiveRenderer.h"
+#include "Graphics/Model.h"
+#include "Resource/ModelLoader.h"
 #include "Input/InputManager.h"
 #include "Physics/PhysicsEngine.h"
 
@@ -9,8 +11,10 @@
 
 namespace GameEngine {
     Character::Character() 
-        : m_color(0.3f, 0.5f, 1.0f, 1.0f) // Azul para Character
+        : m_color(0.3f, 0.5f, 1.0f, 1.0f) // Blue for Character
     {
+        // Initialize model loader
+        m_modelLoader = std::make_unique<ModelLoader>();
     }
 
     Character::~Character() {
@@ -19,6 +23,11 @@ namespace GameEngine {
 
     bool Character::Initialize(PhysicsEngine* physicsEngine) {
         m_physicsEngine = physicsEngine;
+        
+        // Initialize model loader
+        if (!m_modelLoader->Initialize()) {
+            LOG_WARNING("Failed to initialize model loader - FBX models will not be available");
+        }
         
         // Initialize default movement component (HybridMovementComponent)
         InitializeDefaultMovementComponent(physicsEngine);
@@ -46,9 +55,30 @@ namespace GameEngine {
         // Get color based on current movement component type
         Math::Vec4 currentColor = GetMovementTypeColor();
         
-        // Draw character as a simple cube (easier to see movement)
-        Math::Vec3 cubeSize(m_radius * 2, m_height, m_radius * 2);
-        renderer->DrawCube(GetPosition(), cubeSize, currentColor);
+        if (IsUsingFBXModel()) {
+            // Render FBX model meshes with rotation
+            Math::Vec3 position = GetPosition();
+            Math::Vec3 scale(m_modelScale, m_modelScale, m_modelScale);
+            
+            // Create rotation quaternion from yaw angle
+            float yawRadians = GetRotation() * Math::DEG_TO_RAD;
+            Math::Quat rotation = Math::Quat(cos(yawRadians * 0.5f), 0.0f, sin(yawRadians * 0.5f), 0.0f);
+            
+            // Render all meshes from the FBX model
+            auto meshes = m_fbxModel->GetMeshes();
+            for (const auto& mesh : meshes) {
+                if (mesh) {
+                    // Use the movement type color for the FBX model with rotation
+                    renderer->DrawMesh(mesh, position, rotation, scale, currentColor);
+                }
+            }
+            
+            LOG_DEBUG("Rendered FBX model with " + std::to_string(meshes.size()) + " meshes at rotation " + std::to_string(GetRotation()) + " degrees");
+        } else {
+            // Draw character as a simple cube (fallback when no FBX model)
+            Math::Vec3 cubeSize(m_radius * 2, m_height, m_radius * 2);
+            renderer->DrawCube(GetPosition(), cubeSize, currentColor);
+        }
     }
 
     // Transform delegation
@@ -236,6 +266,46 @@ namespace GameEngine {
                     std::to_string(m_spawnPosition.x) + ", " + 
                     std::to_string(m_spawnPosition.y) + ", " + 
                     std::to_string(m_spawnPosition.z) + ")");
+        }
+    }
+
+    bool Character::LoadFBXModel(const std::string& fbxPath) {
+        if (!m_modelLoader || !m_modelLoader->IsInitialized()) {
+            LOG_ERROR("Model loader not initialized, cannot load FBX model: " + fbxPath);
+            return false;
+        }
+
+        LOG_INFO("Loading FBX model: " + fbxPath);
+        
+        try {
+            // Load the FBX model
+            auto loadResult = m_modelLoader->LoadModel(fbxPath);
+            
+            if (!loadResult.success) {
+                LOG_ERROR("Failed to load FBX model '" + fbxPath + "': " + loadResult.errorMessage);
+                return false;
+            }
+            
+            // Create a Model resource from the loaded meshes
+            m_fbxModel = std::make_shared<Model>(fbxPath);
+            m_fbxModel->SetMeshes(loadResult.meshes);
+            
+            // Mixamo models come in standard game character size, so use appropriate scale
+            m_modelScale = 1.0f; // Start with 1:1 scale for Mixamo models
+            m_useFBXModel = true;
+            
+            LOG_INFO("Successfully loaded FBX model '" + fbxPath + "' with " + 
+                    std::to_string(loadResult.meshes.size()) + " meshes, " +
+                    std::to_string(loadResult.totalVertices) + " vertices, " +
+                    std::to_string(loadResult.totalTriangles) + " triangles");
+            
+            return true;
+            
+        } catch (const std::exception& e) {
+            LOG_ERROR("Exception while loading FBX model '" + fbxPath + "': " + std::string(e.what()));
+            m_fbxModel.reset();
+            m_useFBXModel = false;
+            return false;
         }
     }
 

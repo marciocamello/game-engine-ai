@@ -41,6 +41,10 @@ namespace GameEngine {
         // Render loaded meshes
         void DrawMesh(std::shared_ptr<Mesh> mesh, const Math::Vec3& position, const Math::Vec3& scale = Math::Vec3(1.0f), const Math::Vec4& color = Math::Vec4(1.0f));
         void DrawMesh(std::shared_ptr<Mesh> mesh, const Math::Vec3& position, const Math::Vec3& scale, std::shared_ptr<Texture> texture);
+        
+        // Render loaded meshes with rotation
+        void DrawMesh(std::shared_ptr<Mesh> mesh, const Math::Vec3& position, const Math::Quat& rotation, const Math::Vec3& scale = Math::Vec3(1.0f), const Math::Vec4& color = Math::Vec4(1.0f));
+        void DrawMesh(std::shared_ptr<Mesh> mesh, const Math::Vec3& position, const Math::Quat& rotation, const Math::Vec3& scale, std::shared_ptr<Texture> texture);
 
         // Set matrices for rendering
         void SetViewProjectionMatrix(const Math::Mat4& viewProjection);
@@ -49,6 +53,7 @@ namespace GameEngine {
         void CreatePrimitiveMeshes();
         void CreateShaders();
         void DrawPrimitive(std::shared_ptr<Mesh> mesh, const Math::Vec3& position, const Math::Vec3& scale, const Math::Vec4& color, std::shared_ptr<Texture> texture = nullptr);
+        void DrawPrimitive(std::shared_ptr<Mesh> mesh, const Math::Vec3& position, const Math::Quat& rotation, const Math::Vec3& scale, const Math::Vec4& color, std::shared_ptr<Texture> texture = nullptr);
         
         std::shared_ptr<Mesh> CreateCubeMesh();
         std::shared_ptr<Mesh> CreateSphereMesh(int segments = 16);

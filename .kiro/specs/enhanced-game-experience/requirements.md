@@ -44,6 +44,12 @@ This specification defines the enhancement of Game Engine Kiro's example applica
 3. WHEN the character moves THEN the system SHALL properly animate or position the FBX model
 4. WHEN movement components are switched THEN the system SHALL maintain visual consistency with the FBX model
 5. WHEN the FBX model fails to load THEN the system SHALL fallback to the cube representation
+6. WHEN fallback rendering is used THEN the system SHALL display a capsule shape instead of a cube to match physics collision
+7. WHEN debug mode is enabled THEN the system SHALL show the collision capsule alongside the visual model
+8. WHEN model offset is configured THEN the system SHALL provide methods to adjust FBX model position within the physics capsule
+9. WHEN model offset is applied THEN the system SHALL center the FBX model properly within the collision capsule
+10. WHEN visual and physics alignment is tested THEN the system SHALL ensure the FBX model aligns correctly with the physics capsule during all movement
+11. WHEN collision visualization is enabled THEN the system SHALL render both the visual model and collision capsule simultaneously for debugging
 
 ### Requirement 4: Enhanced Environment Objects
 

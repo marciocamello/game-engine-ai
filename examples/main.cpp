@@ -1,6 +1,7 @@
 #include "Core/Engine.h"
 #include "Core/Logger.h"
 #include "Game/Character.h"
+#include "Game/GameAudioManager.h"
 #include "Game/ThirdPersonCameraSystem.h"
 #include "Graphics/Camera.h"
 #include "Graphics/GraphicsRenderer.h"
@@ -50,6 +51,22 @@ public:
     m_character->SwitchToHybridMovement();
     LOG_INFO("Character initialized with HybridMovement (default)");
 
+    // Try to load FBX T-Poser character model
+    if (m_character->LoadFBXModel("assets/meshes/XBot.fbx")) {
+      LOG_INFO("Successfully loaded FBX T-Poser character model");
+      
+      // Configure for Mixamo model (like Unreal Engine)
+      m_character->SetModelScale(0.01f); // Standard Mixamo scale
+      
+      // Adjust capsule size to match the scaled model
+      // Keep physics capsule large enough for collision detection but smaller to match visual
+      m_character->SetCharacterSize(0.15f, 0.9f); // Smaller but still functional for collision
+      
+      LOG_INFO("Adjusted character physics capsule for Mixamo model scale");
+    } else {
+      LOG_INFO("FBX model loading failed, using cube representation as fallback");
+    }
+
     m_camera = std::make_unique<ThirdPersonCameraSystem>();
     m_camera->SetTarget(m_character.get());
     m_camera->SetArmLength(10.0f);
@@ -68,21 +85,33 @@ public:
     input->BindAction("jump", KeyCode::Space);
     input->BindAction("quit", KeyCode::Escape);
 
+    // Initialize audio manager
+    m_audioManager = std::make_unique<GameAudioManager>();
+    if (!m_audioManager->Initialize(m_engine.GetAudio())) {
+      LOG_WARNING("Failed to initialize audio manager - continuing without audio");
+    }
+
     m_engine.SetUpdateCallback([this](float deltaTime) { this->Update(deltaTime); });
     m_engine.SetRenderCallback([this]() { this->Render(); });
 
     LOG_INFO("========================================");
-    LOG_INFO("GAME ENGINE KIRO - BASIC EXAMPLE");
+    LOG_INFO("GAME ENGINE KIRO - ENHANCED EXAMPLE");
     LOG_INFO("========================================");
     LOG_INFO("Controls:");
     LOG_INFO("  WASD - Move character");
-    LOG_INFO("  Space - Jump");
+    LOG_INFO("  Space - Jump (with sound effect)");
     LOG_INFO("  Mouse - Look around");
     LOG_INFO("");
     LOG_INFO("Movement Types:");
     LOG_INFO("  1 - CharacterMovement (basic)");
     LOG_INFO("  2 - PhysicsMovement (realistic)");
     LOG_INFO("  3 - HybridMovement (balanced) - DEFAULT");
+    LOG_INFO("");
+    LOG_INFO("Audio Features:");
+    LOG_INFO("  - Background music playing");
+    LOG_INFO("  - Footstep sounds when walking");
+    LOG_INFO("  - Jump sound effects");
+    LOG_INFO("  - 3D spatial audio");
     LOG_INFO("");
     LOG_INFO("Controls:");
     LOG_INFO("  ESC - Toggle mouse capture");
@@ -107,18 +136,27 @@ public:
       m_activeCharacter = CharacterType::CharacterMovement;
       m_character->SwitchToCharacterMovement();
       m_camera->SetTarget(m_character.get());
+      if (m_audioManager) {
+        m_audioManager->OnCharacterTypeChanged();
+      }
       LOG_INFO("Switched to CharacterMovement (basic)");
     }
     if (input->IsKeyPressed(KeyCode::Num2)) {
       m_activeCharacter = CharacterType::Physics;
       m_character->SwitchToPhysicsMovement();
       m_camera->SetTarget(m_character.get());
+      if (m_audioManager) {
+        m_audioManager->OnCharacterTypeChanged();
+      }
       LOG_INFO("Switched to PhysicsMovement (realistic)");
     }
     if (input->IsKeyPressed(KeyCode::Num3)) {
       m_activeCharacter = CharacterType::Hybrid;
       m_character->SwitchToHybridMovement();
       m_camera->SetTarget(m_character.get());
+      if (m_audioManager) {
+        m_audioManager->OnCharacterTypeChanged();
+      }
       LOG_INFO("Switched to HybridMovement (balanced) - RECOMMENDED");
     }
 
@@ -166,6 +204,11 @@ public:
     if (m_character->HasFallen()) {
       LOG_INFO("Character has fallen! Resetting to spawn position");
       m_character->ResetToSpawnPosition();
+    }
+    
+    // Update audio manager with character state
+    if (m_audioManager) {
+      m_audioManager->Update(deltaTime, m_character.get());
     }
     
     m_camera->Update(deltaTime, m_engine.GetInput());
@@ -240,6 +283,7 @@ private:
   std::unique_ptr<ThirdPersonCameraSystem> m_camera;
   std::unique_ptr<Character> m_character;
   std::unique_ptr<PrimitiveRenderer> m_primitiveRenderer;
+  std::unique_ptr<GameAudioManager> m_audioManager;
   
   CharacterType m_activeCharacter = CharacterType::Hybrid;
 };

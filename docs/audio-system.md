@@ -245,18 +245,18 @@ uint32_t footstepSourceId = audioEngine->CreateAudioSource();
 ### 3D Spatial Audio Implementation
 
 ```cpp
-// Character-based 3D audio
-void UpdateCharacterAudio(float deltaTime) {
-    // Update listener position to character position
-    Math::Vec3 characterPos = character->GetPosition();
-    Math::Vec3 cameraForward = camera->GetForward();
-    Math::Vec3 cameraUp = camera->GetUp();
+// Application-level 3D audio handling (not in Character class)
+void GameApplication::UpdateCharacterAudio(float deltaTime) {
+    // Update listener position based on character position
+    Math::Vec3 characterPos = m_character->GetPosition();
+    Math::Vec3 cameraForward = m_camera->GetForward();
+    Math::Vec3 cameraUp = m_camera->GetUp();
 
-    audioEngine->SetListenerPosition(characterPos);
-    audioEngine->SetListenerOrientation(cameraForward, cameraUp);
+    m_audioEngine->SetListenerPosition(characterPos);
+    m_audioEngine->SetListenerOrientation(cameraForward, cameraUp);
 
     // Position footstep sounds at character feet
-    audioEngine->SetAudioSourcePosition(footstepSourceId,
+    m_audioEngine->SetAudioSourcePosition(m_footstepSourceId,
         Math::Vec3(characterPos.x, characterPos.y - 0.9f, characterPos.z));
 
     // Play footsteps based on movement
@@ -379,41 +379,53 @@ void HandleAudioErrors() {
 ### Integration with Game Systems
 
 ```cpp
-// Character movement integration
-class Character {
+// Game application handles character audio (not Character class)
+class GameApplication {
 private:
+    std::unique_ptr<Character> m_character;
+    std::unique_ptr<AudioEngine> m_audioEngine;
     uint32_t m_jumpAudioSource = 0;
     uint32_t m_footstepAudioSource = 0;
     std::shared_ptr<AudioClip> m_jumpSound;
     std::shared_ptr<AudioClip> m_footstepSound;
 
 public:
-    void InitializeAudio(AudioEngine* audioEngine) {
-        m_jumpAudioSource = audioEngine->CreateAudioSource();
-        m_footstepAudioSource = audioEngine->CreateAudioSource();
+    bool Initialize() {
+        // Initialize character without audio dependencies
+        m_character = std::make_unique<Character>();
+        m_character->Initialize(m_engine.GetPhysics());
 
-        m_jumpSound = audioEngine->LoadAudioClip("assets/audio/jump.wav");
-        m_footstepSound = audioEngine->LoadAudioClip("assets/audio/footstep.wav");
+        // Initialize audio system separately
+        if (m_audioEngine) {
+            m_jumpAudioSource = m_audioEngine->CreateAudioSource();
+            m_footstepAudioSource = m_audioEngine->CreateAudioSource();
+
+            m_jumpSound = m_audioEngine->LoadAudioClip("assets/audio/jump.wav");
+            m_footstepSound = m_audioEngine->LoadAudioClip("assets/audio/footstep.wav");
+        }
+        return true;
     }
 
-    void Jump() {
-        // Physics jump logic...
+    void Update(float deltaTime) {
+        // Update character
+        m_character->Update(deltaTime, input, camera);
 
-        // Play jump sound at character position
-        audioEngine->SetAudioSourcePosition(m_jumpAudioSource, GetPosition());
-        audioEngine->PlayAudioSource(m_jumpAudioSource, m_jumpSound);
-    }
+        // Handle audio feedback based on character state
+        if (m_audioEngine && m_character->IsJumping()) {
+            // Play jump sound at character position
+            m_audioEngine->SetAudioSourcePosition(m_jumpAudioSource, m_character->GetPosition());
+            m_audioEngine->PlayAudioSource(m_jumpAudioSource, m_jumpSound);
+        }
 
-    void UpdateAudio(float deltaTime) {
         // Update footstep audio based on movement
-        if (IsGrounded() && GetVelocity().length() > 0.1f) {
+        if (m_audioEngine && m_character->IsGrounded() && m_character->GetVelocity().length() > 0.1f) {
             static float timer = 0.0f;
             timer += deltaTime;
 
-            float interval = 0.6f / (GetVelocity().length() / GetMaxSpeed());
+            float interval = 0.6f / (m_character->GetVelocity().length() / m_character->GetMoveSpeed());
             if (timer >= interval) {
-                audioEngine->SetAudioSourcePosition(m_footstepAudioSource, GetPosition());
-                audioEngine->PlayAudioSource(m_footstepAudioSource, m_footstepSound);
+                m_audioEngine->SetAudioSourcePosition(m_footstepAudioSource, m_character->GetPosition());
+                m_audioEngine->PlayAudioSource(m_footstepAudioSource, m_footstepSound);
                 timer = 0.0f;
             }
         }

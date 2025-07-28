@@ -3,11 +3,14 @@
 #include "Core/Math.h"
 #include "Game/CharacterMovementComponent.h"
 #include <memory>
+#include <string>
 
 namespace GameEngine {
     class PrimitiveRenderer;
     class InputManager;
     class PhysicsEngine;
+    class Model;
+    class ModelLoader;
 
 
     /**
@@ -71,6 +74,13 @@ namespace GameEngine {
         void SetSpawnPosition(const Math::Vec3& position) { m_spawnPosition = position; }
         const Math::Vec3& GetSpawnPosition() const { return m_spawnPosition; }
 
+        // FBX Model support
+        bool LoadFBXModel(const std::string& fbxPath);
+        void SetUseFBXModel(bool useFBX) { m_useFBXModel = useFBX; }
+        bool IsUsingFBXModel() const { return m_useFBXModel && m_fbxModel != nullptr; }
+        void SetModelScale(float scale) { m_modelScale = scale; }
+
+
 
 
     private:
@@ -88,6 +98,13 @@ namespace GameEngine {
 
         // Rendering
         Math::Vec4 m_color{0.2f, 0.6f, 1.0f, 1.0f}; // Blue capsule
+
+        // FBX Model rendering
+        std::shared_ptr<Model> m_fbxModel;
+        std::unique_ptr<ModelLoader> m_modelLoader;
+        bool m_useFBXModel = false;
+        float m_modelScale = 1.0f;
+
 
         // Fall detection and reset system
         float m_fallLimit = -10.0f;  // Y position below which character is considered fallen

@@ -131,7 +131,7 @@ namespace GameEngine {
 
     void Engine::Render() {
         m_renderer->BeginFrame();
-        m_renderer->Clear(Math::Vec4(0.2f, 0.3f, 0.8f, 1.0f)); // Sky blue background
+        m_renderer->Clear(Math::Vec4(0.1f, 0.1f, 0.1f, 1.0f)); // Dark gray background
         
         // Begin physics debug frame
         if (m_physicsDebugManager) {

@@ -45,17 +45,16 @@
   - Test movement component switching with FBX model
   - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5_
 
-- [-] 5. Fix character collision visualization and alignment
-
+- [x] 5. Fix character collision visualization and alignment
 
   - Replace cube fallback rendering with capsule visualization in Character::Render()
-  - Implement debug capsule rendering using PrimitiveRenderer::DrawCapsule()
-  - Add visual debug mode to show collision capsule alongside FBX model
+  - Implement debug capsule rendering using proper capsule wireframe from capsule.obj
+  - Add visual debug mode to show collision capsule alongside FBX model (F3 key)
   - Ensure fallback capsule matches physics capsule dimensions exactly
   - Test that visual capsule aligns with physics collision behavior
   - _Requirements: 3.6, 3.7_
 
-- [ ] 6. Implement character model offset system
+- [x] 6. Implement character model offset system
 
   - Add SetModelOffset() method to Character class for FBX model positioning
   - Implement GetModelOffset() method to retrieve current model offset

@@ -12,6 +12,31 @@ namespace GameEngine {
     class Model;
     class ModelLoader;
 
+    /**
+     * @brief Configuration structure for character model offset system
+     * 
+     * Provides easy adjustment of FBX model positioning within the physics capsule.
+     * The offset is applied in local space relative to the character's position.
+     */
+    struct ModelOffsetConfiguration {
+        Math::Vec3 offset{0.0f, 0.0f, 0.0f};  // Model offset in local space
+        
+        // Predefined offset configurations for common scenarios
+        static ModelOffsetConfiguration CenteredInCapsule() {
+            // Center the model within a standard capsule (radius=0.3f, height=1.8f)
+            // Basic offset configuration - fine-tuning will be done in future tasks
+            // TODO: Adjust offset values based on visual alignment testing
+            return ModelOffsetConfiguration{Math::Vec3(0.0f, 0.0f, 0.0f)};
+        }
+        
+        static ModelOffsetConfiguration Default() {
+            return ModelOffsetConfiguration{Math::Vec3(0.0f, 0.0f, 0.0f)};
+        }
+        
+        static ModelOffsetConfiguration Custom(const Math::Vec3& customOffset) {
+            return ModelOffsetConfiguration{customOffset};
+        }
+    };
 
     /**
      * @brief Character class with component-based movement system
@@ -80,6 +105,12 @@ namespace GameEngine {
         bool IsUsingFBXModel() const { return m_useFBXModel && m_fbxModel != nullptr; }
         void SetModelScale(float scale) { m_modelScale = scale; }
 
+        // Model offset system
+        void SetModelOffset(const Math::Vec3& offset) { m_modelOffset = offset; }
+        const Math::Vec3& GetModelOffset() const { return m_modelOffset; }
+        void SetModelOffsetConfiguration(const ModelOffsetConfiguration& config) { m_modelOffset = config.offset; }
+        ModelOffsetConfiguration GetModelOffsetConfiguration() const { return ModelOffsetConfiguration{m_modelOffset}; }
+
 
 
 
@@ -104,6 +135,7 @@ namespace GameEngine {
         std::unique_ptr<ModelLoader> m_modelLoader;
         bool m_useFBXModel = false;
         float m_modelScale = 1.0f;
+        Math::Vec3 m_modelOffset{0.0f, 0.0f, 0.0f}; // Offset for centering FBX model within physics capsule
 
 
         // Fall detection and reset system

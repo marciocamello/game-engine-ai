@@ -56,24 +56,29 @@ namespace GameEngine {
         Math::Vec4 currentColor = GetMovementTypeColor();
         
         if (IsUsingFBXModel()) {
-            // Render FBX model meshes with rotation
-            Math::Vec3 position = GetPosition();
+            // Render FBX model meshes with rotation and offset
+            Math::Vec3 basePosition = GetPosition();
             Math::Vec3 scale(m_modelScale, m_modelScale, m_modelScale);
             
             // Create rotation quaternion from yaw angle
             float yawRadians = GetRotation() * Math::DEG_TO_RAD;
             Math::Quat rotation = Math::Quat(cos(yawRadians * 0.5f), 0.0f, sin(yawRadians * 0.5f), 0.0f);
             
+            // Apply model offset to position
+            // The offset is applied in world space for simplicity
+            Math::Vec3 offsetPosition = basePosition + m_modelOffset;
+            
             // Render all meshes from the FBX model
             auto meshes = m_fbxModel->GetMeshes();
             for (const auto& mesh : meshes) {
                 if (mesh) {
-                    // Use the movement type color for the FBX model with rotation
-                    renderer->DrawMesh(mesh, position, rotation, scale, currentColor);
+                    // Use the movement type color for the FBX model with rotation and offset
+                    renderer->DrawMesh(mesh, offsetPosition, rotation, scale, currentColor);
                 }
             }
             
-            LOG_DEBUG("Rendered FBX model with " + std::to_string(meshes.size()) + " meshes at rotation " + std::to_string(GetRotation()) + " degrees");
+            LOG_DEBUG("Rendered FBX model with " + std::to_string(meshes.size()) + " meshes at rotation " + std::to_string(GetRotation()) + " degrees, offset (" + 
+                     std::to_string(m_modelOffset.x) + ", " + std::to_string(m_modelOffset.y) + ", " + std::to_string(m_modelOffset.z) + ")");
         } else {
             // Draw character as a simple cube (fallback when no FBX model)
             Math::Vec3 cubeSize(m_radius * 2, m_height, m_radius * 2);
@@ -292,6 +297,12 @@ namespace GameEngine {
             
             // Mixamo models come in standard game character size, so use appropriate scale
             m_modelScale = 1.0f; // Start with 1:1 scale for Mixamo models
+            
+            // Set default model offset to center FBX model within physics capsule
+            // Physics capsule: radius=0.3f, height=1.8f, centered at character position
+            // Most FBX models need downward offset to align feet with capsule bottom
+            m_modelOffset = ModelOffsetConfiguration::CenteredInCapsule().offset;
+            
             m_useFBXModel = true;
             
             LOG_INFO("Successfully loaded FBX model '" + fbxPath + "' with " + 

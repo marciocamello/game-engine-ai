@@ -52,6 +52,7 @@ public:
         allPassed &= TestCharacterMovementComponents();
         allPassed &= TestCharacterControllerCompatibility();
         allPassed &= TestCharacterUpdate();
+        allPassed &= TestModelOffsetSystem();
         
         TestOutput::PrintInfo("Character Behavior Tests Complete");
         return allPassed;
@@ -285,6 +286,97 @@ private:
         }
         catch (const std::exception& e) {
             std::cout << "Character update test FAILED with exception: " << e.what() << std::endl;
+            return false;
+        }
+    }
+    
+    bool TestModelOffsetSystem() {
+        std::cout << "\nTesting Model Offset System..." << std::endl;
+        
+        try {
+            auto character = std::make_unique<Character>();
+            character->Initialize(m_physicsEngine.get());
+            
+            // Test default model offset
+            Math::Vec3 defaultOffset = character->GetModelOffset();
+            std::cout << "Default model offset: (" << defaultOffset.x << ", " << defaultOffset.y << ", " << defaultOffset.z << ")" << std::endl;
+            
+            // Test setting custom model offset
+            Math::Vec3 testOffset(1.0f, -0.5f, 0.2f);
+            character->SetModelOffset(testOffset);
+            Math::Vec3 retrievedOffset = character->GetModelOffset();
+            
+            bool offsetCorrect = (std::abs(retrievedOffset.x - testOffset.x) < 0.001f) &&
+                                (std::abs(retrievedOffset.y - testOffset.y) < 0.001f) &&
+                                (std::abs(retrievedOffset.z - testOffset.z) < 0.001f);
+            
+            std::cout << "Set offset: (" << testOffset.x << ", " << testOffset.y << ", " << testOffset.z << ")" << std::endl;
+            std::cout << "Got offset: (" << retrievedOffset.x << ", " << retrievedOffset.y << ", " << retrievedOffset.z << ")" << std::endl;
+            
+            // Test model offset configuration structure
+            auto centeredConfig = ModelOffsetConfiguration::CenteredInCapsule();
+            character->SetModelOffsetConfiguration(centeredConfig);
+            Math::Vec3 centeredOffset = character->GetModelOffset();
+            
+            std::cout << "Centered in capsule offset: (" << centeredOffset.x << ", " << centeredOffset.y << ", " << centeredOffset.z << ")" << std::endl;
+            
+            // Test default configuration
+            auto defaultConfig = ModelOffsetConfiguration::Default();
+            character->SetModelOffsetConfiguration(defaultConfig);
+            Math::Vec3 defaultConfigOffset = character->GetModelOffset();
+            
+            bool defaultConfigCorrect = (std::abs(defaultConfigOffset.x) < 0.001f) &&
+                                       (std::abs(defaultConfigOffset.y) < 0.001f) &&
+                                       (std::abs(defaultConfigOffset.z) < 0.001f);
+            
+            std::cout << "Default config offset: (" << defaultConfigOffset.x << ", " << defaultConfigOffset.y << ", " << defaultConfigOffset.z << ")" << std::endl;
+            
+            // Test custom configuration
+            Math::Vec3 customOffsetValue(2.0f, -1.0f, 0.5f);
+            auto customConfig = ModelOffsetConfiguration::Custom(customOffsetValue);
+            character->SetModelOffsetConfiguration(customConfig);
+            Math::Vec3 customConfigOffset = character->GetModelOffset();
+            
+            bool customConfigCorrect = (std::abs(customConfigOffset.x - customOffsetValue.x) < 0.001f) &&
+                                      (std::abs(customConfigOffset.y - customOffsetValue.y) < 0.001f) &&
+                                      (std::abs(customConfigOffset.z - customOffsetValue.z) < 0.001f);
+            
+            std::cout << "Custom config offset: (" << customConfigOffset.x << ", " << customConfigOffset.y << ", " << customConfigOffset.z << ")" << std::endl;
+            
+            // Test getting configuration
+            auto retrievedConfig = character->GetModelOffsetConfiguration();
+            bool configRetrievalCorrect = (std::abs(retrievedConfig.offset.x - customOffsetValue.x) < 0.001f) &&
+                                         (std::abs(retrievedConfig.offset.y - customOffsetValue.y) < 0.001f) &&
+                                         (std::abs(retrievedConfig.offset.z - customOffsetValue.z) < 0.001f);
+            
+            // Test that model offset works with different movement components
+            character->SwitchToCharacterMovement();
+            Math::Vec3 offsetWithCharacterMovement = character->GetModelOffset();
+            
+            character->SwitchToPhysicsMovement();
+            Math::Vec3 offsetWithPhysicsMovement = character->GetModelOffset();
+            
+            character->SwitchToHybridMovement();
+            Math::Vec3 offsetWithHybridMovement = character->GetModelOffset();
+            
+            bool offsetPersistsAcrossComponents = 
+                (std::abs(offsetWithCharacterMovement.x - customOffsetValue.x) < 0.001f) &&
+                (std::abs(offsetWithPhysicsMovement.x - customOffsetValue.x) < 0.001f) &&
+                (std::abs(offsetWithHybridMovement.x - customOffsetValue.x) < 0.001f);
+            
+            std::cout << "Offset with CharacterMovement: (" << offsetWithCharacterMovement.x << ", " << offsetWithCharacterMovement.y << ", " << offsetWithCharacterMovement.z << ")" << std::endl;
+            std::cout << "Offset with PhysicsMovement: (" << offsetWithPhysicsMovement.x << ", " << offsetWithPhysicsMovement.y << ", " << offsetWithPhysicsMovement.z << ")" << std::endl;
+            std::cout << "Offset with HybridMovement: (" << offsetWithHybridMovement.x << ", " << offsetWithHybridMovement.y << ", " << offsetWithHybridMovement.z << ")" << std::endl;
+            
+            bool success = offsetCorrect && defaultConfigCorrect && customConfigCorrect && 
+                          configRetrievalCorrect && offsetPersistsAcrossComponents;
+            
+            std::cout << "Model offset system test: " << (success ? "PASS" : "FAIL") << std::endl;
+            
+            return success;
+        }
+        catch (const std::exception& e) {
+            std::cout << "Model offset system test FAILED with exception: " << e.what() << std::endl;
             return false;
         }
     }

@@ -5,6 +5,7 @@
 #include "Game/ThirdPersonCameraSystem.h"
 #include "Graphics/Camera.h"
 #include "Graphics/GraphicsRenderer.h"
+#include "Graphics/GridRenderer.h"
 #include "Graphics/PrimitiveRenderer.h"
 #include "Graphics/Texture.h"
 #include "Input/InputManager.h"
@@ -107,6 +108,13 @@ public:
     m_audioManager = std::make_unique<GameAudioManager>();
     if (!m_audioManager->Initialize(m_engine.GetAudio())) {
       LOG_WARNING("Failed to initialize audio manager - continuing without audio");
+    }
+
+    // Initialize grid renderer
+    m_gridRenderer = std::make_unique<GridRenderer>();
+    if (!m_gridRenderer->Initialize(m_primitiveRenderer.get())) {
+      LOG_ERROR("Failed to initialize grid renderer");
+      return false;
     }
 
     // Create environment objects
@@ -323,7 +331,10 @@ private:
                                    Math::Vec2(100.0f),
                                    Math::Vec4(0.4f, 0.8f, 0.4f, 1.0f));
 
-    DrawGrid();
+    // Render professional grid system
+    if (m_gridRenderer) {
+      m_gridRenderer->Render(viewProjection);
+    }
     
     // Render environment objects
     RenderEnvironmentObjects();
@@ -348,33 +359,14 @@ private:
     }
   }
 
-  void DrawGrid() {
-    float gridSize = 50.0f;
-    float gridSpacing = 2.0f;
-    Math::Vec4 gridColor(0.2f, 0.2f, 0.2f, 1.0f);
 
-    for (float z = -gridSize; z <= gridSize; z += gridSpacing) {
-      for (float x = -gridSize; x < gridSize; x += gridSpacing) {
-        m_primitiveRenderer->DrawCube(
-            Math::Vec3(x, 0.01f, z),
-            Math::Vec3(gridSpacing * 0.9f, 0.02f, 0.1f), gridColor);
-      }
-    }
-
-    for (float x = -gridSize; x <= gridSize; x += gridSpacing) {
-      for (float z = -gridSize; z < gridSize; z += gridSpacing) {
-        m_primitiveRenderer->DrawCube(
-            Math::Vec3(x, 0.01f, z),
-            Math::Vec3(0.1f, 0.02f, gridSpacing * 0.9f), gridColor);
-      }
-    }
-  }
 
   Engine m_engine;
   std::unique_ptr<ThirdPersonCameraSystem> m_camera;
   std::unique_ptr<Character> m_character;
   std::unique_ptr<PrimitiveRenderer> m_primitiveRenderer;
   std::unique_ptr<GameAudioManager> m_audioManager;
+  std::unique_ptr<GridRenderer> m_gridRenderer;
   
   std::vector<EnvironmentObject> m_environmentObjects;
   

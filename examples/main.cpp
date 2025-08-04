@@ -6,6 +6,7 @@
 #include "Graphics/Camera.h"
 #include "Graphics/GraphicsRenderer.h"
 #include "Graphics/PrimitiveRenderer.h"
+#include "Graphics/Texture.h"
 #include "Input/InputManager.h"
 #include "Physics/PhysicsEngine.h"
 #include <GLFW/glfw3.h>
@@ -18,6 +19,15 @@ public:
     CharacterMovement,        // Character with CharacterMovementComponent (basic)
     Physics,                  // Character with PhysicsMovementComponent (realistic)
     Hybrid                    // Character with HybridMovementComponent (balanced) - DEFAULT
+  };
+
+  struct EnvironmentObject {
+    Math::Vec3 position;
+    Math::Vec3 scale;
+    std::shared_ptr<Texture> texture;
+    Math::Vec4 color;
+    bool useTexture;
+    bool useColor;
   };
 
   GameApplication() = default;
@@ -98,6 +108,9 @@ public:
     if (!m_audioManager->Initialize(m_engine.GetAudio())) {
       LOG_WARNING("Failed to initialize audio manager - continuing without audio");
     }
+
+    // Create environment objects
+    CreateEnvironmentObjects();
 
     m_engine.SetUpdateCallback([this](float deltaTime) { this->Update(deltaTime); });
     m_engine.SetRenderCallback([this]() { this->Render(); });
@@ -230,6 +243,49 @@ public:
 
 private:
 
+  void CreateEnvironmentObjects() {
+    // Create exactly 3 cubes with different material properties
+    m_environmentObjects.clear();
+    
+    // Cube 1: Textured cube (using wall.jpg texture)
+    EnvironmentObject texturedCube;
+    texturedCube.position = Math::Vec3(-5.0f, 1.0f, 5.0f);
+    texturedCube.scale = Math::Vec3(2.0f, 2.0f, 2.0f);
+    texturedCube.texture = std::make_shared<Texture>();
+    if (texturedCube.texture->LoadFromFile("assets/textures/wall.jpg")) {
+      texturedCube.useTexture = true;
+      texturedCube.useColor = false;
+      LOG_INFO("Successfully loaded texture for environment cube 1");
+    } else {
+      // Fallback to solid color if texture fails
+      texturedCube.useTexture = false;
+      texturedCube.useColor = true;
+      texturedCube.color = Math::Vec4(0.8f, 0.4f, 0.2f, 1.0f); // Orange fallback
+      LOG_WARNING("Failed to load texture for cube 1, using color fallback");
+    }
+    m_environmentObjects.push_back(texturedCube);
+    
+    // Cube 2: Solid color cube (blue)
+    EnvironmentObject colorCube;
+    colorCube.position = Math::Vec3(5.0f, 1.0f, 5.0f);
+    colorCube.scale = Math::Vec3(2.0f, 2.0f, 2.0f);
+    colorCube.useTexture = false;
+    colorCube.useColor = true;
+    colorCube.color = Math::Vec4(0.2f, 0.4f, 0.8f, 1.0f); // Blue
+    m_environmentObjects.push_back(colorCube);
+    
+    // Cube 3: Default material cube (no texture, no color - uses default rendering)
+    EnvironmentObject defaultCube;
+    defaultCube.position = Math::Vec3(0.0f, 1.0f, 8.0f);
+    defaultCube.scale = Math::Vec3(2.0f, 2.0f, 2.0f);
+    defaultCube.useTexture = false;
+    defaultCube.useColor = false;
+    defaultCube.color = Math::Vec4(1.0f, 1.0f, 1.0f, 1.0f); // White (default)
+    m_environmentObjects.push_back(defaultCube);
+    
+    LOG_INFO("Created 3 environment objects with different material properties");
+  }
+
   void CreateGroundPlane() {
     auto* physics = m_engine.GetPhysics();
     if (!physics) {
@@ -269,9 +325,27 @@ private:
 
     DrawGrid();
     
+    // Render environment objects
+    RenderEnvironmentObjects();
+    
     // Set debug capsule visualization state
     m_character->SetShowDebugCapsule(m_showDebugCapsule);
     m_character->Render(m_primitiveRenderer.get());
+  }
+
+  void RenderEnvironmentObjects() {
+    for (const auto& obj : m_environmentObjects) {
+      if (obj.useTexture && obj.texture) {
+        // Render with texture
+        m_primitiveRenderer->DrawCube(obj.position, obj.scale, obj.texture);
+      } else if (obj.useColor) {
+        // Render with solid color
+        m_primitiveRenderer->DrawCube(obj.position, obj.scale, obj.color);
+      } else {
+        // Render with default material (white)
+        m_primitiveRenderer->DrawCube(obj.position, obj.scale, Math::Vec4(1.0f, 1.0f, 1.0f, 1.0f));
+      }
+    }
   }
 
   void DrawGrid() {
@@ -301,6 +375,8 @@ private:
   std::unique_ptr<Character> m_character;
   std::unique_ptr<PrimitiveRenderer> m_primitiveRenderer;
   std::unique_ptr<GameAudioManager> m_audioManager;
+  
+  std::vector<EnvironmentObject> m_environmentObjects;
   
   CharacterType m_activeCharacter = CharacterType::Hybrid;
   bool m_showDebugCapsule = false;

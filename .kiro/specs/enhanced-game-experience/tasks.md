@@ -74,7 +74,7 @@
   - Test alignment with all three movement component types (Basic, Physics, Hybrid)
   - _Requirements: 3.10, 3.11_
 
-- [ ] 8. Create enhanced environment objects
+- [x] 8. Create enhanced environment objects
 
   - Design and implement exactly 3 cubes with different material properties
   - Create first cube with texture material applied

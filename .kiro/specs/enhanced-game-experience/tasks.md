@@ -64,7 +64,7 @@
   - Test that model offset works correctly with all movement components
   - _Requirements: 3.8, 3.9_
 
-- [ ] 7. Align FBX model with physics capsule
+- [x] 7. Align FBX model with physics capsule
 
   - Analyze current FBX model scale (1.0f) vs physics capsule dimensions (0.3f radius, 1.8f height)
   - Calculate proper model offset to center FBX model within physics capsule

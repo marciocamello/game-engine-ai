@@ -80,9 +80,14 @@ namespace GameEngine {
             LOG_DEBUG("Rendered FBX model with " + std::to_string(meshes.size()) + " meshes at rotation " + std::to_string(GetRotation()) + " degrees, offset (" + 
                      std::to_string(m_modelOffset.x) + ", " + std::to_string(m_modelOffset.y) + ", " + std::to_string(m_modelOffset.z) + ")");
         } else {
-            // Draw character as a simple cube (fallback when no FBX model)
-            Math::Vec3 cubeSize(m_radius * 2, m_height, m_radius * 2);
-            renderer->DrawCube(GetPosition(), cubeSize, currentColor);
+            // Draw character as a capsule (fallback when no FBX model) - matches physics collision shape
+            renderer->DrawCapsule(GetPosition(), m_radius, m_height, currentColor);
+        }
+
+        // Render debug collision capsule if enabled
+        if (m_showDebugCapsule) {
+            Math::Vec4 debugColor(1.0f, 0.0f, 0.0f, 0.5f); // Semi-transparent red
+            renderer->DrawCapsule(GetPosition(), m_radius, m_height, debugColor);
         }
     }
 

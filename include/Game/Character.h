@@ -24,9 +24,9 @@ namespace GameEngine {
         // Predefined offset configurations for common scenarios
         static ModelOffsetConfiguration CenteredInCapsule() {
             // Center the model within a standard capsule (radius=0.3f, height=1.8f)
-            // Basic offset configuration - fine-tuning will be done in future tasks
-            // TODO: Adjust offset values based on visual alignment testing
-            return ModelOffsetConfiguration{Math::Vec3(0.0f, 0.0f, 0.0f)};
+            // For Mixamo models at 0.01f scale (they export huge), we need to offset downward 
+            // to align feet with capsule bottom. At 0.01f scale, model is ~0.018 units tall.
+            return ModelOffsetConfiguration{Math::Vec3(0.0f, -0.89f, 0.0f)};
         }
         
         static ModelOffsetConfiguration Default() {
@@ -111,6 +111,10 @@ namespace GameEngine {
         void SetModelOffsetConfiguration(const ModelOffsetConfiguration& config) { m_modelOffset = config.offset; }
         ModelOffsetConfiguration GetModelOffsetConfiguration() const { return ModelOffsetConfiguration{m_modelOffset}; }
 
+        // Debug visualization
+        void SetShowDebugCapsule(bool show) { m_showDebugCapsule = show; }
+        bool IsShowingDebugCapsule() const { return m_showDebugCapsule; }
+
 
 
 
@@ -141,6 +145,9 @@ namespace GameEngine {
         // Fall detection and reset system
         float m_fallLimit = -10.0f;  // Y position below which character is considered fallen
         Math::Vec3 m_spawnPosition{0.0f, 1.0f, 0.0f};  // Default spawn position
+
+        // Debug visualization
+        bool m_showDebugCapsule = false;
 
 
     };

@@ -375,7 +375,12 @@ namespace GameEngine {
     }
 
     void PrimitiveRenderer::DrawCapsule(const Math::Vec3& position, float radius, float height, const Math::Vec4& color) {
-        DrawPrimitive(m_capsuleMesh, position, Math::Vec3(radius, height, radius), color);
+        // The capsule mesh is created with radius=0.5 and cylinder height=1.0 (total height=3.0 with hemispheres)
+        // We need to scale it properly to match the desired radius and height
+        float scaleX = radius / 0.5f;  // Scale radius from 0.5 to desired radius
+        float scaleY = height / 3.0f;  // Scale total height from 3.0 to desired height
+        float scaleZ = radius / 0.5f;  // Scale radius from 0.5 to desired radius
+        DrawPrimitive(m_capsuleMesh, position, Math::Vec3(scaleX, scaleY, scaleZ), color);
     }
 
     void PrimitiveRenderer::DrawCylinder(const Math::Vec3& position, float radius, float height, const Math::Vec4& color) {
@@ -396,7 +401,12 @@ namespace GameEngine {
     }
 
     void PrimitiveRenderer::DrawCapsule(const Math::Vec3& position, float radius, float height, std::shared_ptr<Texture> texture) {
-        DrawPrimitive(m_capsuleMesh, position, Math::Vec3(radius, height, radius), Math::Vec4(1.0f), texture);
+        // The capsule mesh is created with radius=0.5 and cylinder height=1.0 (total height=3.0 with hemispheres)
+        // We need to scale it properly to match the desired radius and height
+        float scaleX = radius / 0.5f;  // Scale radius from 0.5 to desired radius
+        float scaleY = height / 3.0f;  // Scale total height from 3.0 to desired height
+        float scaleZ = radius / 0.5f;  // Scale radius from 0.5 to desired radius
+        DrawPrimitive(m_capsuleMesh, position, Math::Vec3(scaleX, scaleY, scaleZ), Math::Vec4(1.0f), texture);
     }
 
     void PrimitiveRenderer::DrawCylinder(const Math::Vec3& position, float radius, float height, std::shared_ptr<Texture> texture) {

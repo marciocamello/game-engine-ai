@@ -55,16 +55,24 @@ public:
     if (m_character->LoadFBXModel("assets/meshes/XBot.fbx")) {
       LOG_INFO("Successfully loaded FBX T-Poser character model");
       
-      // Configure for Mixamo model (like Unreal Engine)
-      m_character->SetModelScale(0.01f); // Standard Mixamo scale
+      // Configure for Mixamo model (they export very large, need small scale)
+      m_character->SetModelScale(0.01f); // Standard Mixamo scale - they export huge
       
-      // Adjust capsule size to match the scaled model
-      // Keep physics capsule large enough for collision detection but smaller to match visual
-      m_character->SetCharacterSize(0.15f, 0.9f); // Smaller but still functional for collision
+      // Keep standard physics capsule dimensions (radius=0.3f, height=1.8f)
+      // This provides good collision detection for a human-sized character
+      m_character->SetCharacterSize(0.3f, 1.8f); // Standard human capsule
       
-      LOG_INFO("Adjusted character physics capsule for Mixamo model scale");
+      // Calculate proper model offset to center scaled FBX model within physics capsule
+      // At 0.01f scale, the Mixamo model becomes very small (about 1.8 units tall becomes 0.018 units)
+      // We need to position it so the scaled model's feet align with the capsule bottom
+      // Physics capsule: center at character position, extends from -0.9 to +0.9 in Y
+      // Scaled model height: ~0.018 units, so we offset it down slightly
+      Math::Vec3 modelOffset(0.0f, -0.89f, 0.0f); // Position near bottom of capsule
+      m_character->SetModelOffset(modelOffset);
+      
+      LOG_INFO("Configured FBX model with 0.01f scale (Mixamo standard) and proper capsule alignment");
     } else {
-      LOG_INFO("FBX model loading failed, using cube representation as fallback");
+      LOG_INFO("FBX model loading failed, using capsule representation as fallback");
     }
 
     m_camera = std::make_unique<ThirdPersonCameraSystem>();
@@ -113,7 +121,8 @@ public:
     LOG_INFO("  - Jump sound effects");
     LOG_INFO("  - 3D spatial audio");
     LOG_INFO("");
-    LOG_INFO("Controls:");
+    LOG_INFO("Debug Controls:");
+    LOG_INFO("  F3 - Toggle debug capsule visualization");
     LOG_INFO("  ESC - Toggle mouse capture");
     LOG_INFO("  F11 - Toggle fullscreen");
     LOG_INFO("  F1 - Exit");
@@ -199,6 +208,11 @@ public:
       LOG_INFO("Testing fall detection - Character teleported high");
     }
 
+    if (input->IsKeyPressed(KeyCode::F3)) {
+      m_showDebugCapsule = !m_showDebugCapsule;
+      LOG_INFO("Debug capsule visualization: " + std::string(m_showDebugCapsule ? "ON" : "OFF"));
+    }
+
     m_character->Update(deltaTime, m_engine.GetInput(), m_camera.get());
     
     if (m_character->HasFallen()) {
@@ -254,6 +268,9 @@ private:
                                    Math::Vec4(0.4f, 0.8f, 0.4f, 1.0f));
 
     DrawGrid();
+    
+    // Set debug capsule visualization state
+    m_character->SetShowDebugCapsule(m_showDebugCapsule);
     m_character->Render(m_primitiveRenderer.get());
   }
 
@@ -286,6 +303,7 @@ private:
   std::unique_ptr<GameAudioManager> m_audioManager;
   
   CharacterType m_activeCharacter = CharacterType::Hybrid;
+  bool m_showDebugCapsule = false;
 };
 
 int main() {

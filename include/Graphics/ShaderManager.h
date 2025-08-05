@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Core/Math.h"
+#include "Graphics/ShaderVariant.h"
 #include <string>
 #include <unordered_map>
 #include <memory>
@@ -11,6 +12,7 @@
 namespace GameEngine {
     class Shader;
     class ShaderHotReloader;
+    class ShaderVariantManager;
 
     struct ShaderDesc {
         std::string name;
@@ -21,6 +23,7 @@ namespace GameEngine {
         std::string tessControlPath;
         std::string tessEvaluationPath;
         
+        ShaderVariant variant; // Shader variant configuration
         bool enableHotReload = true;
         bool enableOptimization = true;
     };
@@ -81,6 +84,12 @@ namespace GameEngine {
         void PrecompileShaders();
         void ClearShaderCache();
 
+        // Shader variant support
+        std::shared_ptr<Shader> CreateShaderVariant(const std::string& baseName, const ShaderVariant& variant);
+        std::shared_ptr<Shader> GetShaderVariant(const std::string& baseName, const ShaderVariant& variant);
+        void RemoveShaderVariant(const std::string& baseName, const ShaderVariant& variant);
+        std::vector<ShaderVariant> GetShaderVariants(const std::string& baseName) const;
+
     private:
         ShaderManager() = default;
         ~ShaderManager() = default;
@@ -112,5 +121,7 @@ namespace GameEngine {
         std::function<void(const std::string&)> m_hotReloadCallback;
         std::function<void(const std::string&, const std::string&)> m_hotReloadErrorCallback;
         ShaderStats m_stats;
+        
+        ShaderVariantManager* m_variantManager = nullptr; // Reference to variant manager
     };
 }

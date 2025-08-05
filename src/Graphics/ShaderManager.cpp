@@ -1,5 +1,6 @@
 #include "Graphics/ShaderManager.h"
 #include "Graphics/Shader.h"
+#include "Graphics/ShaderHotReloader.h"
 #include "Core/Logger.h"
 #include <filesystem>
 #include <fstream>
@@ -21,12 +22,27 @@ namespace GameEngine {
         
         m_shaders.clear();
         m_shaderDescs.clear();
-        m_fileTimestamps.clear();
+        m_fileToShaderMap.clear();
         
         m_stats = ShaderStats{};
         m_hotReloadEnabled = false;
         m_debugMode = false;
-        m_timeSinceLastCheck = 0.0f;
+        
+        // Initialize hot reloader
+        m_hotReloader = std::make_unique<ShaderHotReloader>();
+        if (!m_hotReloader->Initialize()) {
+            LOG_ERROR("Failed to initialize ShaderHotReloader");
+            return false;
+        }
+        
+        // Set up hot reload callbacks
+        m_hotReloader->SetReloadCallback([this](const std::string& filepath) {
+            OnShaderFileChanged(filepath);
+        });
+        
+        m_hotReloader->SetErrorCallback([this](const std::string& filepath, const std::string& error) {
+            OnShaderFileError(filepath, error);
+        });
         
         m_initialized = true;
         LOG_INFO("ShaderManager initialized successfully");
@@ -42,22 +58,28 @@ namespace GameEngine {
         
         UnloadAllShaders();
         m_shaderDescs.clear();
-        m_fileTimestamps.clear();
+        m_fileToShaderMap.clear();
         m_hotReloadCallback = nullptr;
+        m_hotReloadErrorCallback = nullptr;
+        
+        // Shutdown hot reloader
+        if (m_hotReloader) {
+            m_hotReloader->Shutdown();
+            m_hotReloader.reset();
+        }
         
         m_initialized = false;
         LOG_INFO("ShaderManager shutdown complete");
     }
 
     void ShaderManager::Update(float deltaTime) {
-        if (!m_initialized || !m_hotReloadEnabled) {
+        if (!m_initialized) {
             return;
         }
 
-        m_timeSinceLastCheck += deltaTime;
-        if (m_timeSinceLastCheck >= m_hotReloadCheckInterval) {
-            CheckForShaderChanges();
-            m_timeSinceLastCheck = 0.0f;
+        // Update hot reloader
+        if (m_hotReloader && m_hotReloadEnabled) {
+            m_hotReloader->Update();
         }
     }
 
@@ -93,20 +115,9 @@ namespace GameEngine {
         m_shaders[name] = shader;
         m_shaderDescs[name] = desc;
 
-        // Track file timestamps for hot reload
-        if (desc.enableHotReload) {
-            if (!desc.vertexPath.empty() && std::filesystem::exists(desc.vertexPath)) {
-                m_fileTimestamps[desc.vertexPath] = std::filesystem::last_write_time(desc.vertexPath);
-            }
-            if (!desc.fragmentPath.empty() && std::filesystem::exists(desc.fragmentPath)) {
-                m_fileTimestamps[desc.fragmentPath] = std::filesystem::last_write_time(desc.fragmentPath);
-            }
-            if (!desc.geometryPath.empty() && std::filesystem::exists(desc.geometryPath)) {
-                m_fileTimestamps[desc.geometryPath] = std::filesystem::last_write_time(desc.geometryPath);
-            }
-            if (!desc.computePath.empty() && std::filesystem::exists(desc.computePath)) {
-                m_fileTimestamps[desc.computePath] = std::filesystem::last_write_time(desc.computePath);
-            }
+        // Register shader files for hot reload
+        if (desc.enableHotReload && m_hotReloader) {
+            RegisterShaderFiles(name, desc);
         }
 
         UpdateShaderStats();
@@ -190,18 +201,11 @@ namespace GameEngine {
                 LOG_INFO("Unloading shader: " + name);
             }
             
+            // Unregister shader files from hot reload
+            UnregisterShaderFiles(name);
+            
             m_shaders.erase(it);
             m_shaderDescs.erase(name);
-            
-            // Remove file timestamps
-            auto descIt = m_shaderDescs.find(name);
-            if (descIt != m_shaderDescs.end()) {
-                const auto& desc = descIt->second;
-                m_fileTimestamps.erase(desc.vertexPath);
-                m_fileTimestamps.erase(desc.fragmentPath);
-                m_fileTimestamps.erase(desc.geometryPath);
-                m_fileTimestamps.erase(desc.computePath);
-            }
             
             UpdateShaderStats();
         }
@@ -212,9 +216,14 @@ namespace GameEngine {
             LOG_INFO("Unloading all shaders (" + std::to_string(m_shaders.size()) + " shaders)");
         }
         
+        // Unregister all shader files from hot reload
+        for (const auto& pair : m_shaderDescs) {
+            UnregisterShaderFiles(pair.first);
+        }
+        
         m_shaders.clear();
         m_shaderDescs.clear();
-        m_fileTimestamps.clear();
+        m_fileToShaderMap.clear();
         UpdateShaderStats();
     }
 
@@ -264,6 +273,10 @@ namespace GameEngine {
     void ShaderManager::EnableHotReload(bool enable) {
         m_hotReloadEnabled = enable;
         
+        if (m_hotReloader) {
+            m_hotReloader->SetEnabled(enable);
+        }
+        
         if (m_debugMode) {
             LOG_INFO("Hot reload " + std::string(enable ? "enabled" : "disabled"));
         }
@@ -273,37 +286,21 @@ namespace GameEngine {
         m_hotReloadCallback = callback;
     }
 
+    void ShaderManager::SetHotReloadErrorCallback(std::function<void(const std::string&, const std::string&)> callback) {
+        m_hotReloadErrorCallback = callback;
+    }
+
+    void ShaderManager::SetHotReloadCheckInterval(float intervalSeconds) {
+        if (m_hotReloader) {
+            m_hotReloader->SetCheckInterval(intervalSeconds);
+        }
+    }
+
     void ShaderManager::CheckForShaderChanges() {
-        if (!m_hotReloadEnabled) {
-            return;
-        }
-
-        std::vector<std::string> shadersToReload;
-
-        // Check file timestamps
-        for (const auto& pair : m_fileTimestamps) {
-            const std::string& filepath = pair.first;
-            const auto& lastTime = pair.second;
-
-            if (std::filesystem::exists(filepath)) {
-                auto currentTime = std::filesystem::last_write_time(filepath);
-                if (currentTime > lastTime) {
-                    // Find which shader uses this file
-                    for (const auto& shaderPair : m_shaderDescs) {
-                        const auto& desc = shaderPair.second;
-                        if (desc.vertexPath == filepath || desc.fragmentPath == filepath ||
-                            desc.geometryPath == filepath || desc.computePath == filepath) {
-                            shadersToReload.push_back(shaderPair.first);
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-
-        // Reload changed shaders
-        for (const std::string& shaderName : shadersToReload) {
-            ReloadShader(shaderName);
+        // This method is now handled by the ShaderHotReloader
+        // The hot reloader will call OnShaderFileChanged when files change
+        if (m_debugMode) {
+            LOG_INFO("Manual check for shader changes requested");
         }
     }
 
@@ -320,25 +317,11 @@ namespace GameEngine {
             LOG_INFO("Reloading shader: " + name);
         }
 
-        // Create new shader
+        // Create new shader with graceful fallback
         auto newShader = CreateShaderFromDesc(desc);
         if (newShader) {
             // Replace old shader
             m_shaders[name] = newShader;
-            
-            // Update file timestamps
-            if (!desc.vertexPath.empty() && std::filesystem::exists(desc.vertexPath)) {
-                m_fileTimestamps[desc.vertexPath] = std::filesystem::last_write_time(desc.vertexPath);
-            }
-            if (!desc.fragmentPath.empty() && std::filesystem::exists(desc.fragmentPath)) {
-                m_fileTimestamps[desc.fragmentPath] = std::filesystem::last_write_time(desc.fragmentPath);
-            }
-            if (!desc.geometryPath.empty() && std::filesystem::exists(desc.geometryPath)) {
-                m_fileTimestamps[desc.geometryPath] = std::filesystem::last_write_time(desc.geometryPath);
-            }
-            if (!desc.computePath.empty() && std::filesystem::exists(desc.computePath)) {
-                m_fileTimestamps[desc.computePath] = std::filesystem::last_write_time(desc.computePath);
-            }
             
             // Notify callback
             if (m_hotReloadCallback) {
@@ -349,8 +332,13 @@ namespace GameEngine {
                 LOG_INFO("Shader reloaded successfully: " + name);
             }
         } else {
-            LOG_ERROR("Failed to reload shader: " + name);
+            LOG_ERROR("Failed to reload shader: " + name + " - keeping previous version");
             m_stats.compilationErrors++;
+            
+            // Graceful fallback: keep the old shader and notify error callback
+            if (m_hotReloadErrorCallback) {
+                m_hotReloadErrorCallback(name, "Shader compilation failed, keeping previous version");
+            }
         }
     }
 
@@ -437,5 +425,204 @@ namespace GameEngine {
                 m_stats.memoryUsage += 1024; // 1KB per shader (placeholder)
             }
         }
+    }
+
+    void ShaderManager::ReloadShadersFromFiles(const std::vector<std::string>& filepaths) {
+        if (m_debugMode) {
+            LOG_INFO("Batch reloading shaders from " + std::to_string(filepaths.size()) + " files");
+        }
+
+        std::vector<std::string> shadersToReload;
+        
+        // Find all shaders that use these files
+        for (const std::string& filepath : filepaths) {
+            auto shaderNames = GetShadersUsingFile(filepath);
+            for (const std::string& shaderName : shaderNames) {
+                // Avoid duplicates
+                if (std::find(shadersToReload.begin(), shadersToReload.end(), shaderName) == shadersToReload.end()) {
+                    shadersToReload.push_back(shaderName);
+                }
+            }
+        }
+
+        // Reload all affected shaders
+        for (const std::string& shaderName : shadersToReload) {
+            ReloadShader(shaderName);
+        }
+
+        if (m_debugMode) {
+            LOG_INFO("Batch reload completed for " + std::to_string(shadersToReload.size()) + " shaders");
+        }
+    }
+
+    void ShaderManager::WatchShaderDirectory(const std::string& directory) {
+        if (!m_hotReloader) {
+            LOG_ERROR("Hot reloader not initialized");
+            return;
+        }
+
+        m_hotReloader->WatchShaderDirectory(directory);
+        
+        if (m_debugMode) {
+            LOG_INFO("Watching shader directory: " + directory);
+        }
+    }
+
+    void ShaderManager::WatchShaderFile(const std::string& filepath) {
+        if (!m_hotReloader) {
+            LOG_ERROR("Hot reloader not initialized");
+            return;
+        }
+
+        m_hotReloader->WatchShaderFile(filepath);
+        
+        if (m_debugMode) {
+            LOG_INFO("Watching shader file: " + filepath);
+        }
+    }
+
+    void ShaderManager::UnwatchShaderFile(const std::string& filepath) {
+        if (!m_hotReloader) {
+            LOG_ERROR("Hot reloader not initialized");
+            return;
+        }
+
+        m_hotReloader->UnwatchShaderFile(filepath);
+        
+        if (m_debugMode) {
+            LOG_INFO("Stopped watching shader file: " + filepath);
+        }
+    }
+
+    void ShaderManager::OnShaderFileChanged(const std::string& filepath) {
+        if (m_debugMode) {
+            LOG_INFO("Shader file changed: " + filepath);
+        }
+
+        // Find all shaders that use this file and reload them
+        auto shaderNames = GetShadersUsingFile(filepath);
+        
+        if (shaderNames.empty()) {
+            if (m_debugMode) {
+                LOG_WARNING("No shaders found using file: " + filepath);
+            }
+            return;
+        }
+
+        // Batch reload all affected shaders
+        for (const std::string& shaderName : shaderNames) {
+            ReloadShader(shaderName);
+        }
+    }
+
+    void ShaderManager::OnShaderFileError(const std::string& filepath, const std::string& error) {
+        LOG_ERROR("Shader file error for " + filepath + ": " + error);
+        
+        if (m_hotReloadErrorCallback) {
+            m_hotReloadErrorCallback(filepath, error);
+        }
+    }
+
+    void ShaderManager::RegisterShaderFiles(const std::string& shaderName, const ShaderDesc& desc) {
+        // Register all shader files with the hot reloader and map them to the shader name
+        if (!desc.vertexPath.empty()) {
+            std::string normalizedPath = std::filesystem::absolute(desc.vertexPath).string();
+            m_fileToShaderMap[normalizedPath] = shaderName;
+            if (m_hotReloader) {
+                m_hotReloader->WatchShaderFile(normalizedPath);
+            }
+        }
+        
+        if (!desc.fragmentPath.empty()) {
+            std::string normalizedPath = std::filesystem::absolute(desc.fragmentPath).string();
+            m_fileToShaderMap[normalizedPath] = shaderName;
+            if (m_hotReloader) {
+                m_hotReloader->WatchShaderFile(normalizedPath);
+            }
+        }
+        
+        if (!desc.geometryPath.empty()) {
+            std::string normalizedPath = std::filesystem::absolute(desc.geometryPath).string();
+            m_fileToShaderMap[normalizedPath] = shaderName;
+            if (m_hotReloader) {
+                m_hotReloader->WatchShaderFile(normalizedPath);
+            }
+        }
+        
+        if (!desc.computePath.empty()) {
+            std::string normalizedPath = std::filesystem::absolute(desc.computePath).string();
+            m_fileToShaderMap[normalizedPath] = shaderName;
+            if (m_hotReloader) {
+                m_hotReloader->WatchShaderFile(normalizedPath);
+            }
+        }
+        
+        if (!desc.tessControlPath.empty()) {
+            std::string normalizedPath = std::filesystem::absolute(desc.tessControlPath).string();
+            m_fileToShaderMap[normalizedPath] = shaderName;
+            if (m_hotReloader) {
+                m_hotReloader->WatchShaderFile(normalizedPath);
+            }
+        }
+        
+        if (!desc.tessEvaluationPath.empty()) {
+            std::string normalizedPath = std::filesystem::absolute(desc.tessEvaluationPath).string();
+            m_fileToShaderMap[normalizedPath] = shaderName;
+            if (m_hotReloader) {
+                m_hotReloader->WatchShaderFile(normalizedPath);
+            }
+        }
+    }
+
+    void ShaderManager::UnregisterShaderFiles(const std::string& shaderName) {
+        // Find and remove all file mappings for this shader
+        std::vector<std::string> filesToRemove;
+        
+        for (const auto& pair : m_fileToShaderMap) {
+            if (pair.second == shaderName) {
+                filesToRemove.push_back(pair.first);
+            }
+        }
+        
+        for (const std::string& filepath : filesToRemove) {
+            m_fileToShaderMap.erase(filepath);
+            if (m_hotReloader) {
+                m_hotReloader->UnwatchShaderFile(filepath);
+            }
+        }
+    }
+
+    std::vector<std::string> ShaderManager::GetShadersUsingFile(const std::string& filepath) const {
+        std::vector<std::string> shaderNames;
+        
+        std::string normalizedPath = std::filesystem::absolute(filepath).string();
+        
+        // Check direct mapping
+        auto it = m_fileToShaderMap.find(normalizedPath);
+        if (it != m_fileToShaderMap.end()) {
+            shaderNames.push_back(it->second);
+        }
+        
+        // Also check all shader descriptions in case of path variations
+        for (const auto& pair : m_shaderDescs) {
+            const std::string& shaderName = pair.first;
+            const ShaderDesc& desc = pair.second;
+            
+            // Check if any of the shader's files match the given filepath
+            if ((!desc.vertexPath.empty() && std::filesystem::equivalent(desc.vertexPath, filepath)) ||
+                (!desc.fragmentPath.empty() && std::filesystem::equivalent(desc.fragmentPath, filepath)) ||
+                (!desc.geometryPath.empty() && std::filesystem::equivalent(desc.geometryPath, filepath)) ||
+                (!desc.computePath.empty() && std::filesystem::equivalent(desc.computePath, filepath)) ||
+                (!desc.tessControlPath.empty() && std::filesystem::equivalent(desc.tessControlPath, filepath)) ||
+                (!desc.tessEvaluationPath.empty() && std::filesystem::equivalent(desc.tessEvaluationPath, filepath))) {
+                
+                // Avoid duplicates
+                if (std::find(shaderNames.begin(), shaderNames.end(), shaderName) == shaderNames.end()) {
+                    shaderNames.push_back(shaderName);
+                }
+            }
+        }
+        
+        return shaderNames;
     }
 }

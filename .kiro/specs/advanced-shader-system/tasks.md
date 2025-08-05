@@ -16,16 +16,17 @@
     - Ensure backward compatibility with existing shader usage
     - _Requirements: 7.1, 7.2, 8.1_
 
-- [ ] 2. Enhance core Shader class with advanced features
+- [x] 2. Enhance core Shader class with advanced features
 
-  - [ ] 2.1 Extend Shader class with compute shader support
+  - [x] 2.1 Extend Shader class with compute shader support
 
     - Add compute shader compilation methods (CompileFromSource, CompileFromFile)
     - Implement dispatch methods (Dispatch, DispatchIndirect) for compute work
     - Add storage buffer and image texture binding for compute shaders
     - _Requirements: 3.1, 3.2, 3.3_
 
-  - [ ] 2.2 Add comprehensive uniform and resource management
+  - [x] 2.2 Add comprehensive uniform and resource management
+
     - Implement enhanced uniform setting methods for all data types
     - Add texture binding with automatic slot management
     - Create uniform buffer and storage buffer binding system

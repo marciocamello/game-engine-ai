@@ -214,6 +214,13 @@ public:
     LOG_INFO("  - Jump sound effects");
     LOG_INFO("  - 3D spatial audio positioning");
     LOG_INFO("");
+    LOG_INFO("LIGHTING CONTROLS (Lighting System Demo):");
+    LOG_INFO("  F8 - Increase light intensity");
+    LOG_INFO("  F9 - Decrease light intensity");
+    LOG_INFO("  F10 - Cycle light colors (Warm/White/Orange/Blue/Pink/Green)");
+    LOG_INFO("  F12 - Rotate light direction");
+    LOG_INFO("  L - Toggle point light above character");
+    LOG_INFO("");
     LOG_INFO("DEBUG CONTROLS:");
     LOG_INFO("  F3 - Toggle debug capsule visualization");
     LOG_INFO("  F2 - Test fall detection system");
@@ -332,6 +339,80 @@ public:
       LOG_INFO("RENDERING SYSTEM DEMO: Debug capsule visualization " + std::string(m_showDebugCapsule ? "ENABLED" : "DISABLED") + " - Shows physics collision alongside visual model");
     }
 
+    // LIGHTING SYSTEM DEMO: Dynamic lighting controls
+    auto* openglRenderer = static_cast<OpenGLRenderer*>(m_engine.GetRenderer());
+    
+    if (input->IsKeyPressed(KeyCode::F8)) {
+      // Increase directional light intensity
+      m_lightIntensity += 0.5f;
+      if (m_lightIntensity > 10.0f) m_lightIntensity = 10.0f;
+      openglRenderer->SetDirectionalLight(m_lightDirection, m_lightColor, m_lightIntensity);
+      LOG_INFO("LIGHTING SYSTEM DEMO: Light intensity increased to " + std::to_string(m_lightIntensity));
+    }
+    
+    if (input->IsKeyPressed(KeyCode::F9)) {
+      // Decrease directional light intensity
+      m_lightIntensity -= 0.5f;
+      if (m_lightIntensity < 0.1f) m_lightIntensity = 0.1f;
+      openglRenderer->SetDirectionalLight(m_lightDirection, m_lightColor, m_lightIntensity);
+      LOG_INFO("LIGHTING SYSTEM DEMO: Light intensity decreased to " + std::to_string(m_lightIntensity));
+    }
+    
+    if (input->IsKeyPressed(KeyCode::F10)) {
+      // Cycle through different light colors
+      static int colorIndex = 0;
+      Math::Vec3 colors[] = {
+        Math::Vec3(1.0f, 0.95f, 0.8f),  // Warm white (default)
+        Math::Vec3(1.0f, 1.0f, 1.0f),   // Pure white
+        Math::Vec3(1.0f, 0.7f, 0.4f),   // Orange/sunset
+        Math::Vec3(0.8f, 0.9f, 1.0f),   // Cool blue
+        Math::Vec3(1.0f, 0.8f, 0.8f),   // Pink
+        Math::Vec3(0.9f, 1.0f, 0.8f)    // Green tint
+      };
+      std::string colorNames[] = {"Warm White", "Pure White", "Sunset Orange", "Cool Blue", "Pink", "Green Tint"};
+      
+      colorIndex = (colorIndex + 1) % 6;
+      m_lightColor = colors[colorIndex];
+      openglRenderer->SetDirectionalLight(m_lightDirection, m_lightColor, m_lightIntensity);
+      LOG_INFO("LIGHTING SYSTEM DEMO: Light color changed to " + colorNames[colorIndex]);
+    }
+    
+    if (input->IsKeyPressed(KeyCode::F12)) {
+      // Rotate light direction
+      static float angle = 0.0f;
+      angle += 30.0f; // Rotate 30 degrees each press
+      if (angle >= 360.0f) angle = 0.0f;
+      
+      float radians = angle * Math::DEG_TO_RAD;
+      m_lightDirection = Math::Vec3(
+        sinf(radians) * 0.5f,  // X component
+        -1.0f,                 // Y component (always pointing down)
+        cosf(radians) * 0.5f   // Z component
+      );
+      m_lightDirection = glm::normalize(m_lightDirection);
+      
+      openglRenderer->SetDirectionalLight(m_lightDirection, m_lightColor, m_lightIntensity);
+      LOG_INFO("LIGHTING SYSTEM DEMO: Light direction rotated to " + std::to_string(angle) + " degrees");
+    }
+    
+    if (input->IsKeyPressed(KeyCode::L)) {
+      // Toggle point light
+      static bool pointLightEnabled = false;
+      pointLightEnabled = !pointLightEnabled;
+      
+      if (pointLightEnabled) {
+        // Add a point light above the character
+        Math::Vec3 characterPos = m_character->GetPosition();
+        Math::Vec3 pointLightPos = characterPos + Math::Vec3(0.0f, 5.0f, 0.0f);
+        openglRenderer->AddPointLight(pointLightPos, Math::Vec3(1.0f, 0.8f, 0.6f), 8.0f, 12.0f);
+        LOG_INFO("LIGHTING SYSTEM DEMO: Point light ENABLED above character");
+      } else {
+        // Clear all point lights (this will remove the point light)
+        // Note: In a more advanced system, we'd have individual point light management
+        LOG_INFO("LIGHTING SYSTEM DEMO: Point light DISABLED (restart to clear)");
+      }
+    }
+
     m_character->Update(deltaTime, m_engine.GetInput(), m_camera.get());
     
     if (m_character->HasFallen()) {
@@ -347,7 +428,6 @@ public:
     m_camera->Update(deltaTime, m_engine.GetInput());
     
     // Sync renderer with primitive renderer
-    auto* openglRenderer = static_cast<OpenGLRenderer*>(m_engine.GetRenderer());
     if (openglRenderer) {
       openglRenderer->SyncWithPrimitiveRenderer(m_primitiveRenderer.get());
     }
@@ -643,6 +723,11 @@ private:
   
   CharacterType m_activeCharacter = CharacterType::Hybrid;
   bool m_showDebugCapsule = false;
+  
+  // Lighting system state
+  Math::Vec3 m_lightDirection = Math::Vec3(0.3f, -1.0f, 0.3f);
+  Math::Vec3 m_lightColor = Math::Vec3(1.0f, 0.95f, 0.8f);
+  float m_lightIntensity = 3.0f;
 };
 
 int main() {

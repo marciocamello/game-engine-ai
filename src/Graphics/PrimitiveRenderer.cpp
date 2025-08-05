@@ -2,6 +2,8 @@
 #include "Graphics/Mesh.h"
 #include "Graphics/Shader.h"
 #include "Graphics/Texture.h"
+#include "Graphics/Material.h"
+#include "Graphics/PBRMaterial.h"
 #include "Graphics/ShaderManager.h"
 #include "Core/Logger.h"
 #include <cmath>
@@ -353,9 +355,9 @@ namespace GameEngine {
         shader->SetMat4("u_mvp", mvp);
         shader->SetMat4("u_model", model);
         shader->SetMat3("u_normalMatrix", normalMatrix);
-        shader->SetVec3("u_lightPos", Math::Vec3(5.0f, 10.0f, 5.0f));
-        shader->SetVec3("u_lightColor", Math::Vec3(1.0f, 1.0f, 1.0f));
-        shader->SetVec3("u_viewPos", Math::Vec3(0.0f, 5.0f, 10.0f));
+        
+        // Apply lighting uniforms
+        ApplyLightingUniforms(shader);
         
         // Set texture or color
         if (texture) {
@@ -511,5 +513,138 @@ namespace GameEngine {
         }
         
         LOG_INFO("PrimitiveRenderer: Shader hot-reload " + std::string(enable ? "enabled" : "disabled"));
+    }
+
+    // Material-aware rendering methods
+    void PrimitiveRenderer::DrawCube(const Math::Vec3& position, const Math::Vec3& scale, std::shared_ptr<Material> material) {
+        DrawPrimitive(m_cubeMesh, position, Math::Quat(1,0,0,0), scale, material);
+    }
+
+    void PrimitiveRenderer::DrawSphere(const Math::Vec3& position, float radius, std::shared_ptr<Material> material) {
+        DrawPrimitive(m_sphereMesh, position, Math::Quat(1,0,0,0), Math::Vec3(radius), material);
+    }
+
+    void PrimitiveRenderer::DrawCapsule(const Math::Vec3& position, float radius, float height, std::shared_ptr<Material> material) {
+        float scaleX = radius / 0.5f;  // Scale radius from 0.5 to desired radius
+        float scaleY = height / 3.0f;  // Scale total height from 3.0 to desired height
+        float scaleZ = radius / 0.5f;  // Scale radius from 0.5 to desired radius
+        DrawPrimitive(m_capsuleMesh, position, Math::Quat(1,0,0,0), Math::Vec3(scaleX, scaleY, scaleZ), material);
+    }
+
+    void PrimitiveRenderer::DrawCylinder(const Math::Vec3& position, float radius, float height, std::shared_ptr<Material> material) {
+        DrawPrimitive(m_cylinderMesh, position, Math::Quat(1,0,0,0), Math::Vec3(radius, height, radius), material);
+    }
+
+    void PrimitiveRenderer::DrawPlane(const Math::Vec3& position, const Math::Vec2& size, std::shared_ptr<Material> material) {
+        DrawPrimitive(m_planeMesh, position, Math::Quat(1,0,0,0), Math::Vec3(size.x, 1.0f, size.y), material);
+    }
+
+    void PrimitiveRenderer::DrawMesh(std::shared_ptr<Mesh> mesh, const Math::Vec3& position, const Math::Vec3& scale, std::shared_ptr<Material> material) {
+        DrawPrimitive(mesh, position, Math::Quat(1,0,0,0), scale, material);
+    }
+
+    void PrimitiveRenderer::DrawMesh(std::shared_ptr<Mesh> mesh, const Math::Vec3& position, const Math::Quat& rotation, const Math::Vec3& scale, std::shared_ptr<Material> material) {
+        DrawPrimitive(mesh, position, rotation, scale, material);
+    }
+
+    // Material-aware DrawPrimitive method
+    void PrimitiveRenderer::DrawPrimitive(std::shared_ptr<Mesh> mesh, const Math::Vec3& position, const Math::Quat& rotation, const Math::Vec3& scale, std::shared_ptr<Material> material) {
+        if (!mesh || !material) return;
+
+        auto shader = material->GetShader();
+        if (!shader || !shader->IsValid()) {
+            LOG_WARNING("Material has invalid shader, falling back to default");
+            // Fall back to color rendering
+            DrawPrimitive(mesh, position, rotation, scale, Math::Vec4(1.0f, 1.0f, 1.0f, 1.0f));
+            return;
+        }
+
+        shader->Use();
+        
+        // Create model matrix with rotation
+        Math::Mat4 model = Math::CreateTransform(position, rotation, scale);
+        Math::Mat4 mvp = m_viewProjectionMatrix * model;
+        Math::Mat3 normalMatrix = Math::Mat3(glm::transpose(glm::inverse(model)));
+        
+        // Set common uniforms
+        shader->SetUniform("u_mvp", mvp);
+        shader->SetUniform("u_model", model);
+        shader->SetUniform("u_view", m_viewMatrix);
+        shader->SetUniform("u_projection", m_projectionMatrix);
+        shader->SetUniform("u_normalMatrix", normalMatrix);
+        
+        // Apply lighting uniforms
+        ApplyLightingUniforms(shader);
+        
+        // Apply material properties to shader
+        material->ApplyToShader(shader);
+        
+        mesh->Draw();
+        
+        shader->Unuse();
+    }
+
+    // Matrix setters
+    void PrimitiveRenderer::SetViewMatrix(const Math::Mat4& viewMatrix) {
+        m_viewMatrix = viewMatrix;
+    }
+
+    void PrimitiveRenderer::SetProjectionMatrix(const Math::Mat4& projectionMatrix) {
+        m_projectionMatrix = projectionMatrix;
+    }
+
+    // Lighting system methods
+    void PrimitiveRenderer::SetCameraPosition(const Math::Vec3& position) {
+        m_cameraPosition = position;
+    }
+
+    void PrimitiveRenderer::SetDirectionalLight(const Math::Vec3& direction, const Math::Vec3& color, float intensity) {
+        m_directionalLight.direction = glm::normalize(direction);
+        m_directionalLight.color = color;
+        m_directionalLight.intensity = intensity;
+    }
+
+    void PrimitiveRenderer::AddPointLight(const Math::Vec3& position, const Math::Vec3& color, float intensity, float radius) {
+        if (m_pointLights.size() >= MAX_POINT_LIGHTS) {
+            LOG_WARNING("Maximum number of point lights reached (" + std::to_string(MAX_POINT_LIGHTS) + ")");
+            return;
+        }
+
+        PointLight light;
+        light.position = position;
+        light.color = color;
+        light.intensity = intensity;
+        light.radius = radius;
+        
+        m_pointLights.push_back(light);
+    }
+
+    void PrimitiveRenderer::ClearPointLights() {
+        m_pointLights.clear();
+    }
+
+    void PrimitiveRenderer::ApplyLightingUniforms(std::shared_ptr<Shader> shader) {
+        // Set camera position
+        shader->SetUniform("u_cameraPosition", m_cameraPosition);
+        
+        // Set directional light
+        shader->SetUniform("u_directionalLight.direction", m_directionalLight.direction);
+        shader->SetUniform("u_directionalLight.color", m_directionalLight.color);
+        shader->SetUniform("u_directionalLight.intensity", m_directionalLight.intensity);
+
+        // Set point lights
+        shader->SetUniform("u_pointLightCount", static_cast<int>(m_pointLights.size()));
+        for (size_t i = 0; i < m_pointLights.size() && i < MAX_POINT_LIGHTS; ++i) {
+            std::string prefix = "u_pointLights[" + std::to_string(i) + "].";
+            shader->SetUniform(prefix + "position", m_pointLights[i].position);
+            shader->SetUniform(prefix + "color", m_pointLights[i].color);
+            shader->SetUniform(prefix + "intensity", m_pointLights[i].intensity);
+            shader->SetUniform(prefix + "radius", m_pointLights[i].radius);
+        }
+
+        // Legacy lighting uniforms for backward compatibility with existing shaders
+        shader->SetUniform("u_lightPos", m_directionalLight.direction * -10.0f); // Convert direction to position
+        shader->SetUniform("u_lightColor", m_directionalLight.color * m_directionalLight.intensity);
+        shader->SetUniform("u_viewPos", m_cameraPosition);
     }
 }

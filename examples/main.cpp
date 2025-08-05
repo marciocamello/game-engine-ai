@@ -13,6 +13,7 @@
 #include "Game/ThirdPersonCameraSystem.h"
 #include "Graphics/Camera.h"
 #include "Graphics/GraphicsRenderer.h"
+#include "Graphics/OpenGLRenderer.h"
 #include "Graphics/GridRenderer.h"
 #include "Graphics/PrimitiveRenderer.h"
 #include "Graphics/Texture.h"
@@ -344,6 +345,12 @@ public:
     }
     
     m_camera->Update(deltaTime, m_engine.GetInput());
+    
+    // Sync renderer with primitive renderer
+    auto* openglRenderer = static_cast<OpenGLRenderer*>(m_engine.GetRenderer());
+    if (openglRenderer) {
+      openglRenderer->SyncWithPrimitiveRenderer(m_primitiveRenderer.get());
+    }
     
     // End performance monitoring
     m_performanceMonitor->EndFrame();

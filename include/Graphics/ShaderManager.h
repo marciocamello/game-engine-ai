@@ -10,6 +10,7 @@
 
 namespace GameEngine {
     class Shader;
+    class ShaderHotReloader;
 
     struct ShaderDesc {
         std::string name;

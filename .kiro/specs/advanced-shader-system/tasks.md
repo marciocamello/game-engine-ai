@@ -32,16 +32,17 @@
     - Create uniform buffer and storage buffer binding system
     - _Requirements: 2.4, 3.5, 7.6_
 
-- [ ] 3. Implement shader hot-reloading system
+- [-] 3. Implement shader hot-reloading system
 
-  - [ ] 3.1 Create ShaderHotReloader class
+  - [x] 3.1 Create ShaderHotReloader class
 
     - Implement file watching system using filesystem monitoring
     - Add automatic change detection with configurable check intervals
     - Create callback system for reload notifications and error handling
     - _Requirements: 1.1, 1.2, 1.3_
 
-  - [ ] 3.2 Integrate hot-reload with ShaderManager
+  - [-] 3.2 Integrate hot-reload with ShaderManager
+
     - Add hot-reload enable/disable functionality to ShaderManager
     - Implement batch recompilation for multiple changed files
     - Create graceful fallback when recompilation fails

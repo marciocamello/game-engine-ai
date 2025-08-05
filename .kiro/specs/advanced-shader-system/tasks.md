@@ -93,7 +93,6 @@
 
   - [x] 6.2 Implement built-in post-processing effects
 
-
     - Create tone mapping effect with Reinhard, ACES, and Filmic operators
     - Implement FXAA anti-aliasing with quality settings
     - Add bloom effect with threshold, intensity, and radius controls

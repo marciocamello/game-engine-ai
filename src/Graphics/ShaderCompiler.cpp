@@ -651,13 +651,34 @@ namespace GameEngine {
     std::string ShaderCompiler::RemoveComments(const std::string& source) {
         std::string result = source;
         
-        // Remove single-line comments
-        std::regex singleLineComment(R"(//.*$)");
-        result = std::regex_replace(result, singleLineComment, "");
+        // Remove single-line comments (line by line)
+        std::istringstream stream(result);
+        std::string line;
+        std::ostringstream output;
         
-        // Remove multi-line comments
-        std::regex multiLineComment(R"(/\*.*?\*/)");
-        result = std::regex_replace(result, multiLineComment, "");
+        while (std::getline(stream, line)) {
+            // Find // and remove everything after it
+            size_t commentPos = line.find("//");
+            if (commentPos != std::string::npos) {
+                line = line.substr(0, commentPos);
+            }
+            output << line << "\n";
+        }
+        
+        result = output.str();
+        
+        // Remove multi-line comments using simple string operations
+        size_t start = 0;
+        while ((start = result.find("/*", start)) != std::string::npos) {
+            size_t end = result.find("*/", start + 2);
+            if (end != std::string::npos) {
+                result.erase(start, end - start + 2);
+            } else {
+                // Unclosed comment, remove to end
+                result.erase(start);
+                break;
+            }
+        }
         
         return result;
     }

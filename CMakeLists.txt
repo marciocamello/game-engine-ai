@@ -477,6 +477,9 @@ add_integration_test(ResourceUsageTrackingTest tests/integration/test_resource_u
 # Model Debugger integration test
 add_integration_test(ModelDebuggerTest tests/integration/test_model_debugger.cpp)
 
+# Performance and Stability integration test
+add_integration_test(PerformanceStabilityTest tests/integration/test_performance_stability.cpp)
+
 # Simple FBX test - removed (redundant with integration tests)
 
 # Discover and add unit tests automatically

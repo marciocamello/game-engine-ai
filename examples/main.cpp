@@ -1,5 +1,8 @@
 #include "Core/Engine.h"
 #include "Core/Logger.h"
+#include "Core/PerformanceMonitor.h"
+#include "Core/AssetValidator.h"
+#include "Core/ResourcePool.h"
 #include "Game/Character.h"
 #include "Game/GameAudioManager.h"
 #include "Game/ThirdPersonCameraSystem.h"
@@ -33,9 +36,30 @@ public:
   };
 
   GameApplication() = default;
-  ~GameApplication() = default;
+  ~GameApplication() {
+    // Ensure proper cleanup
+    if (m_audioManager) {
+      m_audioManager->Cleanup();
+    }
+    
+    // Clean up texture pool
+    m_texturePool.Clear();
+    
+    LOG_INFO("GameApplication cleaned up successfully");
+  }
 
   bool Initialize() {
+    // Initialize performance monitoring
+    m_performanceMonitor = std::make_unique<PerformanceMonitor>();
+    
+    // Initialize asset validation
+    m_assetValidator = std::make_unique<AssetValidator>();
+    m_assetValidator->LogAssetStatus();
+    
+    if (!m_assetValidator->AllRequiredAssetsAvailable()) {
+      LOG_WARNING("Some required assets are missing, but continuing with fallbacks");
+    }
+    
     if (!m_engine.Initialize()) {
       LOG_ERROR("Failed to initialize game engine");
       return false;
@@ -188,6 +212,9 @@ public:
     LOG_INFO("  F3 - Toggle debug capsule visualization");
     LOG_INFO("  F2 - Test fall detection system");
     LOG_INFO("  F4 - Show comprehensive system status");
+    LOG_INFO("  F5 - Show performance report");
+    LOG_INFO("  F6 - Show asset validation status");
+    LOG_INFO("  F7 - Force resource cleanup");
     LOG_INFO("  ESC - Toggle mouse capture");
     LOG_INFO("  F11 - Toggle fullscreen");
     LOG_INFO("  F1 - Exit application");
@@ -203,6 +230,9 @@ public:
   }
 
   void Update(float deltaTime) {
+    // Begin performance monitoring
+    m_performanceMonitor->BeginFrame();
+    
     auto *input = m_engine.GetInput();
     auto *window = m_engine.GetRenderer()->GetWindow();
 
@@ -277,6 +307,20 @@ public:
       LogComprehensiveSystemStatus();
     }
 
+    if (input->IsKeyPressed(KeyCode::F5)) {
+      m_performanceMonitor->LogPerformanceReport();
+    }
+
+    if (input->IsKeyPressed(KeyCode::F6)) {
+      m_assetValidator->LogAssetStatus();
+    }
+
+    if (input->IsKeyPressed(KeyCode::F7)) {
+      // Force resource cleanup
+      m_texturePool.CleanupExpired();
+      LOG_INFO("Forced resource cleanup completed");
+    }
+
     if (input->IsKeyPressed(KeyCode::F3)) {
       m_showDebugCapsule = !m_showDebugCapsule;
       LOG_INFO("RENDERING SYSTEM DEMO: Debug capsule visualization " + std::string(m_showDebugCapsule ? "ENABLED" : "DISABLED") + " - Shows physics collision alongside visual model");
@@ -295,6 +339,17 @@ public:
     }
     
     m_camera->Update(deltaTime, m_engine.GetInput());
+    
+    // End performance monitoring
+    m_performanceMonitor->EndFrame();
+    
+    // Periodic resource cleanup (every 5 seconds)
+    static float cleanupTimer = 0.0f;
+    cleanupTimer += deltaTime;
+    if (cleanupTimer >= 5.0f) {
+      m_texturePool.CleanupExpired();
+      cleanupTimer = 0.0f;
+    }
   }
 
 private:
@@ -305,21 +360,31 @@ private:
     
     auto* physics = m_engine.GetPhysics();
     
-    // Cube 1: Textured cube (using wall.jpg texture)
+    // Cube 1: Textured cube (using wall.jpg texture with resource pooling)
     EnvironmentObject texturedCube;
     texturedCube.position = Math::Vec3(-5.0f, 1.0f, 5.0f);
     texturedCube.scale = Math::Vec3(2.0f, 2.0f, 2.0f);
-    texturedCube.texture = std::make_shared<Texture>();
-    if (texturedCube.texture->LoadFromFile("assets/textures/wall.jpg")) {
-      texturedCube.useTexture = true;
-      texturedCube.useColor = false;
-      LOG_INFO("Successfully loaded texture for environment cube 1");
+    
+    // Use resource pool for efficient texture management
+    std::string texturePath = "assets/textures/wall.jpg";
+    if (m_assetValidator->ValidateAsset(texturePath)) {
+      texturedCube.texture = m_texturePool.GetOrCreate(texturePath);
+      if (texturedCube.texture && texturedCube.texture->LoadFromFile(texturePath)) {
+        texturedCube.useTexture = true;
+        texturedCube.useColor = false;
+        LOG_INFO("Successfully loaded texture for environment cube 1 (pooled)");
+      } else {
+        texturedCube.useTexture = false;
+        texturedCube.useColor = true;
+        texturedCube.color = Math::Vec4(0.8f, 0.4f, 0.2f, 1.0f); // Orange fallback
+        LOG_WARNING("Failed to load texture for cube 1, using color fallback");
+      }
     } else {
-      // Fallback to solid color if texture fails
+      // Asset not available, use fallback
       texturedCube.useTexture = false;
       texturedCube.useColor = true;
       texturedCube.color = Math::Vec4(0.8f, 0.4f, 0.2f, 1.0f); // Orange fallback
-      LOG_WARNING("Failed to load texture for cube 1, using color fallback");
+      LOG_INFO("Texture asset not available, using color fallback for cube 1");
     }
     
     // Create physics body for cube 1
@@ -530,6 +595,19 @@ private:
     LOG_INFO("  ✓ Smooth Movement: Camera interpolation and constraints");
     LOG_INFO("  ✓ Mouse Control: Free-look camera positioning");
     
+    // Performance Status
+    LOG_INFO("PERFORMANCE SYSTEM:");
+    const auto& stats = m_performanceMonitor->GetFrameStats();
+    LOG_INFO("  ✓ Current FPS: " + std::to_string(stats.fps));
+    LOG_INFO("  ✓ Average FPS: " + std::to_string(stats.averageFPS));
+    LOG_INFO("  ✓ Memory Usage: " + std::to_string(stats.memoryUsageMB) + " MB");
+    LOG_INFO("  ✓ Performance Target: " + std::string(m_performanceMonitor->IsPerformanceTarget() ? "MET" : "NOT MET"));
+    
+    // Resource Management Status
+    LOG_INFO("RESOURCE MANAGEMENT:");
+    LOG_INFO("  ✓ Texture Pool: " + std::to_string(m_texturePool.GetResourceCount()) + " cached textures");
+    LOG_INFO("  ✓ Asset Validation: " + std::string(m_assetValidator->AllRequiredAssetsAvailable() ? "All required assets available" : "Using fallbacks"));
+    
     LOG_INFO("========================================");
     LOG_INFO("ALL ENGINE SYSTEMS OPERATIONAL AND DEMONSTRATED");
     LOG_INFO("========================================");
@@ -543,6 +621,11 @@ private:
   std::unique_ptr<PrimitiveRenderer> m_primitiveRenderer;
   std::unique_ptr<GameAudioManager> m_audioManager;
   std::unique_ptr<GridRenderer> m_gridRenderer;
+  
+  // Performance and resource management
+  std::unique_ptr<PerformanceMonitor> m_performanceMonitor;
+  std::unique_ptr<AssetValidator> m_assetValidator;
+  ResourcePool<Texture> m_texturePool;
   
   std::vector<EnvironmentObject> m_environmentObjects;
   

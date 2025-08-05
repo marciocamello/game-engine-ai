@@ -110,10 +110,10 @@ namespace GameEngine {
         void UpdateTextureMemoryUsage(const std::string& shaderName, size_t bytes);
         
         // Resource introspection
-        std::vector<ShaderResourceInfo> GetShaderUniforms(uint32_t programId);
-        std::vector<ShaderResourceInfo> GetShaderAttributes(uint32_t programId);
-        std::vector<ShaderResourceInfo> GetShaderStorageBuffers(uint32_t programId);
-        int EstimateInstructionCount(uint32_t programId);
+        std::vector<ShaderResourceInfo> GetShaderUniforms(uint32_t programId) const;
+        std::vector<ShaderResourceInfo> GetShaderAttributes(uint32_t programId) const;
+        std::vector<ShaderResourceInfo> GetShaderStorageBuffers(uint32_t programId) const;
+        int EstimateInstructionCount(uint32_t programId) const;
         
         // Statistics retrieval
         ShaderPerformanceStats GetShaderStats(const std::string& shaderName) const;

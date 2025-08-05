@@ -62,25 +62,21 @@ bool TestShaderValidation() {
     TestOutput::PrintTestStart("shader validation");
 
     // Test valid shader source
-    std::string validShader = R"(
-        #version 330 core
-        in vec3 position;
-        uniform mat4 mvpMatrix;
-        void main() {
-            gl_Position = mvpMatrix * vec4(position, 1.0);
-        }
-    )";
+    std::string validShader = R"(#version 330 core
+in vec3 position;
+uniform mat4 mvpMatrix;
+void main() {
+    gl_Position = mvpMatrix * vec4(position, 1.0);
+})";
     
     auto result = ShaderValidator::ValidateShaderSource(validShader, "vertex");
     EXPECT_TRUE(result.isValid);
     
     // Test invalid shader source (missing version)
-    std::string invalidShader = R"(
-        in vec3 position;
-        void main() {
-            gl_Position = vec4(position, 1.0);
-        }
-    )";
+    std::string invalidShader = R"(in vec3 position;
+void main() {
+    gl_Position = vec4(position, 1.0);
+})";
     
     auto invalidResult = ShaderValidator::ValidateShaderSource(invalidShader, "vertex");
     EXPECT_FALSE(invalidResult.isValid);
@@ -156,22 +152,20 @@ bool TestGPUMemoryTracking() {
 bool TestShaderAnalysis() {
     TestOutput::PrintTestStart("shader analysis");
 
-    std::string shaderSource = R"(
-        #version 330 core
-        uniform mat4 mvpMatrix;
-        uniform sampler2D diffuseTexture;
-        in vec3 position;
-        in vec2 texCoord;
-        out vec4 fragColor;
-        
-        void main() {
-            vec4 texColor = texture(diffuseTexture, texCoord);
-            fragColor = texColor * 2.0;
-            if (fragColor.a < 0.5) {
-                discard;
-            }
-        }
-    )";
+    std::string shaderSource = R"(#version 330 core
+uniform mat4 mvpMatrix;
+uniform sampler2D diffuseTexture;
+in vec3 position;
+in vec2 texCoord;
+out vec4 fragColor;
+
+void main() {
+    vec4 texColor = texture(diffuseTexture, texCoord);
+    fragColor = texColor * 2.0;
+    if (fragColor.a < 0.5) {
+        discard;
+    }
+})";
     
     auto analysis = ShaderAnalyzer::AnalyzeShaderSource(shaderSource, "fragment");
     

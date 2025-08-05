@@ -1,5 +1,6 @@
 #include "Graphics/ShaderError.h"
 #include "Core/Logger.h"
+#include <glad/glad.h>
 #include <sstream>
 #include <regex>
 #include <algorithm>
@@ -300,8 +301,7 @@ namespace GameEngine {
         return cleaned;
     }
 
-}    // S
-haderValidator implementation
+    // ShaderValidator implementation
     ShaderValidator::ValidationResult ShaderValidator::ValidateShaderSource(const std::string& source, const std::string& shaderType) {
         ValidationResult result;
         

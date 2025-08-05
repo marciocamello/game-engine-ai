@@ -1,9 +1,12 @@
 #include "Graphics/Shader.h"
 #include "Graphics/Texture.h"
+#include "Graphics/ShaderError.h"
+#include "Graphics/ShaderProfiler.h"
 #include "Core/Logger.h"
 #include <glad/glad.h>
 #include <fstream>
 #include <sstream>
+#include <chrono>
 
 namespace GameEngine {
     Shader::Shader() {
@@ -72,11 +75,44 @@ namespace GameEngine {
         m_state = State::Compiling;
         m_compileLog.clear();
         
+        // Start timing compilation
+        auto startTime = std::chrono::high_resolution_clock::now();
+        
+        // Store source for validation
+        m_shaderSources[type] = source;
+        
         uint32_t glType = GetGLShaderType(type);
         if (glType == 0) {
             m_state = State::Error;
             m_compileLog = "Unsupported shader type";
-            LOG_ERROR("Unsupported shader type");
+            ShaderErrorHandler::HandleRuntimeError("Unknown", "Unsupported shader type");
+            return false;
+        }
+        
+        // Validate shader source before compilation
+        std::string shaderTypeName = (type == Type::Vertex) ? "vertex" : 
+                                    (type == Type::Fragment) ? "fragment" :
+                                    (type == Type::Compute) ? "compute" : "unknown";
+        
+        auto validationResult = ShaderValidator::ValidateShaderSource(source, shaderTypeName);
+        
+        // Report validation warnings
+        for (const auto& warning : validationResult.warnings) {
+            if (m_warningCallback) {
+                m_warningCallback("Shader", warning);
+            } else {
+                ShaderErrorHandler::HandleWarning("Shader", warning);
+            }
+        }
+        
+        // If validation failed, don't attempt compilation
+        if (!validationResult.isValid) {
+            m_state = State::Error;
+            m_compileLog = "Validation failed: ";
+            for (const auto& error : validationResult.errors) {
+                m_compileLog += error + "; ";
+            }
+            ShaderErrorHandler::HandleCompilationError("Shader", m_compileLog);
             return false;
         }
         
@@ -94,6 +130,14 @@ namespace GameEngine {
         
         m_shaders[type] = shader;
         m_state = State::Compiled;
+        
+        // Record compilation time
+        auto endTime = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime);
+        double compilationTimeMs = duration.count() / 1000.0;
+        
+        ShaderProfiler::GetInstance().RecordCompilationTime("Shader", compilationTimeMs);
+        
         return true;
     }
 
@@ -116,6 +160,9 @@ namespace GameEngine {
     bool Shader::LinkProgram() {
         m_linkLog.clear();
         
+        // Start timing linking
+        auto startTime = std::chrono::high_resolution_clock::now();
+        
         if (m_programID != 0) {
             glDeleteProgram(m_programID);
         }
@@ -134,10 +181,23 @@ namespace GameEngine {
         int success;
         glGetProgramiv(m_programID, GL_LINK_STATUS, &success);
         if (!success) {
-            char infoLog[512];
-            glGetProgramInfoLog(m_programID, 512, nullptr, infoLog);
+            char infoLog[1024];
+            glGetProgramInfoLog(m_programID, 1024, nullptr, infoLog);
             m_linkLog = infoLog;
-            LOG_ERROR("Shader linking failed: " + m_linkLog);
+            
+            // Use enhanced error handling
+            if (m_errorCallback) {
+                try {
+                    ShaderCompilationError error("Shader", infoLog);
+                    m_errorCallback(error);
+                } catch (...) {
+                    // Fallback to basic logging if callback fails
+                    LOG_ERROR("Shader linking failed: " + m_linkLog);
+                }
+            } else {
+                ShaderErrorHandler::HandleLinkingError("Shader", infoLog);
+            }
+            
             glDeleteProgram(m_programID);
             m_programID = 0;
             m_state = State::Error;
@@ -151,7 +211,28 @@ namespace GameEngine {
             }
         }
         
+        // Validate the linked program
+        auto validationResult = ShaderValidator::ValidateShaderProgram(m_programID);
+        for (const auto& warning : validationResult.warnings) {
+            if (m_warningCallback) {
+                m_warningCallback("Shader", warning);
+            } else {
+                ShaderErrorHandler::HandleWarning("Shader", warning);
+            }
+        }
+        
         m_state = State::Linked;
+        
+        // Record linking time
+        auto endTime = std::chrono::high_resolution_clock::now();
+        auto duration = std::chrono::duration_cast<std::chrono::microseconds>(endTime - startTime);
+        double linkingTimeMs = duration.count() / 1000.0;
+        
+        ShaderProfiler::GetInstance().RecordLinkingTime("Shader", linkingTimeMs);
+        
+        // Register shader with profiler
+        ShaderProfiler::GetInstance().RegisterShader("Shader", m_programID);
+        
         return true;
     }
 
@@ -164,9 +245,23 @@ namespace GameEngine {
         int success;
         glGetShaderiv(shader, GL_COMPILE_STATUS, &success);
         if (!success) {
-            char infoLog[512];
-            glGetShaderInfoLog(shader, 512, nullptr, infoLog);
-            LOG_ERROR("Shader compilation failed: " + std::string(infoLog));
+            char infoLog[1024];
+            glGetShaderInfoLog(shader, 1024, nullptr, infoLog);
+            m_compileLog = infoLog;
+            
+            // Use enhanced error handling
+            if (m_errorCallback) {
+                try {
+                    ShaderCompilationError error("Shader", infoLog);
+                    m_errorCallback(error);
+                } catch (...) {
+                    // Fallback to basic logging if callback fails
+                    LOG_ERROR("Shader compilation failed: " + std::string(infoLog));
+                }
+            } else {
+                ShaderErrorHandler::HandleCompilationError("Shader", infoLog);
+            }
+            
             glDeleteShader(shader);
             return 0;
         }
@@ -197,11 +292,18 @@ namespace GameEngine {
     void Shader::Use() const {
         if (m_programID) {
             glUseProgram(m_programID);
+            
+            // Start timing for profiling
+            ShaderProfiler::GetInstance().BeginShaderTiming("Shader");
+            ShaderProfiler::GetInstance().RecordDrawCall("Shader");
         }
     }
 
     void Shader::Unuse() const {
         glUseProgram(0);
+        
+        // End timing for profiling
+        ShaderProfiler::GetInstance().EndShaderTiming("Shader");
     }
 
     int Shader::GetUniformLocation(const std::string& name) {
@@ -398,10 +500,23 @@ namespace GameEngine {
         int success;
         glGetProgramiv(m_programID, GL_LINK_STATUS, &success);
         if (!success) {
-            char infoLog[512];
-            glGetProgramInfoLog(m_programID, 512, nullptr, infoLog);
+            char infoLog[1024];
+            glGetProgramInfoLog(m_programID, 1024, nullptr, infoLog);
             m_linkLog = infoLog;
-            LOG_ERROR("Compute shader linking failed: " + m_linkLog);
+            
+            // Use enhanced error handling
+            if (m_errorCallback) {
+                try {
+                    ShaderCompilationError error("ComputeShader", infoLog);
+                    m_errorCallback(error);
+                } catch (...) {
+                    // Fallback to basic logging if callback fails
+                    LOG_ERROR("Compute shader linking failed: " + m_linkLog);
+                }
+            } else {
+                ShaderErrorHandler::HandleLinkingError("ComputeShader", infoLog);
+            }
+            
             glDeleteProgram(m_programID);
             m_programID = 0;
             m_state = State::Error;
@@ -410,5 +525,61 @@ namespace GameEngine {
 
         m_state = State::Linked;
         return true;
+    }
+
+    // Error handling and debugging methods
+    void Shader::SetErrorCallback(std::function<void(const ShaderCompilationError&)> callback) {
+        m_errorCallback = callback;
+    }
+
+    void Shader::SetWarningCallback(std::function<void(const std::string&, const std::string&)> callback) {
+        m_warningCallback = callback;
+    }
+
+    bool Shader::ValidateShader() const {
+        if (m_programID == 0) {
+            return false;
+        }
+        
+        auto result = ShaderValidator::ValidateShaderProgram(m_programID);
+        return result.isValid;
+    }
+
+    std::vector<std::string> Shader::GetValidationWarnings() const {
+        std::vector<std::string> allWarnings;
+        
+        // Validate each shader source
+        for (const auto& pair : m_shaderSources) {
+            std::string shaderTypeName = (pair.first == Type::Vertex) ? "vertex" : 
+                                        (pair.first == Type::Fragment) ? "fragment" :
+                                        (pair.first == Type::Compute) ? "compute" : "unknown";
+            
+            auto result = ShaderValidator::ValidateShaderSource(pair.second, shaderTypeName);
+            allWarnings.insert(allWarnings.end(), result.warnings.begin(), result.warnings.end());
+        }
+        
+        // Validate the linked program if available
+        if (m_programID != 0) {
+            auto programResult = ShaderValidator::ValidateShaderProgram(m_programID);
+            allWarnings.insert(allWarnings.end(), programResult.warnings.begin(), programResult.warnings.end());
+        }
+        
+        return allWarnings;
+    }
+
+    std::vector<std::string> Shader::GetPerformanceWarnings() const {
+        std::vector<std::string> performanceWarnings;
+        
+        // Analyze each shader source for performance issues
+        for (const auto& pair : m_shaderSources) {
+            std::string shaderTypeName = (pair.first == Type::Vertex) ? "vertex" : 
+                                        (pair.first == Type::Fragment) ? "fragment" :
+                                        (pair.first == Type::Compute) ? "compute" : "unknown";
+            
+            auto result = ShaderValidator::AnalyzeShaderPerformance(pair.second, shaderTypeName);
+            performanceWarnings.insert(performanceWarnings.end(), result.warnings.begin(), result.warnings.end());
+        }
+        
+        return performanceWarnings;
     }
 }

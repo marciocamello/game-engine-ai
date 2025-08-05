@@ -440,6 +440,18 @@ if exist "build\Release\ResourceUsageTrackingTest.exe" (
     )
 )
 
+REM Run ShadermanagerintegrationTest
+if exist "build\Release\ShadermanagerintegrationTest.exe" (
+    echo [INFO] Running ShadermanagerintegrationTest...
+    build\Release\ShadermanagerintegrationTest.exe >nul 2>&1
+    if errorlevel 1 (
+        echo [FAILED] ShadermanagerintegrationTest
+        goto :test_failed
+    ) else (
+        echo [PASS] ShadermanagerintegrationTest
+    )
+)
+
 echo.
 echo ========================================
 echo [SUCCESS] ALL TESTS PASSED!

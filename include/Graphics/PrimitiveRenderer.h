@@ -2,6 +2,7 @@
 
 #include "Core/Math.h"
 #include <memory>
+#include <string>
 
 namespace GameEngine {
     class Shader;
@@ -49,6 +50,17 @@ namespace GameEngine {
         // Set matrices for rendering
         void SetViewProjectionMatrix(const Math::Mat4& viewProjection);
 
+        // Enhanced shader management integration
+        void SetCustomColorShader(std::shared_ptr<Shader> shader);
+        void SetCustomTexturedShader(std::shared_ptr<Shader> shader);
+        void ResetToDefaultShaders();
+        std::shared_ptr<Shader> GetColorShader() const { return m_colorShader; }
+        std::shared_ptr<Shader> GetTexturedShader() const { return m_texturedShader; }
+        
+        // Shader hot-reload support
+        void ReloadShaders();
+        void EnableShaderHotReload(bool enable);
+
     private:
         void CreatePrimitiveMeshes();
         void CreateShaders();
@@ -70,5 +82,12 @@ namespace GameEngine {
         std::shared_ptr<Mesh> m_planeMesh;
 
         Math::Mat4 m_viewProjectionMatrix{1.0f};
+
+        // Shader management
+        bool m_usingCustomColorShader = false;
+        bool m_usingCustomTexturedShader = false;
+        bool m_hotReloadEnabled = false;
+        static const std::string DEFAULT_COLOR_SHADER_NAME;
+        static const std::string DEFAULT_TEXTURED_SHADER_NAME;
     };
 }

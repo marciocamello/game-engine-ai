@@ -1,5 +1,7 @@
 #include "Graphics/OpenGLRenderer.h"
 #include "Graphics/Camera.h"
+#include "Graphics/ShaderManager.h"
+#include "Graphics/Shader.h"
 #include "Core/Logger.h"
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
@@ -54,6 +56,12 @@ namespace GameEngine {
             return false;
         }
 
+        // Initialize ShaderManager
+        if (!ShaderManager::GetInstance().Initialize()) {
+            LOG_ERROR("Failed to initialize ShaderManager");
+            return false;
+        }
+
         SetViewport(0, 0, settings.windowWidth, settings.windowHeight);
         
         LOG_INFO("OpenGL Renderer initialized successfully");
@@ -90,6 +98,9 @@ namespace GameEngine {
     }
 
     void OpenGLRenderer::Shutdown() {
+        // Shutdown ShaderManager
+        ShaderManager::GetInstance().Shutdown();
+        
         if (m_window) {
             glfwDestroyWindow(m_window);
             m_window = nullptr;
@@ -106,6 +117,11 @@ namespace GameEngine {
 
     void OpenGLRenderer::Present() {
         glfwSwapBuffers(m_window);
+    }
+
+    void OpenGLRenderer::Update(float deltaTime) {
+        // Update ShaderManager for hot-reload functionality
+        ShaderManager::GetInstance().Update(deltaTime);
     }
 
     void OpenGLRenderer::SetViewport(int x, int y, int width, int height) {
@@ -130,8 +146,19 @@ namespace GameEngine {
     }
 
     std::shared_ptr<Shader> OpenGLRenderer::CreateShader(const std::string& vertexSource, const std::string& fragmentSource) {
-        // Shader creation implementation would go here
-        return nullptr;
+        // Generate a unique name for the shader based on source hash
+        std::string shaderName = "runtime_shader_" + std::to_string(std::hash<std::string>{}(vertexSource + fragmentSource));
+        
+        // Use ShaderManager to create and manage the shader
+        return ShaderManager::GetInstance().LoadShaderFromSource(shaderName, vertexSource, fragmentSource);
+    }
+
+    std::shared_ptr<Shader> OpenGLRenderer::LoadShaderFromFiles(const std::string& name, const std::string& vertexPath, const std::string& fragmentPath) {
+        return ShaderManager::GetInstance().LoadShaderFromFiles(name, vertexPath, fragmentPath);
+    }
+
+    std::shared_ptr<Shader> OpenGLRenderer::GetShader(const std::string& name) {
+        return ShaderManager::GetInstance().GetShader(name);
     }
 
     std::shared_ptr<Texture> OpenGLRenderer::CreateTexture(const std::string& filepath) {
@@ -142,5 +169,34 @@ namespace GameEngine {
     std::shared_ptr<Mesh> OpenGLRenderer::CreateMesh(const std::vector<float>& vertices, const std::vector<unsigned int>& indices) {
         // Mesh creation implementation would go here
         return nullptr;
+    }
+
+    bool OpenGLRenderer::LoadShader(const std::string& name, const std::string& vertexPath, const std::string& fragmentPath, bool enableHotReload) {
+        ShaderDesc desc;
+        desc.name = name;
+        desc.vertexPath = vertexPath;
+        desc.fragmentPath = fragmentPath;
+        desc.enableHotReload = enableHotReload;
+        desc.enableOptimization = true;
+
+        auto shader = ShaderManager::GetInstance().LoadShader(name, desc);
+        return shader != nullptr;
+    }
+
+    bool OpenGLRenderer::UnloadShader(const std::string& name) {
+        ShaderManager::GetInstance().UnloadShader(name);
+        return true; // ShaderManager doesn't return success/failure for unload
+    }
+
+    void OpenGLRenderer::ReloadShader(const std::string& name) {
+        ShaderManager::GetInstance().ReloadShader(name);
+    }
+
+    void OpenGLRenderer::EnableShaderHotReload(bool enable) {
+        ShaderManager::GetInstance().EnableHotReload(enable);
+    }
+
+    std::vector<std::string> OpenGLRenderer::GetLoadedShaderNames() const {
+        return ShaderManager::GetInstance().GetShaderNames();
     }
 }

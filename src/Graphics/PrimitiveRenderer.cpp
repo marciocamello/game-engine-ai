@@ -2,10 +2,15 @@
 #include "Graphics/Mesh.h"
 #include "Graphics/Shader.h"
 #include "Graphics/Texture.h"
+#include "Graphics/ShaderManager.h"
 #include "Core/Logger.h"
 #include <cmath>
 
 namespace GameEngine {
+    // Define static constants
+    const std::string PrimitiveRenderer::DEFAULT_COLOR_SHADER_NAME = "primitive_color";
+    const std::string PrimitiveRenderer::DEFAULT_TEXTURED_SHADER_NAME = "primitive_textured";
+
     PrimitiveRenderer::PrimitiveRenderer() {
     }
 
@@ -153,11 +158,13 @@ namespace GameEngine {
             }
         )";
 
-        m_colorShader = std::make_shared<Shader>();
-        m_colorShader->LoadFromSource(colorVertexShader, colorFragmentShader);
-
-        m_texturedShader = std::make_shared<Shader>();
-        m_texturedShader->LoadFromSource(texturedVertexShader, texturedFragmentShader);
+        // Use ShaderManager to create and manage shaders
+        m_colorShader = ShaderManager::GetInstance().LoadShaderFromSource(DEFAULT_COLOR_SHADER_NAME, colorVertexShader, colorFragmentShader);
+        m_texturedShader = ShaderManager::GetInstance().LoadShaderFromSource(DEFAULT_TEXTURED_SHADER_NAME, texturedVertexShader, texturedFragmentShader);
+        
+        // Initialize shader management state
+        m_usingCustomColorShader = false;
+        m_usingCustomTexturedShader = false;
     }
 
     void PrimitiveRenderer::CreatePrimitiveMeshes() {
@@ -433,5 +440,76 @@ namespace GameEngine {
 
     void PrimitiveRenderer::DrawMesh(std::shared_ptr<Mesh> mesh, const Math::Vec3& position, const Math::Quat& rotation, const Math::Vec3& scale, std::shared_ptr<Texture> texture) {
         DrawPrimitive(mesh, position, rotation, scale, Math::Vec4(1.0f), texture);
+    }
+
+    void PrimitiveRenderer::SetCustomColorShader(std::shared_ptr<Shader> shader) {
+        if (shader) {
+            m_colorShader = shader;
+            m_usingCustomColorShader = true;
+            LOG_INFO("PrimitiveRenderer: Using custom color shader");
+        } else {
+            LOG_WARNING("PrimitiveRenderer: Cannot set null custom color shader");
+        }
+    }
+
+    void PrimitiveRenderer::SetCustomTexturedShader(std::shared_ptr<Shader> shader) {
+        if (shader) {
+            m_texturedShader = shader;
+            m_usingCustomTexturedShader = true;
+            LOG_INFO("PrimitiveRenderer: Using custom textured shader");
+        } else {
+            LOG_WARNING("PrimitiveRenderer: Cannot set null custom textured shader");
+        }
+    }
+
+    void PrimitiveRenderer::ResetToDefaultShaders() {
+        // Reload default shaders from ShaderManager
+        m_colorShader = ShaderManager::GetInstance().GetShader(DEFAULT_COLOR_SHADER_NAME);
+        m_texturedShader = ShaderManager::GetInstance().GetShader(DEFAULT_TEXTURED_SHADER_NAME);
+        
+        m_usingCustomColorShader = false;
+        m_usingCustomTexturedShader = false;
+        
+        LOG_INFO("PrimitiveRenderer: Reset to default shaders");
+    }
+
+    void PrimitiveRenderer::ReloadShaders() {
+        // Only reload default shaders, not custom ones
+        if (!m_usingCustomColorShader) {
+            ShaderManager::GetInstance().ReloadShader(DEFAULT_COLOR_SHADER_NAME);
+            m_colorShader = ShaderManager::GetInstance().GetShader(DEFAULT_COLOR_SHADER_NAME);
+        }
+        
+        if (!m_usingCustomTexturedShader) {
+            ShaderManager::GetInstance().ReloadShader(DEFAULT_TEXTURED_SHADER_NAME);
+            m_texturedShader = ShaderManager::GetInstance().GetShader(DEFAULT_TEXTURED_SHADER_NAME);
+        }
+        
+        LOG_INFO("PrimitiveRenderer: Shaders reloaded");
+    }
+
+    void PrimitiveRenderer::EnableShaderHotReload(bool enable) {
+        m_hotReloadEnabled = enable;
+        
+        // Set up hot-reload callback if enabling
+        if (enable) {
+            ShaderManager::GetInstance().SetHotReloadCallback([this](const std::string& shaderName) {
+                // Only handle our default shaders
+                if ((shaderName == DEFAULT_COLOR_SHADER_NAME && !m_usingCustomColorShader) ||
+                    (shaderName == DEFAULT_TEXTURED_SHADER_NAME && !m_usingCustomTexturedShader)) {
+                    
+                    // Update our shader references
+                    if (shaderName == DEFAULT_COLOR_SHADER_NAME) {
+                        m_colorShader = ShaderManager::GetInstance().GetShader(DEFAULT_COLOR_SHADER_NAME);
+                    } else if (shaderName == DEFAULT_TEXTURED_SHADER_NAME) {
+                        m_texturedShader = ShaderManager::GetInstance().GetShader(DEFAULT_TEXTURED_SHADER_NAME);
+                    }
+                    
+                    LOG_INFO("PrimitiveRenderer: Hot-reloaded shader: " + shaderName);
+                }
+            });
+        }
+        
+        LOG_INFO("PrimitiveRenderer: Shader hot-reload " + std::string(enable ? "enabled" : "disabled"));
     }
 }

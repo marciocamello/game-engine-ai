@@ -172,6 +172,18 @@ if exist "build\Release\TextureloaderTest.exe" (
     )
 )
 
+REM Run ShaderManager unit test
+if exist "build\Release\ShadermanagerTest.exe" (
+    echo [INFO] Running ShadermanagerTest...
+    build\Release\ShadermanagerTest.exe >nul 2>&1
+    if errorlevel 1 (
+        echo [FAILED] ShadermanagerTest
+        goto :test_failed
+    ) else (
+        echo [PASS] ShadermanagerTest
+    )
+)
+
 echo.
 echo Running Integration Tests...
 echo ----------------------------------------

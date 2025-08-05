@@ -491,6 +491,9 @@ add_integration_test(ModelDebuggerTest tests/integration/test_model_debugger.cpp
 # Performance and Stability integration test
 add_integration_test(PerformanceStabilityTest tests/integration/test_performance_stability.cpp)
 
+# ShaderManager Integration test
+add_integration_test(ShadermanagerintegrationTest tests/integration/test_shadermanager_integration.cpp)
+
 # Simple FBX test - removed (redundant with integration tests)
 
 # Discover and add unit tests automatically

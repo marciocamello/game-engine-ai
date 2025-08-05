@@ -39,6 +39,7 @@ namespace GameEngine {
         virtual void BeginFrame() = 0;
         virtual void EndFrame() = 0;
         virtual void Present() = 0;
+        virtual void Update(float deltaTime) = 0;
 
         virtual void SetViewport(int x, int y, int width, int height) = 0;
         virtual void Clear(const Math::Vec4& color = Math::Vec4(0.0f, 0.0f, 0.0f, 1.0f)) = 0;
@@ -49,8 +50,17 @@ namespace GameEngine {
 
         // Resource creation
         virtual std::shared_ptr<Shader> CreateShader(const std::string& vertexSource, const std::string& fragmentSource) = 0;
+        virtual std::shared_ptr<Shader> LoadShaderFromFiles(const std::string& name, const std::string& vertexPath, const std::string& fragmentPath) = 0;
+        virtual std::shared_ptr<Shader> GetShader(const std::string& name) = 0;
         virtual std::shared_ptr<Texture> CreateTexture(const std::string& filepath) = 0;
         virtual std::shared_ptr<Mesh> CreateMesh(const std::vector<float>& vertices, const std::vector<unsigned int>& indices) = 0;
+
+        // Enhanced shader management integration
+        virtual bool LoadShader(const std::string& name, const std::string& vertexPath, const std::string& fragmentPath, bool enableHotReload = true) = 0;
+        virtual bool UnloadShader(const std::string& name) = 0;
+        virtual void ReloadShader(const std::string& name) = 0;
+        virtual void EnableShaderHotReload(bool enable) = 0;
+        virtual std::vector<std::string> GetLoadedShaderNames() const = 0;
 
         GLFWwindow* GetWindow() const { return m_window; }
         const RenderSettings& GetSettings() const { return m_settings; }

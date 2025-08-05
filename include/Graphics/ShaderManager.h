@@ -60,9 +60,17 @@ namespace GameEngine {
         void EnableHotReload(bool enable);
         bool IsHotReloadEnabled() const { return m_hotReloadEnabled; }
         void SetHotReloadCallback(std::function<void(const std::string&)> callback);
+        void SetHotReloadErrorCallback(std::function<void(const std::string&, const std::string&)> callback);
         void CheckForShaderChanges();
         void ReloadShader(const std::string& name);
         void ReloadAllShaders();
+        void SetHotReloadCheckInterval(float intervalSeconds);
+        
+        // Batch recompilation support
+        void ReloadShadersFromFiles(const std::vector<std::string>& filepaths);
+        void WatchShaderDirectory(const std::string& directory);
+        void WatchShaderFile(const std::string& filepath);
+        void UnwatchShaderFile(const std::string& filepath);
 
         // Performance and debugging
         ShaderStats GetShaderStats() const;
@@ -83,19 +91,26 @@ namespace GameEngine {
         std::shared_ptr<Shader> CreateShaderFromDesc(const ShaderDesc& desc);
         bool ValidateShaderDesc(const ShaderDesc& desc);
         void UpdateShaderStats();
+        
+        // Hot-reload internal methods
+        void OnShaderFileChanged(const std::string& filepath);
+        void OnShaderFileError(const std::string& filepath, const std::string& error);
+        void RegisterShaderFiles(const std::string& shaderName, const ShaderDesc& desc);
+        void UnregisterShaderFiles(const std::string& shaderName);
+        std::vector<std::string> GetShadersUsingFile(const std::string& filepath) const;
 
         // Member variables
         std::unordered_map<std::string, std::shared_ptr<Shader>> m_shaders;
         std::unordered_map<std::string, ShaderDesc> m_shaderDescs;
-        std::unordered_map<std::string, std::filesystem::file_time_type> m_fileTimestamps;
+        std::unordered_map<std::string, std::string> m_fileToShaderMap; // Maps file paths to shader names
 
         bool m_initialized = false;
         bool m_hotReloadEnabled = false;
         bool m_debugMode = false;
-        float m_hotReloadCheckInterval = 0.5f;
-        float m_timeSinceLastCheck = 0.0f;
 
+        std::unique_ptr<ShaderHotReloader> m_hotReloader;
         std::function<void(const std::string&)> m_hotReloadCallback;
+        std::function<void(const std::string&, const std::string&)> m_hotReloadErrorCallback;
         ShaderStats m_stats;
     };
 }

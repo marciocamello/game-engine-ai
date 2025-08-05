@@ -68,79 +68,14 @@ Remove-Item -Recurse -Force build -ErrorAction SilentlyContinue
 
 ## Test Standards - MANDATORY TO FOLLOW
 
-### CRITICAL RULE: Correct Tests
+**FOR COMPLETE TEST STANDARDS AND TEMPLATES**: See testing-standards.md
+
+### Key Testing Rules
 
 - **NEVER create fictitious tests just to pass**
-- **If OpenGL/GLAD prevents testing, leave for future offscreen structure**
-- **Write valid tests, not workarounds**
-
-### CRITICAL RULE: OpenGL Testing Strategy
-
-- **ALWAYS try to make OpenGL tests mathematical and CPU-based first**
-- **If OpenGL context is required and causes errors, use CPU and math alternatives**
-- **If test can continue without OpenGL context errors, proceed normally**
-- **If OpenGL context errors occur, implement using CPU/math validation**
-- **Leave OpenGL-dependent tests for future offscreen rendering structure**
+- **ALWAYS follow the exact template structure in testing-standards.md**
+- **ALWAYS run `.\scripts\run_tests.bat` before completing any task**
 - **Focus on testing logic, algorithms, and data structures rather than OpenGL calls**
-
-### Test Output Format
-
-All tests MUST use the standardized TestOutput methods:
-
-```cpp
-#include "TestUtils.h"
-
-// Test structure
-bool TestFunctionName() {
-    TestOutput::PrintTestStart("Test description");
-
-    // Test logic here
-    if (condition) {
-        TestOutput::PrintTestPass("Test description");
-        return true;
-    } else {
-        TestOutput::PrintTestFail("Test description", "expected_value", "actual_value");
-        return false;
-    }
-}
-
-// Main function structure
-int main() {
-    TestOutput::PrintHeader("Test Suite Name");
-
-    TestSuite suite("Test Suite Name");
-
-    try {
-        suite.RunTest("Test Name", TestFunctionName);
-        // Add more tests...
-
-        suite.PrintSummary();
-        return suite.AllTestsPassed() ? 0 : 1;
-
-    } catch (const std::exception& e) {
-        TestOutput::PrintError("Exception: " + std::string(e.what()));
-        return 1;
-    }
-}
-```
-
-### Test Output Standards - MANDATORY
-
-- Use `TestOutput::PrintInfo()` for informational messages
-- Use `TestOutput::PrintTestPass()` for successful tests
-- Use `TestOutput::PrintTestFail()` for failed tests:
-  - `PrintTestFail(testName)` - simple failure message
-  - `PrintTestFail(testName, expected, actual)` - detailed failure with expected vs actual values
-- Use `TestOutput::PrintError()` for errors and exceptions
-- **ALWAYS include try/catch blocks in main functions**
-- **ALWAYS return correct exit codes (0 for success, 1 for failure)**
-- **NEVER use emotions/emojis in test messages**
-
-### Test File Naming
-
-- Unit tests: `tests/unit/test_[component_name].cpp`
-- Integration tests: `tests/integration/test_[feature_name].cpp`
-- Test executables: `[ComponentName]Test.exe`
 
 ## Code Standards - MANDATORY
 

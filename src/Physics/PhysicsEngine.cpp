@@ -610,6 +610,19 @@ namespace GameEngine {
             return result;
         }
         
+        // Debug log for sweep parameters
+        float sweepDistance = glm::length(to - from);
+        if (sweepDistance > 0.001f) {
+            LOG_DEBUG("SweepCapsule: from(" + std::to_string(from.x) + ", " + std::to_string(from.y) + ", " + std::to_string(from.z) + 
+                     ") to(" + std::to_string(to.x) + ", " + std::to_string(to.y) + ", " + std::to_string(to.z) + 
+                     ") radius=" + std::to_string(radius) + " height=" + std::to_string(height) + 
+                     " distance=" + std::to_string(sweepDistance));
+            
+            // Log number of objects in world
+            int numObjects = bulletWorld->getNumCollisionObjects();
+            LOG_DEBUG("SweepCapsule: World has " + std::to_string(numObjects) + " collision objects");
+        }
+        
         // Create capsule shape for sweep test
         btCapsuleShape capsuleShape(radius, height);
         
@@ -625,9 +638,13 @@ namespace GameEngine {
         bulletWorld->convexSweepTest(&capsuleShape, fromTransform, toTransform, sweepCallback);
         
         if (sweepCallback.hasHit()) {
+            LOG_DEBUG("SweepCapsule: Hit detected at fraction " + std::to_string(sweepCallback.m_closestHitFraction));
+            
             // Find the body ID that corresponds to this Bullet rigid body
             const btRigidBody* hitBody = btRigidBody::upcast(sweepCallback.m_hitCollisionObject);
             if (hitBody) {
+                LOG_DEBUG("SweepCapsule: Hit object is a rigid body");
+                
                 // Search for the body ID in our mapping
                 for (const auto& pair : m_bulletBodies) {
                     if (pair.second == hitBody) {
@@ -638,11 +655,22 @@ namespace GameEngine {
                         result.fraction = sweepCallback.m_closestHitFraction;
                         result.distance = glm::length(to - from) * result.fraction;
                         
-                        LOG_DEBUG("Capsule sweep hit rigid body with ID: " + std::to_string(result.bodyId) + 
-                                 " at fraction: " + std::to_string(result.fraction));
+                        LOG_INFO("SweepCapsule: Hit rigid body ID " + std::to_string(result.bodyId) + 
+                                " at fraction " + std::to_string(result.fraction) + 
+                                " distance " + std::to_string(result.distance));
                         break;
                     }
                 }
+                
+                if (!result.hasHit) {
+                    LOG_WARNING("SweepCapsule: Hit rigid body not found in mapping");
+                }
+            } else {
+                LOG_DEBUG("SweepCapsule: Hit object is not a rigid body");
+            }
+        } else {
+            if (sweepDistance > 0.001f) {
+                LOG_DEBUG("SweepCapsule: No hit detected");
             }
         }
         

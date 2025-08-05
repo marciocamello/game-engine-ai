@@ -79,6 +79,7 @@ namespace GameEngine {
         
         // Collision detection methods
         CollisionInfo SweepTest(const Math::Vec3& from, const Math::Vec3& to, float radius, float height);
+        CollisionInfo MultiRaycastTest(const Math::Vec3& from, const Math::Vec3& movement);
         bool IsGroundedCheck() const;
         StepInfo CheckStepUp(const Math::Vec3& moveDirection, float moveDistance);
         bool CheckSlope(const Math::Vec3& normal);
@@ -102,6 +103,7 @@ namespace GameEngine {
         // Movement state
         bool m_isGrounded = false;
         bool m_isJumping = false;
+        float m_jumpStartTime = 0.0f; // Time since jump started (for audio timing)
         Math::Vec3 m_inputDirection{0.0f};
 
         // Hybrid physics parameters

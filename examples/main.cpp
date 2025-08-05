@@ -29,6 +29,7 @@ public:
     Math::Vec4 color;
     bool useTexture;
     bool useColor;
+    uint32_t rigidBodyId = 0; // Physics body ID for collision
   };
 
   GameApplication() = default;
@@ -302,6 +303,8 @@ private:
     // Create exactly 3 cubes with different material properties
     m_environmentObjects.clear();
     
+    auto* physics = m_engine.GetPhysics();
+    
     // Cube 1: Textured cube (using wall.jpg texture)
     EnvironmentObject texturedCube;
     texturedCube.position = Math::Vec3(-5.0f, 1.0f, 5.0f);
@@ -318,6 +321,28 @@ private:
       texturedCube.color = Math::Vec4(0.8f, 0.4f, 0.2f, 1.0f); // Orange fallback
       LOG_WARNING("Failed to load texture for cube 1, using color fallback");
     }
+    
+    // Create physics body for cube 1
+    if (physics) {
+      RigidBody cubeDesc;
+      cubeDesc.position = texturedCube.position;
+      cubeDesc.rotation = Math::Quat(1.0f, 0.0f, 0.0f, 0.0f);
+      cubeDesc.velocity = Math::Vec3(0.0f);
+      cubeDesc.mass = 0.0f; // Static object
+      cubeDesc.restitution = 0.3f;
+      cubeDesc.friction = 0.7f;
+      cubeDesc.isStatic = true;
+      cubeDesc.isKinematic = false;
+
+      CollisionShape cubeShape;
+      cubeShape.type = CollisionShape::Box;
+      cubeShape.dimensions = texturedCube.scale;
+
+      texturedCube.rigidBodyId = physics->CreateRigidBody(cubeDesc, cubeShape);
+      if (texturedCube.rigidBodyId == 0) {
+        LOG_WARNING("Failed to create physics body for environment cube 1");
+      }
+    }
     m_environmentObjects.push_back(texturedCube);
     
     // Cube 2: Solid color cube (blue)
@@ -327,6 +352,28 @@ private:
     colorCube.useTexture = false;
     colorCube.useColor = true;
     colorCube.color = Math::Vec4(0.2f, 0.4f, 0.8f, 1.0f); // Blue
+    
+    // Create physics body for cube 2
+    if (physics) {
+      RigidBody cubeDesc;
+      cubeDesc.position = colorCube.position;
+      cubeDesc.rotation = Math::Quat(1.0f, 0.0f, 0.0f, 0.0f);
+      cubeDesc.velocity = Math::Vec3(0.0f);
+      cubeDesc.mass = 0.0f; // Static object
+      cubeDesc.restitution = 0.3f;
+      cubeDesc.friction = 0.7f;
+      cubeDesc.isStatic = true;
+      cubeDesc.isKinematic = false;
+
+      CollisionShape cubeShape;
+      cubeShape.type = CollisionShape::Box;
+      cubeShape.dimensions = colorCube.scale;
+
+      colorCube.rigidBodyId = physics->CreateRigidBody(cubeDesc, cubeShape);
+      if (colorCube.rigidBodyId == 0) {
+        LOG_WARNING("Failed to create physics body for environment cube 2");
+      }
+    }
     m_environmentObjects.push_back(colorCube);
     
     // Cube 3: Default material cube (no texture, no color - uses default rendering)
@@ -336,12 +383,35 @@ private:
     defaultCube.useTexture = false;
     defaultCube.useColor = false;
     defaultCube.color = Math::Vec4(1.0f, 1.0f, 1.0f, 1.0f); // White (default)
+    
+    // Create physics body for cube 3
+    if (physics) {
+      RigidBody cubeDesc;
+      cubeDesc.position = defaultCube.position;
+      cubeDesc.rotation = Math::Quat(1.0f, 0.0f, 0.0f, 0.0f);
+      cubeDesc.velocity = Math::Vec3(0.0f);
+      cubeDesc.mass = 0.0f; // Static object
+      cubeDesc.restitution = 0.3f;
+      cubeDesc.friction = 0.7f;
+      cubeDesc.isStatic = true;
+      cubeDesc.isKinematic = false;
+
+      CollisionShape cubeShape;
+      cubeShape.type = CollisionShape::Box;
+      cubeShape.dimensions = defaultCube.scale;
+
+      defaultCube.rigidBodyId = physics->CreateRigidBody(cubeDesc, cubeShape);
+      if (defaultCube.rigidBodyId == 0) {
+        LOG_WARNING("Failed to create physics body for environment cube 3");
+      }
+    }
     m_environmentObjects.push_back(defaultCube);
     
     LOG_INFO("RENDERING SYSTEM DEMO: Created 3 environment objects demonstrating different material properties:");
     LOG_INFO("  - Cube 1: Textured material (texture mapping demonstration)");
     LOG_INFO("  - Cube 2: Solid color material (shader color demonstration)");
     LOG_INFO("  - Cube 3: Default material (basic rendering demonstration)");
+    LOG_INFO("PHYSICS SYSTEM DEMO: Created collision bodies for all environment objects");
   }
 
   void CreateGroundPlane() {

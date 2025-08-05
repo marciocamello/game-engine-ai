@@ -59,12 +59,8 @@ namespace GameEngine {
         // Check for jump state changes
         bool currentJumpingState = character->IsJumping();
         
-        // Debug log to see jump state for all character types
-        if (currentJumpingState != m_previousJumpingState) {
-            LOG_INFO("GameAudioManager: Jump state changed - Type: " + std::string(character->GetMovementTypeName()) + 
-                     ", IsJumping: " + (currentJumpingState ? "true" : "false") + 
-                     ", Previous: " + (m_previousJumpingState ? "true" : "false"));
-        }
+        // Reduced logging for performance - only log actual jump events
+        // Debug log removed to improve performance
         
         if (currentJumpingState && !m_previousJumpingState) {
             // Character just started jumping
@@ -76,12 +72,7 @@ namespace GameEngine {
         m_previousCharacterPosition = character->GetPosition();
         m_previousGroundedState = character->IsGrounded();
         
-        // Debug log for troubleshooting character type audio issues
-        if (m_isWalking) {
-            LOG_INFO("GameAudioManager: Character walking - Type: " + std::string(character->GetMovementTypeName()) + 
-                     ", Position: (" + std::to_string(character->GetPosition().x) + ", " + 
-                     std::to_string(character->GetPosition().y) + ", " + std::to_string(character->GetPosition().z) + ")");
-        }
+        // Debug logging removed for performance optimization
     }
 
     void GameAudioManager::Cleanup() {
@@ -292,13 +283,7 @@ namespace GameEngine {
         
         bool isMoving = isMovingByVelocity || isMovingByPosition;
         
-        // Debug logging to understand what's happening
-        if (isMoving) {
-            LOG_INFO("GameAudioManager: Movement detected - Type: " + std::string(character->GetMovementTypeName()) + 
-                     ", VelMag: " + std::to_string(velocityMagnitude) + 
-                     ", PosDelta: " + std::to_string(positionChange) + 
-                     ", Grounded: " + (isGrounded ? "true" : "false"));
-        }
+        // Debug logging removed for performance optimization
 
         // Update walking state
         bool shouldPlayFootsteps = isGrounded && isMoving && !character->IsJumping();
@@ -307,7 +292,7 @@ namespace GameEngine {
         if (m_isWalking && !shouldPlayFootsteps) {
             m_audioEngine->StopAudioSource(m_footstepSource);
             m_footstepTimer = 0.0f;
-            LOG_INFO("GameAudioManager: Stopped walking - stopped footstep sound and reset timer");
+            // Debug logging removed for performance
         }
         
         SetWalkingState(shouldPlayFootsteps);
@@ -320,7 +305,7 @@ namespace GameEngine {
                 m_audioEngine->SetAudioSourcePosition(m_footstepSource, currentPosition);
                 m_audioEngine->PlayAudioSource(m_footstepSource, m_footstepSound);
                 m_footstepTimer = 0.0f;
-                LOG_INFO("GameAudioManager: Playing footstep sound - Timer was: " + std::to_string(m_footstepTimer + m_config.footstepInterval));
+                // Debug logging removed for performance
             }
         }
     }

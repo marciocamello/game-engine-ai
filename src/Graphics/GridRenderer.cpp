@@ -41,32 +41,46 @@ namespace GameEngine {
         const float spacing = m_settings.gridSpacing;
         const float lineHeight = 0.01f; // Slightly above ground plane
         
-        // Render grid lines along Z-axis (running in X direction)
-        for (float z = -halfSize; z <= halfSize; z += spacing) {
-            int lineIndex = static_cast<int>((z + halfSize) / spacing);
-            bool isMajorLine = (lineIndex % m_settings.majorLineInterval) == 0;
-            
-            Math::Vec4 lineColor = isMajorLine ? m_settings.majorLineColor : m_settings.minorLineColor;
-            
-            // Create a thin line running from -halfSize to +halfSize in X direction
-            Math::Vec3 position(0.0f, lineHeight, z);
-            Math::Vec3 scale(halfSize * 2.0f, 0.02f, m_settings.lineWidth);
-            
-            m_primitiveRenderer->DrawCube(position, scale, lineColor);
+        // Optimize by reducing grid density for better performance
+        const float optimizedSpacing = std::max(spacing, 1.0f); // Minimum 1 unit spacing
+        const float optimizedSize = halfSize;  // Use full grid size to match ground collision
+        
+        // Batch render minor lines first
+        for (float z = -optimizedSize; z <= optimizedSize; z += optimizedSpacing) {
+            int lineIndex = static_cast<int>((z + optimizedSize) / optimizedSpacing);
+            if ((lineIndex % m_settings.majorLineInterval) != 0) { // Only minor lines
+                Math::Vec3 position(0.0f, lineHeight, z);
+                Math::Vec3 scale(optimizedSize * 2.0f, 0.02f, m_settings.lineWidth);
+                m_primitiveRenderer->DrawCube(position, scale, m_settings.minorLineColor);
+            }
         }
         
-        // Render grid lines along X-axis (running in Z direction)
-        for (float x = -halfSize; x <= halfSize; x += spacing) {
-            int lineIndex = static_cast<int>((x + halfSize) / spacing);
-            bool isMajorLine = (lineIndex % m_settings.majorLineInterval) == 0;
-            
-            Math::Vec4 lineColor = isMajorLine ? m_settings.majorLineColor : m_settings.minorLineColor;
-            
-            // Create a thin line running from -halfSize to +halfSize in Z direction
-            Math::Vec3 position(x, lineHeight, 0.0f);
-            Math::Vec3 scale(m_settings.lineWidth, 0.02f, halfSize * 2.0f);
-            
-            m_primitiveRenderer->DrawCube(position, scale, lineColor);
+        for (float x = -optimizedSize; x <= optimizedSize; x += optimizedSpacing) {
+            int lineIndex = static_cast<int>((x + optimizedSize) / optimizedSpacing);
+            if ((lineIndex % m_settings.majorLineInterval) != 0) { // Only minor lines
+                Math::Vec3 position(x, lineHeight, 0.0f);
+                Math::Vec3 scale(m_settings.lineWidth, 0.02f, optimizedSize * 2.0f);
+                m_primitiveRenderer->DrawCube(position, scale, m_settings.minorLineColor);
+            }
+        }
+        
+        // Then render major lines (fewer of them, more visible)
+        for (float z = -optimizedSize; z <= optimizedSize; z += optimizedSpacing) {
+            int lineIndex = static_cast<int>((z + optimizedSize) / optimizedSpacing);
+            if ((lineIndex % m_settings.majorLineInterval) == 0) { // Only major lines
+                Math::Vec3 position(0.0f, lineHeight, z);
+                Math::Vec3 scale(optimizedSize * 2.0f, 0.02f, m_settings.lineWidth * 1.5f); // Slightly thicker
+                m_primitiveRenderer->DrawCube(position, scale, m_settings.majorLineColor);
+            }
+        }
+        
+        for (float x = -optimizedSize; x <= optimizedSize; x += optimizedSpacing) {
+            int lineIndex = static_cast<int>((x + optimizedSize) / optimizedSpacing);
+            if ((lineIndex % m_settings.majorLineInterval) == 0) { // Only major lines
+                Math::Vec3 position(x, lineHeight, 0.0f);
+                Math::Vec3 scale(m_settings.lineWidth * 1.5f, 0.02f, optimizedSize * 2.0f); // Slightly thicker
+                m_primitiveRenderer->DrawCube(position, scale, m_settings.majorLineColor);
+            }
         }
     }
 }

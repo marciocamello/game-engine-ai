@@ -287,12 +287,23 @@ function(print_test_summary)
     endif()
 endfunction()
 
-# Example game executable
+# Enhanced Example - Comprehensive feature demonstration
+# This example showcases all engine capabilities including audio, FBX models, 
+# environment objects, professional grid, and advanced features
 add_executable(GameExample
     examples/main.cpp
 )
 
 target_link_libraries(GameExample PRIVATE GameEngineKiro)
+
+# Basic Example - Clean demonstration of core movement mechanics
+# This example focuses on essential character movement without distractions
+# Demonstrates: WASD movement, jumping, movement component switching, third-person camera
+add_executable(BasicExample
+    examples/basic_example.cpp
+)
+
+target_link_libraries(BasicExample PRIVATE GameEngineKiro)
 
 # Character comparison example (temporarily disabled due to interface issues)
 # add_executable(CharacterComparison
@@ -557,9 +568,15 @@ if(Bullet_FOUND)
     )
 endif()
 
-# Copy assets to build directory
+# Copy assets to build directory for both examples
 add_custom_command(TARGET GameExample POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
     ${CMAKE_SOURCE_DIR}/assets $<TARGET_FILE_DIR:GameExample>/assets
-    COMMENT "Copying assets to build directory"
+    COMMENT "Copying assets to build directory for enhanced example"
+)
+
+add_custom_command(TARGET BasicExample POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+    ${CMAKE_SOURCE_DIR}/assets $<TARGET_FILE_DIR:BasicExample>/assets
+    COMMENT "Copying assets to build directory for basic example"
 )

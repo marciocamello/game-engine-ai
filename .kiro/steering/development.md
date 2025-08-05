@@ -74,6 +74,15 @@ Remove-Item -Recurse -Force build -ErrorAction SilentlyContinue
 - **If OpenGL/GLAD prevents testing, leave for future offscreen structure**
 - **Write valid tests, not workarounds**
 
+### CRITICAL RULE: OpenGL Testing Strategy
+
+- **ALWAYS try to make OpenGL tests mathematical and CPU-based first**
+- **If OpenGL context is required and causes errors, use CPU and math alternatives**
+- **If test can continue without OpenGL context errors, proceed normally**
+- **If OpenGL context errors occur, implement using CPU/math validation**
+- **Leave OpenGL-dependent tests for future offscreen rendering structure**
+- **Focus on testing logic, algorithms, and data structures rather than OpenGL calls**
+
 ### Test Output Format
 
 All tests MUST use the standardized TestOutput methods:
@@ -228,6 +237,10 @@ int main() {
 - **NEVER use emoticons in analysis or technical communication**
 - **Reserve emoticons ONLY for documentation creation**
 - **Keep technical communication professional and concise**
+- **NEVER use markdown formatting in summaries (no headers, bold, bullets)**
+- **Use plain text checklists without complex formatting**
+- **Avoid elaborate punctuation or visual elements in technical summaries**
+- **Focus on factual information only in task completion reports**
 
 ### Performance Considerations
 

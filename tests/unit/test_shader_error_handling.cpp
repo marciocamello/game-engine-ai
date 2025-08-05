@@ -14,33 +14,22 @@ bool TestShaderCompilationError() {
     TestOutput::PrintTestStart("shader compilation error");
 
     try {
-        std::cout << "Creating ShaderCompilationError..." << std::endl;
-        
         // Test basic error creation
         ShaderCompilationError error("TestShader", "Syntax error at line 10", 10);
         
-        std::cout << "Testing GetShaderName..." << std::endl;
         std::string shaderName = error.GetShaderName();
-        std::cout << "Shader name: " << shaderName << std::endl;
-        
         if (shaderName != "TestShader") {
             TestOutput::PrintTestFail("shader compilation error", "TestShader", shaderName);
             return false;
         }
         
-        std::cout << "Testing GetLineNumber..." << std::endl;
         int lineNumber = error.GetLineNumber();
-        std::cout << "Line number: " << lineNumber << std::endl;
-        
         if (lineNumber != 10) {
             TestOutput::PrintTestFail("shader compilation error", "10", std::to_string(lineNumber));
             return false;
         }
         
-        std::cout << "Testing GetFormattedError..." << std::endl;
         std::string formattedError = error.GetFormattedError();
-        std::cout << "Formatted error: " << formattedError << std::endl;
-        
         if (formattedError.find("TestShader") == std::string::npos) {
             TestOutput::PrintTestFail("shader compilation error", "contains TestShader", "missing TestShader");
             return false;
@@ -59,7 +48,6 @@ bool TestShaderCompilationError() {
         TestOutput::PrintTestPass("shader compilation error");
         return true;
     } catch (const std::exception& e) {
-        std::cout << "Exception caught: " << e.what() << std::endl;
         TestOutput::PrintTestFail("shader compilation error", "no exception", e.what());
         return false;
     }

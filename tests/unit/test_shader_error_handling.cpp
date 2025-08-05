@@ -1,6 +1,7 @@
 #include "TestUtils.h"
 #include "Graphics/ShaderError.h"
 #include "Graphics/ShaderProfiler.h"
+#include <iostream>
 
 using namespace GameEngine;
 using namespace GameEngine::Testing;
@@ -12,19 +13,56 @@ using namespace GameEngine::Testing;
 bool TestShaderCompilationError() {
     TestOutput::PrintTestStart("shader compilation error");
 
-    // Test basic error creation
-    ShaderCompilationError error("TestShader", "Syntax error at line 10", 10);
-    
-    EXPECT_EQUAL(error.GetShaderName(), std::string("TestShader"));
-    EXPECT_EQUAL(error.GetLineNumber(), 10);
-    
-    std::string formattedError = error.GetFormattedError();
-    EXPECT_TRUE(formattedError.find("TestShader") != std::string::npos);
-    EXPECT_TRUE(formattedError.find("Line 10") != std::string::npos);
-    EXPECT_TRUE(formattedError.find("Syntax error") != std::string::npos);
+    try {
+        std::cout << "Creating ShaderCompilationError..." << std::endl;
+        
+        // Test basic error creation
+        ShaderCompilationError error("TestShader", "Syntax error at line 10", 10);
+        
+        std::cout << "Testing GetShaderName..." << std::endl;
+        std::string shaderName = error.GetShaderName();
+        std::cout << "Shader name: " << shaderName << std::endl;
+        
+        if (shaderName != "TestShader") {
+            TestOutput::PrintTestFail("shader compilation error", "TestShader", shaderName);
+            return false;
+        }
+        
+        std::cout << "Testing GetLineNumber..." << std::endl;
+        int lineNumber = error.GetLineNumber();
+        std::cout << "Line number: " << lineNumber << std::endl;
+        
+        if (lineNumber != 10) {
+            TestOutput::PrintTestFail("shader compilation error", "10", std::to_string(lineNumber));
+            return false;
+        }
+        
+        std::cout << "Testing GetFormattedError..." << std::endl;
+        std::string formattedError = error.GetFormattedError();
+        std::cout << "Formatted error: " << formattedError << std::endl;
+        
+        if (formattedError.find("TestShader") == std::string::npos) {
+            TestOutput::PrintTestFail("shader compilation error", "contains TestShader", "missing TestShader");
+            return false;
+        }
+        
+        if (formattedError.find("Line 10") == std::string::npos) {
+            TestOutput::PrintTestFail("shader compilation error", "contains Line 10", "missing Line 10");
+            return false;
+        }
+        
+        if (formattedError.find("Syntax error") == std::string::npos) {
+            TestOutput::PrintTestFail("shader compilation error", "contains Syntax error", "missing Syntax error");
+            return false;
+        }
 
-    TestOutput::PrintTestPass("shader compilation error");
-    return true;
+        TestOutput::PrintTestPass("shader compilation error");
+        return true;
+    } catch (const std::exception& e) {
+        std::cout << "Exception caught: " << e.what() << std::endl;
+        TestOutput::PrintTestFail("shader compilation error", "no exception", e.what());
+        return false;
+    }
 }
 
 /**
@@ -34,24 +72,50 @@ bool TestShaderCompilationError() {
 bool TestShaderErrorParsing() {
     TestOutput::PrintTestStart("shader error parsing");
 
-    std::string errorLog = "0:10: error: 'undeclared_variable' : undeclared identifier\n"
-                          "0:15: error: syntax error";
-    
-    auto errors = ShaderErrorHandler::ParseErrorLog(errorLog, "vertex");
-    
-    EXPECT_EQUAL(errors.size(), size_t(2));
-    
-    if (errors.size() >= 2) {
-        EXPECT_EQUAL(errors[0].lineNumber, 10);
-        EXPECT_TRUE(errors[0].message.find("undeclared identifier") != std::string::npos);
-        EXPECT_EQUAL(errors[0].shaderType, std::string("vertex"));
+    try {
+        std::string errorLog = "0:10: error: 'undeclared_variable' : undeclared identifier\n"
+                              "0:15: error: syntax error";
         
-        EXPECT_EQUAL(errors[1].lineNumber, 15);
-        EXPECT_TRUE(errors[1].message.find("syntax error") != std::string::npos);
-    }
+        auto errors = ShaderErrorHandler::ParseErrorLog(errorLog, "vertex");
+        
+        if (errors.size() != 2) {
+            TestOutput::PrintTestFail("shader error parsing", "2 errors", std::to_string(errors.size()));
+            return false;
+        }
+        
+        if (errors.size() >= 2) {
+            if (errors[0].lineNumber != 10) {
+                TestOutput::PrintTestFail("shader error parsing", "line 10", std::to_string(errors[0].lineNumber));
+                return false;
+            }
+            
+            if (errors[0].message.find("undeclared identifier") == std::string::npos) {
+                TestOutput::PrintTestFail("shader error parsing", "contains undeclared identifier", errors[0].message);
+                return false;
+            }
+            
+            if (errors[0].shaderType != "vertex") {
+                TestOutput::PrintTestFail("shader error parsing", "vertex", errors[0].shaderType);
+                return false;
+            }
+            
+            if (errors[1].lineNumber != 15) {
+                TestOutput::PrintTestFail("shader error parsing", "line 15", std::to_string(errors[1].lineNumber));
+                return false;
+            }
+            
+            if (errors[1].message.find("syntax error") == std::string::npos) {
+                TestOutput::PrintTestFail("shader error parsing", "contains syntax error", errors[1].message);
+                return false;
+            }
+        }
 
-    TestOutput::PrintTestPass("shader error parsing");
-    return true;
+        TestOutput::PrintTestPass("shader error parsing");
+        return true;
+    } catch (const std::exception& e) {
+        TestOutput::PrintTestFail("shader error parsing", "no exception", e.what());
+        return false;
+    }
 }
 
 /**

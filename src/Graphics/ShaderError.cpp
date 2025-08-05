@@ -16,12 +16,12 @@ namespace GameEngine {
 
     // ShaderCompilationError implementation
     ShaderCompilationError::ShaderCompilationError(const std::string& shaderName, const std::string& error, int line)
-        : std::runtime_error(FormatErrorMessage()), m_shaderName(shaderName), m_lineNumber(line) {
+        : std::runtime_error(""), m_shaderName(shaderName), m_lineNumber(line) {
         m_errors.emplace_back(line, error);
     }
 
     ShaderCompilationError::ShaderCompilationError(const std::string& shaderName, const std::vector<ShaderError>& errors)
-        : std::runtime_error(FormatErrorMessage()), m_shaderName(shaderName), m_lineNumber(-1), m_errors(errors) {
+        : std::runtime_error(""), m_shaderName(shaderName), m_lineNumber(-1), m_errors(errors) {
         if (!errors.empty() && errors[0].lineNumber != -1) {
             m_lineNumber = errors[0].lineNumber;
         }

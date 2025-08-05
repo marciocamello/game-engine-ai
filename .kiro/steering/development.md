@@ -4,6 +4,29 @@
 
 **BEFORE ANY TASK**: Read critical-rules.md - Violation = Incomplete Task
 
+## DANGEROUS COMMANDS - ABSOLUTELY PROHIBITED
+
+### Windows Dangerous Commands
+
+- **NEVER use**: `rmdir`, `rd`, `del`, `erase`, `format`, `diskpart`
+- **NEVER use**: `Remove-Item` (except for build directory cleanup as specified)
+- **NEVER use**: PowerShell deletion commands beyond specified exceptions
+- **NEVER use**: Batch file deletion commands
+- **ONLY PERMITTED cleanup**: `Remove-Item -Recurse -Force build -ErrorAction SilentlyContinue`
+
+### Cross-Platform Dangerous Commands
+
+- **NEVER use**: `rm`, `rm -rf`, `unlink`, `shred`
+- **NEVER use**: `mv` or `move` for deletion purposes
+- **NEVER use**: Any command that could delete project files
+- **NEVER use**: System-level commands that modify file permissions destructively
+
+### Git Commands - Use with Extreme Caution
+
+- **NEVER use**: `git reset --hard` without explicit approval
+- **NEVER use**: `git clean -fd` without explicit approval
+- **ALWAYS ask**: Before any destructive git operation
+
 ## Build System
 
 ### Primary Build Commands
@@ -119,6 +142,15 @@ int main() {
 - **NEVER add redundant code**
 - **NEVER alter base classes without extreme necessity**
 
+### CRITICAL RULE: Task-Driven Development
+
+- **NEVER create anything not specified in current task**
+- **If bugs/errors occur**: Fix them in place, do not recreate components
+- **If tests fail**: Debug and fix the existing test, do not create new ones
+- **If functions break**: Analyze and repair, do not rewrite from scratch
+- **NEVER create "basic examples" when advanced examples already exist**
+- **ALWAYS work within task scope**: Only implement what is explicitly requested
+
 ### Include Paths
 
 ```cpp
@@ -157,7 +189,19 @@ int main() {
 1. **Complete build**: `.\scripts\build.bat`
 2. **All tests**: `.\scripts\run_tests.bat`
 3. **Check error logs**
-4. **ONLY THEN mark as completed**
+4. **Create commit with task information**
+5. **ONLY THEN mark as completed**
+
+### CRITICAL RULE: Task Completion Standards
+
+- **NEVER mark task completed if**:
+  - Build is failing
+  - Any tests are failing
+  - Runtime errors exist
+  - Performance regressions detected
+- **If system breaks during task**: STOP and fix immediately
+- **If unsure about reverting**: Ask developer for manual approval
+- **ALWAYS commit after task completion** with descriptive message
 
 ### Adding New Tests
 
@@ -176,6 +220,14 @@ int main() {
 - **Follow existing patterns without duplication**
 - **Use proper error handling**
 - **Technical and professional logging only**
+
+### Communication Standards - MANDATORY
+
+- **NEVER use complex summaries with icons at task completion**
+- **Use simple, direct summaries**: State what was done, nothing more
+- **NEVER use emoticons in analysis or technical communication**
+- **Reserve emoticons ONLY for documentation creation**
+- **Keep technical communication professional and concise**
 
 ### Performance Considerations
 

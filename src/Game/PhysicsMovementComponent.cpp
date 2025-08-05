@@ -86,6 +86,9 @@ namespace GameEngine {
 
     void PhysicsMovementComponent::Jump() {
         if (!m_config.canJump || !IsGrounded()) {
+            LOG_DEBUG("PhysicsMovementComponent: Jump blocked - canJump: " + std::string(m_config.canJump ? "true" : "false") + 
+                     ", IsGrounded: " + std::string(IsGrounded() ? "true" : "false") + 
+                     ", RigidBodyID: " + std::to_string(m_rigidBodyId));
             return;
         }
 
@@ -94,7 +97,8 @@ namespace GameEngine {
         m_accumulatedImpulses += jumpImpulse;
         m_isJumping = true;
         
-        LOG_DEBUG("PhysicsMovementComponent jumping with impulse: " + std::to_string(jumpImpulse.y));
+        LOG_INFO("PhysicsMovementComponent: Jump executed - impulse: " + std::to_string(jumpImpulse.y) + 
+                 ", m_isJumping: " + std::string(m_isJumping ? "true" : "false"));
     }
 
     void PhysicsMovementComponent::StopJumping() {
@@ -147,6 +151,12 @@ namespace GameEngine {
         if (input->IsKeyDown(KeyCode::A)) rightInput -= 1.0f;
         if (input->IsKeyDown(KeyCode::D)) rightInput += 1.0f;
         
+        // Debug log for input detection
+        if (forwardInput != 0.0f || rightInput != 0.0f) {
+            LOG_DEBUG("PhysicsMovementComponent: Input detected - Forward: " + std::to_string(forwardInput) + 
+                     ", Right: " + std::to_string(rightInput) + ", RigidBodyID: " + std::to_string(m_rigidBodyId));
+        }
+        
         if (camera && (forwardInput != 0.0f || rightInput != 0.0f)) {
             // Use camera system to get movement direction
             m_inputDirection = camera->GetMovementDirection(forwardInput, rightInput);
@@ -168,6 +178,7 @@ namespace GameEngine {
 
         // Handle jumping
         if (input->IsKeyPressed(KeyCode::Space)) {
+            LOG_DEBUG("PhysicsMovementComponent: Space key pressed, attempting jump");
             Jump();
         }
 
@@ -227,16 +238,21 @@ namespace GameEngine {
 
     void PhysicsMovementComponent::ApplyMovementForces() {
         if (!m_physicsEngine || m_rigidBodyId == 0) {
+            LOG_DEBUG("PhysicsMovementComponent: Cannot apply forces - PhysicsEngine: " + 
+                     std::string(m_physicsEngine ? "valid" : "null") + 
+                     ", RigidBodyID: " + std::to_string(m_rigidBodyId));
             return;
         }
 
         // Apply accumulated forces
         if (glm::length(m_accumulatedForces) > 0.001f) {
+            LOG_DEBUG("PhysicsMovementComponent: Applying force - magnitude: " + std::to_string(glm::length(m_accumulatedForces)));
             m_physicsEngine->ApplyForce(m_rigidBodyId, m_accumulatedForces);
         }
 
         // Apply accumulated impulses
         if (glm::length(m_accumulatedImpulses) > 0.001f) {
+            LOG_DEBUG("PhysicsMovementComponent: Applying impulse - magnitude: " + std::to_string(glm::length(m_accumulatedImpulses)));
             m_physicsEngine->ApplyImpulse(m_rigidBodyId, m_accumulatedImpulses);
         }
     }

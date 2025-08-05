@@ -31,6 +31,11 @@ namespace GameEngine {
         m_lastFrameTime = deltaTime;
         m_sweepTestCount = 0;
         
+        // Update jump timer
+        if (m_isJumping) {
+            m_jumpStartTime += deltaTime;
+        }
+        
         // Clear accumulated input from previous frame
         m_accumulatedInput = Math::Vec3(0.0f);
         m_jumpRequested = false;
@@ -61,14 +66,18 @@ namespace GameEngine {
 
     void HybridMovementComponent::Jump() {
         if (!m_config.canJump || !IsGrounded()) {
+            LOG_DEBUG("HybridMovementComponent: Jump blocked - canJump: " + std::string(m_config.canJump ? "true" : "false") + 
+                     ", IsGrounded: " + std::string(IsGrounded() ? "true" : "false"));
             return;
         }
 
         m_velocity.y = m_config.jumpZVelocity;
         m_isJumping = true;
+        m_jumpStartTime = 0.0f; // Reset jump timer
         m_movementMode = MovementMode::Falling;
         
-        LOG_DEBUG("HybridMovementComponent jumping with velocity: " + std::to_string(m_config.jumpZVelocity));
+        LOG_INFO("HybridMovementComponent: Jump executed - velocity: " + std::to_string(m_config.jumpZVelocity) + 
+                 ", m_isJumping: " + std::string(m_isJumping ? "true" : "false"));
     }
 
     void HybridMovementComponent::StopJumping() {
@@ -157,7 +166,11 @@ namespace GameEngine {
         
         if (isGrounded && !wasGrounded) {
             m_movementMode = MovementMode::Walking;
-            m_isJumping = false;
+            // Only reset jumping state if enough time has passed (for audio detection)
+            if (m_jumpStartTime > 0.1f) {
+                m_isJumping = false;
+                m_jumpStartTime = 0.0f;
+            }
             LOG_DEBUG("HybridMovementComponent: Landed");
         } else if (!isGrounded && wasGrounded) {
             m_movementMode = MovementMode::Falling;
@@ -261,8 +274,22 @@ namespace GameEngine {
     }
 
     Math::Vec3 HybridMovementComponent::ResolveMovement(const Math::Vec3& desiredMovement) {
-        // Simple collision resolution - just like original CharacterController
-        CollisionInfo collision = SweepTest(m_position, m_position + desiredMovement, m_characterRadius, m_characterHeight);
+        // Use multiple raycast tests around the character capsule for more reliable collision detection
+        CollisionInfo collision = MultiRaycastTest(m_position, desiredMovement);
+        
+        // Debug log for collision detection
+        if (glm::length(desiredMovement) > 0.001f) {
+            LOG_DEBUG("HybridMovementComponent: MultiRaycast from (" + 
+                     std::to_string(m_position.x) + ", " + std::to_string(m_position.y) + ", " + std::to_string(m_position.z) + 
+                     ") movement (" + std::to_string(desiredMovement.x) + ", " + 
+                     std::to_string(desiredMovement.y) + ", " + std::to_string(desiredMovement.z) + 
+                     ") - HasCollision: " + std::string(collision.hasCollision ? "true" : "false"));
+            
+            if (collision.hasCollision) {
+                LOG_INFO("HybridMovementComponent: COLLISION DETECTED with body ID: " + std::to_string(collision.hitBodyId) + 
+                         " at distance: " + std::to_string(collision.distance));
+            }
+        }
         
         if (!collision.hasCollision) {
             // No collision - move freely
@@ -276,6 +303,60 @@ namespace GameEngine {
     Math::Vec3 HybridMovementComponent::ResolveCollision(const Math::Vec3& desiredMovement, const CollisionInfo& collision) {
         // Slide along the collision surface
         return SlideAlongSurface(desiredMovement, collision.normal);
+    }
+
+    HybridMovementComponent::CollisionInfo HybridMovementComponent::MultiRaycastTest(const Math::Vec3& from, const Math::Vec3& movement) {
+        CollisionInfo result;
+        
+        if (!m_physicsEngine || glm::length(movement) < 0.001f) {
+            return result;
+        }
+        
+        // Normalize movement direction
+        Math::Vec3 moveDir = glm::normalize(movement);
+        float moveDistance = glm::length(movement);
+        
+        // Test multiple rays around the character capsule
+        std::vector<Math::Vec3> testPoints;
+        
+        // Center ray
+        testPoints.push_back(from);
+        
+        // Rays around the character at different heights and radii
+        float testRadius = m_characterRadius * 0.8f; // Slightly smaller than actual radius
+        for (int i = 0; i < 8; ++i) {
+            float angle = (i / 8.0f) * 2.0f * glm::pi<float>();
+            Math::Vec3 offset(cos(angle) * testRadius, 0.0f, sin(angle) * testRadius);
+            
+            // Test at different heights
+            testPoints.push_back(from + offset); // Center height
+            testPoints.push_back(from + offset + Math::Vec3(0.0f, m_characterHeight * 0.3f, 0.0f)); // Upper
+            testPoints.push_back(from + offset - Math::Vec3(0.0f, m_characterHeight * 0.3f, 0.0f)); // Lower
+        }
+        
+        float closestDistance = moveDistance;
+        bool foundCollision = false;
+        
+        // Test each ray
+        for (const auto& testPoint : testPoints) {
+            if (m_physicsEngine) {
+                auto rayHit = m_physicsEngine->Raycast(testPoint, moveDir, moveDistance);
+                if (rayHit.hasHit && rayHit.distance < closestDistance) {
+                    closestDistance = rayHit.distance;
+                    foundCollision = true;
+                    
+                    result.hasCollision = true;
+                    result.contactPoint = rayHit.point;
+                    result.contactNormal = rayHit.normal;
+                    result.normal = rayHit.normal;
+                    result.hitBodyId = rayHit.bodyId;
+                    result.distance = rayHit.distance;
+                    result.penetrationDepth = 0.0f;
+                }
+            }
+        }
+        
+        return result;
     }
 
     Math::Vec3 HybridMovementComponent::SlideAlongSurface(const Math::Vec3& movement, const Math::Vec3& normal) {
@@ -340,7 +421,11 @@ namespace GameEngine {
                     if (!m_isGrounded) {
                         // Just landed naturally
                         m_isGrounded = true;
-                        m_isJumping = false;
+                        // Only reset jumping state if enough time has passed (for audio detection)
+                        if (m_jumpStartTime > 0.1f) {
+                            m_isJumping = false;
+                            m_jumpStartTime = 0.0f;
+                        }
                         m_movementMode = MovementMode::Walking;
                         LOG_INFO("HybridMovementComponent: Landed naturally on ground at Y=" + std::to_string(groundLevel));
                     }
@@ -377,7 +462,11 @@ namespace GameEngine {
                 
                 if (!m_isGrounded) {
                     m_isGrounded = true;
-                    m_isJumping = false;
+                    // Only reset jumping state if enough time has passed (for audio detection)
+                    if (m_jumpStartTime > 0.1f) {
+                        m_isJumping = false;
+                        m_jumpStartTime = 0.0f;
+                    }
                     m_movementMode = MovementMode::Walking;
                     LOG_INFO("HybridMovementComponent: Landed on ground (fallback)");
                 }

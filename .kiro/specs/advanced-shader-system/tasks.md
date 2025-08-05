@@ -78,6 +78,7 @@
     - Add PBR-specific property validation and defaults
     - Integrate with existing PBR shader system (basic.frag)
     - Add material editor support for PBR properties
+    - Create unit tests following testing-standards.md template
     - _Requirements: 2.1, 2.2, 2.3_
 
 - [ ] 6. Build post-processing pipeline framework
@@ -147,12 +148,14 @@
     - Create tests for Shader class compilation and linking
     - Add tests for PBRMaterial property management and serialization
     - Implement tests for shader variant creation and selection
+    - Follow testing-standards.md template structure exactly
     - _Requirements: 2.1, 2.5, 4.1_
 
   - [ ] 10.2 Add integration tests for system interactions
     - Create tests for hot-reload system functionality
     - Add tests for post-processing pipeline with multiple effects
     - Implement tests for compute shader dispatch and synchronization
+    - Follow testing-standards.md template structure exactly
     - _Requirements: 1.1, 5.1, 3.4_
 
 - [ ] 11. Implement performance optimization features
@@ -236,6 +239,7 @@
   - Test hot-reload system stability under continuous development workflow
   - Verify cross-platform compatibility and hardware fallback behavior
   - Update examples (basic and enhanced) to demonstrate new shader features
+  - Follow testing-standards.md template structure for any new tests
   - _Requirements: 7.7, 9.4, 1.6, 8.6_
 
 ## Build and Development Notes

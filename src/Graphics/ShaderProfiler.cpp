@@ -130,7 +130,7 @@ namespace GameEngine {
         stats.textureMemoryUsage = bytes;
     }
 
-    std::vector<ShaderResourceInfo> ShaderProfiler::GetShaderUniforms(uint32_t programId) {
+    std::vector<ShaderResourceInfo> ShaderProfiler::GetShaderUniforms(uint32_t programId) const {
         std::vector<ShaderResourceInfo> uniforms;
         
         if (programId == 0) return uniforms;
@@ -151,7 +151,7 @@ namespace GameEngine {
         return uniforms;
     }
 
-    std::vector<ShaderResourceInfo> ShaderProfiler::GetShaderAttributes(uint32_t programId) {
+    std::vector<ShaderResourceInfo> ShaderProfiler::GetShaderAttributes(uint32_t programId) const {
         std::vector<ShaderResourceInfo> attributes;
         
         if (programId == 0) return attributes;
@@ -172,7 +172,7 @@ namespace GameEngine {
         return attributes;
     }
 
-    std::vector<ShaderResourceInfo> ShaderProfiler::GetShaderStorageBuffers(uint32_t programId) {
+    std::vector<ShaderResourceInfo> ShaderProfiler::GetShaderStorageBuffers(uint32_t programId) const {
         std::vector<ShaderResourceInfo> storageBuffers;
         
         if (programId == 0) return storageBuffers;
@@ -200,7 +200,7 @@ namespace GameEngine {
         return storageBuffers;
     }
 
-    int ShaderProfiler::EstimateInstructionCount(uint32_t programId) {
+    int ShaderProfiler::EstimateInstructionCount(uint32_t programId) const {
         // This is a rough estimation based on available OpenGL queries
         // Real instruction counting would require vendor-specific extensions
         
@@ -429,7 +429,7 @@ namespace GameEngine {
     void ShaderProfiler::DumpShaderInfo(const std::string& shaderName) const {
         auto it = m_shaderPrograms.find(shaderName);
         if (it == m_shaderPrograms.end()) {
-            LOG_WARN("Shader not found for info dump: " + shaderName);
+            LOG_INFO("Shader not found for info dump: " + shaderName);
             return;
         }
         
@@ -540,8 +540,7 @@ namespace GameEngine {
         return stats.averageFrameTimeMs;
     }
 
-} 
-   // GPUMemoryTracker implementation
+    // GPUMemoryTracker implementation
     GPUMemoryTracker& GPUMemoryTracker::GetInstance() {
         static GPUMemoryTracker instance;
         return instance;

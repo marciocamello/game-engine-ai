@@ -4,9 +4,11 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include <functional>
 
 namespace GameEngine {
     class Texture;
+    class ShaderCompilationError;
 
     class Shader {
     public:
@@ -82,6 +84,13 @@ namespace GameEngine {
         State GetState() const { return m_state; }
         std::string GetCompileLog() const { return m_compileLog; }
         std::string GetLinkLog() const { return m_linkLog; }
+        
+        // Error handling and debugging
+        void SetErrorCallback(std::function<void(const ShaderCompilationError&)> callback);
+        void SetWarningCallback(std::function<void(const std::string&, const std::string&)> callback);
+        bool ValidateShader() const;
+        std::vector<std::string> GetValidationWarnings() const;
+        std::vector<std::string> GetPerformanceWarnings() const;
 
     private:
         uint32_t CompileShader(const std::string& source, uint32_t type);
@@ -99,5 +108,12 @@ namespace GameEngine {
         std::string m_linkLog;
         uint32_t m_nextTextureSlot = 0;
         std::unordered_map<std::string, uint32_t> m_textureSlots; // Track texture slot assignments
+        
+        // Error handling callbacks
+        std::function<void(const ShaderCompilationError&)> m_errorCallback;
+        std::function<void(const std::string&, const std::string&)> m_warningCallback;
+        
+        // Cached shader sources for validation
+        std::unordered_map<Type, std::string> m_shaderSources;
     };
 }

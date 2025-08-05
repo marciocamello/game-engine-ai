@@ -64,16 +64,17 @@
     - Add variant memory management and cleanup
     - _Requirements: 4.4, 4.5, 4.7_
 
-- [ ] 5. Develop PBR material system
+- [-] 5. Develop PBR material system
 
-  - [ ] 5.1 Enhance existing Material class architecture
+  - [x] 5.1 Enhance existing Material class architecture
 
     - Extend current Material class with advanced property system
     - Add material template system for different material types
     - Create material serialization and deserialization (JSON)
     - _Requirements: 2.5, 2.6, 7.4_
 
-  - [ ] 5.2 Create PBRMaterial specialization
+  - [x] 5.2 Create PBRMaterial specialization
+
     - Create PBRMaterial class inheriting from Material
     - Add PBR-specific property validation and defaults
     - Integrate with existing PBR shader system (basic.frag)

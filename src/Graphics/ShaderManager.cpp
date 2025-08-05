@@ -1,6 +1,7 @@
 #include "Graphics/ShaderManager.h"
 #include "Graphics/Shader.h"
 #include "Graphics/ShaderHotReloader.h"
+#include "Graphics/ShaderVariantManager.h"
 #include "Core/Logger.h"
 #include <filesystem>
 #include <fstream>
@@ -35,6 +36,9 @@ namespace GameEngine {
             return false;
         }
         
+        // Get reference to variant manager
+        m_variantManager = &ShaderVariantManager::GetInstance();
+        
         // Set up hot reload callbacks
         m_hotReloader->SetReloadCallback([this](const std::string& filepath) {
             OnShaderFileChanged(filepath);
@@ -67,6 +71,8 @@ namespace GameEngine {
             m_hotReloader->Shutdown();
             m_hotReloader.reset();
         }
+        
+        m_variantManager = nullptr;
         
         m_initialized = false;
         LOG_INFO("ShaderManager shutdown complete");
@@ -624,5 +630,42 @@ namespace GameEngine {
         }
         
         return shaderNames;
+    }
+
+    // Shader variant support methods
+    std::shared_ptr<Shader> ShaderManager::CreateShaderVariant(const std::string& baseName, const ShaderVariant& variant) {
+        if (!m_variantManager) {
+            LOG_ERROR("ShaderVariantManager not available");
+            return nullptr;
+        }
+        
+        return m_variantManager->CreateVariant(baseName, variant);
+    }
+
+    std::shared_ptr<Shader> ShaderManager::GetShaderVariant(const std::string& baseName, const ShaderVariant& variant) {
+        if (!m_variantManager) {
+            LOG_ERROR("ShaderVariantManager not available");
+            return nullptr;
+        }
+        
+        return m_variantManager->GetVariant(baseName, variant);
+    }
+
+    void ShaderManager::RemoveShaderVariant(const std::string& baseName, const ShaderVariant& variant) {
+        if (!m_variantManager) {
+            LOG_ERROR("ShaderVariantManager not available");
+            return;
+        }
+        
+        m_variantManager->RemoveVariant(baseName, variant);
+    }
+
+    std::vector<ShaderVariant> ShaderManager::GetShaderVariants(const std::string& baseName) const {
+        if (!m_variantManager) {
+            LOG_ERROR("ShaderVariantManager not available");
+            return {};
+        }
+        
+        return m_variantManager->GetVariants(baseName);
     }
 }

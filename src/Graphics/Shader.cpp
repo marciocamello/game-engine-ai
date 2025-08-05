@@ -1,4 +1,5 @@
 #include "Graphics/Shader.h"
+#include "Graphics/Texture.h"
 #include "Core/Logger.h"
 #include <glad/glad.h>
 #include <fstream>
@@ -11,6 +12,13 @@ namespace GameEngine {
     Shader::~Shader() {
         if (m_programID) {
             glDeleteProgram(m_programID);
+        }
+        
+        // Clean up individual shaders
+        for (auto& pair : m_shaders) {
+            if (pair.second != 0) {
+                glDeleteShader(pair.second);
+            }
         }
     }
 
@@ -58,6 +66,93 @@ namespace GameEngine {
         glDeleteShader(fragmentShader);
         
         return success;
+    }
+
+    bool Shader::CompileFromSource(const std::string& source, Type type) {
+        m_state = State::Compiling;
+        m_compileLog.clear();
+        
+        uint32_t glType = GetGLShaderType(type);
+        if (glType == 0) {
+            m_state = State::Error;
+            m_compileLog = "Unsupported shader type";
+            LOG_ERROR("Unsupported shader type");
+            return false;
+        }
+        
+        uint32_t shader = CompileShader(source, glType);
+        if (shader == 0) {
+            m_state = State::Error;
+            return false;
+        }
+        
+        // Clean up existing shader of this type
+        auto it = m_shaders.find(type);
+        if (it != m_shaders.end() && it->second != 0) {
+            glDeleteShader(it->second);
+        }
+        
+        m_shaders[type] = shader;
+        m_state = State::Compiled;
+        return true;
+    }
+
+    bool Shader::CompileFromFile(const std::string& filepath, Type type) {
+        std::ifstream file(filepath);
+        if (!file.is_open()) {
+            m_state = State::Error;
+            m_compileLog = "Failed to open shader file: " + filepath;
+            LOG_ERROR("Failed to open shader file: " + filepath);
+            return false;
+        }
+        
+        std::stringstream stream;
+        stream << file.rdbuf();
+        file.close();
+        
+        return CompileFromSource(stream.str(), type);
+    }
+
+    bool Shader::LinkProgram() {
+        m_linkLog.clear();
+        
+        if (m_programID != 0) {
+            glDeleteProgram(m_programID);
+        }
+        
+        m_programID = glCreateProgram();
+        
+        // Attach all compiled shaders
+        for (const auto& pair : m_shaders) {
+            if (pair.second != 0) {
+                glAttachShader(m_programID, pair.second);
+            }
+        }
+        
+        glLinkProgram(m_programID);
+        
+        int success;
+        glGetProgramiv(m_programID, GL_LINK_STATUS, &success);
+        if (!success) {
+            char infoLog[512];
+            glGetProgramInfoLog(m_programID, 512, nullptr, infoLog);
+            m_linkLog = infoLog;
+            LOG_ERROR("Shader linking failed: " + m_linkLog);
+            glDeleteProgram(m_programID);
+            m_programID = 0;
+            m_state = State::Error;
+            return false;
+        }
+        
+        // Detach shaders after linking
+        for (const auto& pair : m_shaders) {
+            if (pair.second != 0) {
+                glDetachShader(m_programID, pair.second);
+            }
+        }
+        
+        m_state = State::Linked;
+        return true;
     }
 
     uint32_t Shader::CompileShader(const std::string& source, uint32_t type) {
@@ -120,35 +215,200 @@ namespace GameEngine {
         return location;
     }
 
-    void Shader::SetBool(const std::string& name, bool value) {
+
+
+    // Enhanced uniform setters
+    void Shader::SetUniform(const std::string& name, bool value) {
         glUniform1i(GetUniformLocation(name), static_cast<int>(value));
     }
 
-    void Shader::SetInt(const std::string& name, int value) {
+    void Shader::SetUniform(const std::string& name, int value) {
         glUniform1i(GetUniformLocation(name), value);
     }
 
-    void Shader::SetFloat(const std::string& name, float value) {
+    void Shader::SetUniform(const std::string& name, float value) {
         glUniform1f(GetUniformLocation(name), value);
     }
 
-    void Shader::SetVec2(const std::string& name, const Math::Vec2& value) {
+    void Shader::SetUniform(const std::string& name, const Math::Vec2& value) {
         glUniform2fv(GetUniformLocation(name), 1, &value[0]);
     }
 
-    void Shader::SetVec3(const std::string& name, const Math::Vec3& value) {
+    void Shader::SetUniform(const std::string& name, const Math::Vec3& value) {
         glUniform3fv(GetUniformLocation(name), 1, &value[0]);
     }
 
-    void Shader::SetVec4(const std::string& name, const Math::Vec4& value) {
+    void Shader::SetUniform(const std::string& name, const Math::Vec4& value) {
         glUniform4fv(GetUniformLocation(name), 1, &value[0]);
     }
 
-    void Shader::SetMat3(const std::string& name, const Math::Mat3& value) {
+    void Shader::SetUniform(const std::string& name, const Math::Mat3& value) {
         glUniformMatrix3fv(GetUniformLocation(name), 1, GL_FALSE, &value[0][0]);
     }
 
-    void Shader::SetMat4(const std::string& name, const Math::Mat4& value) {
+    void Shader::SetUniform(const std::string& name, const Math::Mat4& value) {
         glUniformMatrix4fv(GetUniformLocation(name), 1, GL_FALSE, &value[0][0]);
+    }
+
+    void Shader::SetUniformArray(const std::string& name, const std::vector<Math::Mat4>& values) {
+        if (!values.empty()) {
+            glUniformMatrix4fv(GetUniformLocation(name), static_cast<GLsizei>(values.size()), 
+                             GL_FALSE, &values[0][0][0]);
+        }
+    }
+
+    void Shader::SetUniformArray(const std::string& name, const std::vector<Math::Vec3>& values) {
+        if (!values.empty()) {
+            glUniform3fv(GetUniformLocation(name), static_cast<GLsizei>(values.size()), &values[0][0]);
+        }
+    }
+
+    void Shader::SetUniformArray(const std::string& name, const std::vector<Math::Vec4>& values) {
+        if (!values.empty()) {
+            glUniform4fv(GetUniformLocation(name), static_cast<GLsizei>(values.size()), &values[0][0]);
+        }
+    }
+
+    void Shader::SetUniformArray(const std::string& name, const std::vector<float>& values) {
+        if (!values.empty()) {
+            glUniform1fv(GetUniformLocation(name), static_cast<GLsizei>(values.size()), values.data());
+        }
+    }
+
+    void Shader::SetUniformArray(const std::string& name, const std::vector<int>& values) {
+        if (!values.empty()) {
+            glUniform1iv(GetUniformLocation(name), static_cast<GLsizei>(values.size()), values.data());
+        }
+    }
+
+    // Texture binding with automatic slot management
+    void Shader::BindTexture(const std::string& name, uint32_t textureId, uint32_t slot) {
+        glActiveTexture(GL_TEXTURE0 + slot);
+        glBindTexture(GL_TEXTURE_2D, textureId);
+        SetUniform(name, static_cast<int>(slot));
+    }
+
+    void Shader::BindTexture(const std::string& name, const Texture& texture, uint32_t slot) {
+        BindTexture(name, texture.GetID(), slot);
+    }
+
+    void Shader::BindTextureAuto(const std::string& name, uint32_t textureId) {
+        // Check if this texture uniform already has a slot assigned
+        auto it = m_textureSlots.find(name);
+        uint32_t slot;
+        
+        if (it != m_textureSlots.end()) {
+            // Use existing slot
+            slot = it->second;
+        } else {
+            // Assign new slot
+            slot = GetNextTextureSlot();
+            m_textureSlots[name] = slot;
+        }
+        
+        BindTexture(name, textureId, slot);
+    }
+
+    void Shader::BindTextureAuto(const std::string& name, const Texture& texture) {
+        BindTextureAuto(name, texture.GetID());
+    }
+
+    void Shader::BindImageTexture(const std::string& name, uint32_t textureId, uint32_t slot, uint32_t access) {
+        glBindImageTexture(slot, textureId, 0, GL_FALSE, 0, access, GL_RGBA8);
+        SetUniform(name, static_cast<int>(slot));
+    }
+
+    // Storage buffer and uniform buffer binding
+    void Shader::BindStorageBuffer(const std::string& name, uint32_t bufferId, uint32_t binding) {
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, binding, bufferId);
+        
+        // Set the binding point for the named buffer block
+        uint32_t blockIndex = glGetProgramResourceIndex(m_programID, GL_SHADER_STORAGE_BLOCK, name.c_str());
+        if (blockIndex != GL_INVALID_INDEX) {
+            glShaderStorageBlockBinding(m_programID, blockIndex, binding);
+        }
+    }
+
+    void Shader::BindUniformBuffer(const std::string& name, uint32_t bufferId, uint32_t binding) {
+        glBindBufferBase(GL_UNIFORM_BUFFER, binding, bufferId);
+        
+        // Set the binding point for the named uniform block
+        uint32_t blockIndex = glGetUniformBlockIndex(m_programID, name.c_str());
+        if (blockIndex != GL_INVALID_INDEX) {
+            glUniformBlockBinding(m_programID, blockIndex, binding);
+        }
+    }
+
+    // Compute shader dispatch
+    void Shader::Dispatch(uint32_t groupsX, uint32_t groupsY, uint32_t groupsZ) {
+        glDispatchCompute(groupsX, groupsY, groupsZ);
+    }
+
+    void Shader::DispatchIndirect(uint32_t indirectBuffer) {
+        glBindBuffer(GL_DISPATCH_INDIRECT_BUFFER, indirectBuffer);
+        glDispatchComputeIndirect(0);
+    }
+
+    // Synchronization
+    void Shader::MemoryBarrier(uint32_t barriers) {
+        glMemoryBarrier(barriers);
+    }
+
+    void Shader::WaitForCompletion() {
+        glFinish();
+    }
+
+    // Helper methods
+    uint32_t Shader::GetGLShaderType(Type type) {
+        switch (type) {
+            case Type::Vertex: return GL_VERTEX_SHADER;
+            case Type::Fragment: return GL_FRAGMENT_SHADER;
+            case Type::Geometry: return GL_GEOMETRY_SHADER;
+            case Type::Compute: return GL_COMPUTE_SHADER;
+            case Type::TessControl: return GL_TESS_CONTROL_SHADER;
+            case Type::TessEvaluation: return GL_TESS_EVALUATION_SHADER;
+            default: return 0;
+        }
+    }
+
+    uint32_t Shader::GetNextTextureSlot() {
+        return m_nextTextureSlot++;
+    }
+
+    void Shader::ResetTextureSlots() {
+        m_nextTextureSlot = 0;
+        m_textureSlots.clear();
+    }
+
+    uint32_t Shader::GetTextureSlot(const std::string& name) const {
+        auto it = m_textureSlots.find(name);
+        return (it != m_textureSlots.end()) ? it->second : 0;
+    }
+
+    bool Shader::HasUniform(const std::string& name) const {
+        if (m_programID == 0) return false;
+        return glGetUniformLocation(m_programID, name.c_str()) != -1;
+    }
+
+    bool Shader::LinkComputeProgram(uint32_t computeShader) {
+        m_programID = glCreateProgram();
+        glAttachShader(m_programID, computeShader);
+        glLinkProgram(m_programID);
+
+        int success;
+        glGetProgramiv(m_programID, GL_LINK_STATUS, &success);
+        if (!success) {
+            char infoLog[512];
+            glGetProgramInfoLog(m_programID, 512, nullptr, infoLog);
+            m_linkLog = infoLog;
+            LOG_ERROR("Compute shader linking failed: " + m_linkLog);
+            glDeleteProgram(m_programID);
+            m_programID = 0;
+            m_state = State::Error;
+            return false;
+        }
+
+        m_state = State::Linked;
+        return true;
     }
 }

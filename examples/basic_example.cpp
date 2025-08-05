@@ -1,28 +1,108 @@
-// Basic Example - Clean demonstration of core character movement
-// This example focuses on essential movement functionality without distractions
-// Demonstrates: WASD movement, jumping, movement component switching, third-person camera
+// Basic Example - Minimal scene navigation with professional grid
+// This example provides a clean environment for scene navigation, similar to Unreal Engine's viewport
+// Demonstrates: Free camera navigation, professional grid system, minimal clean interface
 
 #include "Core/Engine.h"
 #include "Core/Logger.h"
-#include "Game/Character.h"
-#include "Game/ThirdPersonCameraSystem.h"
 #include "Graphics/Camera.h"
 #include "Graphics/GraphicsRenderer.h"
 #include "Graphics/PrimitiveRenderer.h"
+#include "Graphics/GridRenderer.h"
 #include "Input/InputManager.h"
-#include "Physics/PhysicsEngine.h"
 #include <GLFW/glfw3.h>
 
 using namespace GameEngine;
 
+/**
+ * @brief Free camera for scene navigation (similar to Unreal Engine viewport camera)
+ */
+class FreeCamera : public Camera {
+public:
+    FreeCamera() {
+        SetPosition(Math::Vec3(0.0f, 5.0f, 10.0f));
+        m_yaw = -90.0f;
+        m_pitch = -20.0f;
+        m_moveSpeed = 10.0f;
+        m_mouseSensitivity = 0.1f;
+        UpdateCameraVectors();
+    }
+
+    void Update(float deltaTime, InputManager* input) {
+        // Movement with WASD + E/Q
+        Math::Vec3 velocity(0.0f);
+        
+        if (input->IsActionDown("move_forward")) {
+            velocity += m_front;
+        }
+        if (input->IsActionDown("move_backward")) {
+            velocity -= m_front;
+        }
+        if (input->IsActionDown("move_left")) {
+            velocity -= m_right;
+        }
+        if (input->IsActionDown("move_right")) {
+            velocity += m_right;
+        }
+        if (input->IsActionDown("move_up")) {
+            velocity += m_worldUp;
+        }
+        if (input->IsActionDown("move_down")) {
+            velocity -= m_worldUp;
+        }
+
+        // Apply movement
+        if (velocity.x != 0.0f || velocity.y != 0.0f || velocity.z != 0.0f) {
+            Math::Vec3 normalizedVelocity = glm::normalize(velocity);
+            Math::Vec3 currentPos = GetPosition();
+            SetPosition(currentPos + normalizedVelocity * m_moveSpeed * deltaTime);
+        }
+
+        // Mouse look
+        auto mouseDelta = input->GetMouseDelta();
+        if (mouseDelta.x != 0.0f || mouseDelta.y != 0.0f) {
+            m_yaw += mouseDelta.x * m_mouseSensitivity;
+            m_pitch -= mouseDelta.y * m_mouseSensitivity;
+
+            // Constrain pitch
+            if (m_pitch > 89.0f) m_pitch = 89.0f;
+            if (m_pitch < -89.0f) m_pitch = -89.0f;
+
+            UpdateCameraVectors();
+        }
+    }
+
+    void SetMoveSpeed(float speed) { m_moveSpeed = speed; }
+    float GetMoveSpeed() const { return m_moveSpeed; }
+
+private:
+    void UpdateCameraVectors() {
+        Math::Vec3 front;
+        front.x = cosf(Math::ToRadians(m_yaw)) * cosf(Math::ToRadians(m_pitch));
+        front.y = sinf(Math::ToRadians(m_pitch));
+        front.z = sinf(Math::ToRadians(m_yaw)) * cosf(Math::ToRadians(m_pitch));
+        
+        m_front = glm::normalize(front);
+        m_right = glm::normalize(glm::cross(m_front, m_worldUp));
+        m_up = glm::normalize(glm::cross(m_right, m_front));
+        
+        // Update camera rotation using GLM lookAt
+        Math::Vec3 currentPos = GetPosition();
+        LookAt(currentPos + m_front, m_up);
+    }
+
+    float m_yaw = -90.0f;
+    float m_pitch = 0.0f;
+    float m_moveSpeed = 10.0f;
+    float m_mouseSensitivity = 0.1f;
+    
+    Math::Vec3 m_front{0.0f, 0.0f, -1.0f};
+    Math::Vec3 m_up{0.0f, 1.0f, 0.0f};
+    Math::Vec3 m_right{1.0f, 0.0f, 0.0f};
+    Math::Vec3 m_worldUp{0.0f, 1.0f, 0.0f};
+};
+
 class BasicGameApplication {
 public:
-  enum class CharacterType {
-    CharacterMovement,        // Character with CharacterMovementComponent (basic)
-    Physics,                  // Character with PhysicsMovementComponent (realistic)
-    Hybrid                    // Character with HybridMovementComponent (balanced) - DEFAULT
-  };
-
   BasicGameApplication() = default;
   ~BasicGameApplication() {
     LOG_INFO("BasicGameApplication cleaned up successfully");
@@ -40,80 +120,65 @@ public:
       return false;
     }
 
-    CreateGroundPlane();
-
-    // Initialize character with basic setup
-    m_character = std::make_unique<Character>();
-    if (!m_character->Initialize(m_engine.GetPhysics())) {
-      LOG_ERROR("Failed to initialize character");
-      return false;
-    }
-    
-    Math::Vec3 spawnPosition(0.0f, 1.0f, 0.0f);
-    m_character->SetSpawnPosition(spawnPosition);
-    m_character->SetPosition(spawnPosition);
-    m_character->SetFallLimit(-5.0f);
-
-    // Set HybridMovement as default movement component
-    m_character->SwitchToHybridMovement();
-    LOG_INFO("Character initialized with HybridMovement (default)");
-
-    // Initialize third-person camera system
-    m_camera = std::make_unique<ThirdPersonCameraSystem>();
-    m_camera->SetTarget(m_character.get());
-    m_camera->SetArmLength(10.0f);
-    m_camera->SetRotationLimits(-45.0f, 45.0f);
-    m_camera->SetSensitivity(0.8f, 0.6f);
-    m_camera->SetMouseSensitivity(0.15f);
-
+    // Initialize free camera for scene navigation
+    m_camera = std::make_unique<FreeCamera>();
     m_engine.GetRenderer()->SetCamera(m_camera.get());
     m_engine.SetMainCamera(m_camera.get());
     
-    LOG_INFO("Third-person camera system initialized");
+    LOG_INFO("Free camera initialized for scene navigation");
 
-    // Bind essential input controls
+    // Initialize professional grid renderer
+    m_gridRenderer = std::make_unique<GridRenderer>();
+    if (!m_gridRenderer->Initialize(m_primitiveRenderer.get())) {
+      LOG_ERROR("Failed to initialize grid renderer");
+      return false;
+    } else {
+      LOG_INFO("Professional grid system initialized");
+    }
+
+    // Bind navigation controls (similar to Unreal Engine viewport)
     auto *input = m_engine.GetInput();
     input->BindAction("move_forward", KeyCode::W);
     input->BindAction("move_backward", KeyCode::S);
     input->BindAction("move_left", KeyCode::A);
     input->BindAction("move_right", KeyCode::D);
-    input->BindAction("jump", KeyCode::Space);
+    input->BindAction("move_up", KeyCode::E);      // Move up
+    input->BindAction("move_down", KeyCode::Q);    // Move down
     input->BindAction("quit", KeyCode::Escape);
     
-    LOG_INFO("Input controls bound successfully");
+    LOG_INFO("Navigation controls bound successfully");
 
     m_engine.SetUpdateCallback([this](float deltaTime) { this->Update(deltaTime); });
     m_engine.SetRenderCallback([this]() { this->Render(); });
 
     LOG_INFO("========================================");
-    LOG_INFO("GAME ENGINE KIRO - BASIC EXAMPLE");
+    LOG_INFO("GAME ENGINE KIRO - BASIC SCENE NAVIGATION");
     LOG_INFO("========================================");
     LOG_INFO("");
-    LOG_INFO("CORE FEATURES DEMONSTRATED:");
-    LOG_INFO("  ✓ Character Movement: WASD controls with physics");
-    LOG_INFO("  ✓ Jumping: Space key with physics simulation");
-    LOG_INFO("  ✓ Camera System: Third-person camera with mouse control");
-    LOG_INFO("  ✓ Movement Components: Three different movement types");
+    LOG_INFO("MINIMAL FEATURES:");
+    LOG_INFO("  ✓ Professional Grid System: Clean reference grid");
+    LOG_INFO("  ✓ Free Camera Navigation: Unreal Engine-style viewport camera");
+    LOG_INFO("  ✓ Clean Interface: No distractions, pure navigation");
     LOG_INFO("");
-    LOG_INFO("CONTROLS:");
-    LOG_INFO("  WASD - Move character");
-    LOG_INFO("  Space - Jump");
-    LOG_INFO("  Mouse - Look around (third-person camera)");
+    LOG_INFO("NAVIGATION CONTROLS:");
+    LOG_INFO("  WASD - Move camera horizontally");
+    LOG_INFO("  E/Q - Move camera up/down");
+    LOG_INFO("  Mouse - Look around (free camera)");
     LOG_INFO("  ESC - Toggle mouse capture");
+    LOG_INFO("  F1 - Exit application");
     LOG_INFO("");
-    LOG_INFO("MOVEMENT COMPONENTS:");
-    LOG_INFO("  1 - CharacterMovement (basic movement)");
-    LOG_INFO("  2 - PhysicsMovement (realistic physics)");
-    LOG_INFO("  3 - HybridMovement (balanced) - DEFAULT");
+    LOG_INFO("SPEED CONTROLS:");
+    LOG_INFO("  Shift - Increase camera speed");
+    LOG_INFO("  Ctrl - Decrease camera speed");
     LOG_INFO("");
-    LOG_INFO("This basic example focuses on core movement mechanics");
+    LOG_INFO("This basic example provides clean scene navigation");
     LOG_INFO("For comprehensive feature demonstration, see the enhanced example");
     LOG_INFO("========================================");
     return true;
   }
 
   void Run() {
-    LOG_INFO("Starting basic example game loop...");
+    LOG_INFO("Starting basic scene navigation...");
     m_engine.Run();
   }
 
@@ -121,24 +186,14 @@ public:
     auto *input = m_engine.GetInput();
     auto *window = m_engine.GetRenderer()->GetWindow();
 
-    // Movement component switching
-    if (input->IsKeyPressed(KeyCode::Num1)) {
-      m_activeCharacter = CharacterType::CharacterMovement;
-      m_character->SwitchToCharacterMovement();
-      m_camera->SetTarget(m_character.get());
-      LOG_INFO("Switched to CharacterMovement (basic movement component)");
+    // Camera speed adjustment
+    if (input->IsKeyPressed(KeyCode::LeftShift) || input->IsKeyPressed(KeyCode::RightShift)) {
+      m_camera->SetMoveSpeed(m_camera->GetMoveSpeed() * 1.5f);
+      LOG_INFO("Camera speed increased to " + std::to_string(m_camera->GetMoveSpeed()));
     }
-    if (input->IsKeyPressed(KeyCode::Num2)) {
-      m_activeCharacter = CharacterType::Physics;
-      m_character->SwitchToPhysicsMovement();
-      m_camera->SetTarget(m_character.get());
-      LOG_INFO("Switched to PhysicsMovement (realistic physics simulation)");
-    }
-    if (input->IsKeyPressed(KeyCode::Num3)) {
-      m_activeCharacter = CharacterType::Hybrid;
-      m_character->SwitchToHybridMovement();
-      m_camera->SetTarget(m_character.get());
-      LOG_INFO("Switched to HybridMovement (balanced physics + control)");
+    if (input->IsKeyPressed(KeyCode::LeftCtrl) || input->IsKeyPressed(KeyCode::RightCtrl)) {
+      m_camera->SetMoveSpeed(m_camera->GetMoveSpeed() * 0.75f);
+      LOG_INFO("Camera speed decreased to " + std::to_string(m_camera->GetMoveSpeed()));
     }
 
     // Mouse capture toggle
@@ -147,7 +202,7 @@ public:
       mouseCaptured = !mouseCaptured;
       if (mouseCaptured) {
         glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_DISABLED);
-        LOG_INFO("Mouse captured");
+        LOG_INFO("Mouse captured for navigation");
       } else {
         glfwSetInputMode(window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
         LOG_INFO("Mouse released");
@@ -157,83 +212,41 @@ public:
     // Exit application
     if (input->IsKeyPressed(KeyCode::F1)) {
       glfwSetWindowShouldClose(window, GLFW_TRUE);
-      LOG_INFO("Exiting basic example");
+      LOG_INFO("Exiting basic scene navigation");
       return;
     }
 
-    // Update character and camera
-    m_character->Update(deltaTime, m_engine.GetInput(), m_camera.get());
-    
-    // Handle character fall detection
-    if (m_character->HasFallen()) {
-      LOG_INFO("Character fall detection triggered - Resetting to spawn position");
-      m_character->ResetToSpawnPosition();
-    }
-    
+    // Update camera
     m_camera->Update(deltaTime, m_engine.GetInput());
   }
 
 private:
-  void CreateGroundPlane() {
-    auto* physics = m_engine.GetPhysics();
-    if (!physics) {
-      LOG_WARNING("No physics engine available for ground plane creation");
-      return;
-    }
-
-    RigidBody groundDesc;
-    groundDesc.position = Math::Vec3(0.0f, -0.5f, 0.0f);
-    groundDesc.rotation = Math::Quat(1.0f, 0.0f, 0.0f, 0.0f);
-    groundDesc.velocity = Math::Vec3(0.0f);
-    groundDesc.mass = 0.0f;
-    groundDesc.restitution = 0.1f;
-    groundDesc.friction = 0.8f;
-    groundDesc.isStatic = true;
-    groundDesc.isKinematic = false;
-
-    CollisionShape groundShape;
-    groundShape.type = CollisionShape::Box;
-    groundShape.dimensions = Math::Vec3(100.0f, 1.0f, 100.0f);
-
-    uint32_t groundId = physics->CreateRigidBody(groundDesc, groundShape);
-    if (groundId == 0) {
-      LOG_ERROR("Failed to create ground plane rigid body");
-    } else {
-      LOG_INFO("Ground plane created successfully");
-    }
-  }
-
   void Render() {
     Math::Mat4 viewProjection = m_camera->GetViewProjectionMatrix();
     m_primitiveRenderer->SetViewProjectionMatrix(viewProjection);
 
-    // Render simple ground plane
-    m_primitiveRenderer->DrawPlane(Math::Vec3(0.0f, 0.0f, 0.0f),
-                                   Math::Vec2(100.0f),
-                                   Math::Vec4(0.4f, 0.8f, 0.4f, 1.0f));
-
-    // Render character (uses capsule fallback for clean basic example)
-    m_character->Render(m_primitiveRenderer.get());
+    // Render professional grid system only
+    if (m_gridRenderer) {
+      m_gridRenderer->Render(viewProjection);
+    }
   }
 
   Engine m_engine;
-  std::unique_ptr<ThirdPersonCameraSystem> m_camera;
-  std::unique_ptr<Character> m_character;
+  std::unique_ptr<FreeCamera> m_camera;
   std::unique_ptr<PrimitiveRenderer> m_primitiveRenderer;
-  
-  CharacterType m_activeCharacter = CharacterType::Hybrid;
+  std::unique_ptr<GridRenderer> m_gridRenderer;
 };
 
 int main() {
   BasicGameApplication app;
 
   if (!app.Initialize()) {
-    LOG_CRITICAL("Failed to initialize basic example application");
+    LOG_CRITICAL("Failed to initialize basic scene navigation application");
     return -1;
   }
 
   app.Run();
 
-  LOG_INFO("Basic example terminated successfully");
+  LOG_INFO("Basic scene navigation terminated successfully");
   return 0;
 }

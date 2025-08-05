@@ -64,7 +64,7 @@
     - Add variant memory management and cleanup
     - _Requirements: 4.4, 4.5, 4.7_
 
-- [-] 5. Develop PBR material system
+- [x] 5. Develop PBR material system
 
   - [x] 5.1 Enhance existing Material class architecture
 
@@ -82,16 +82,18 @@
     - Create unit tests following testing-standards.md template
     - _Requirements: 2.1, 2.2, 2.3_
 
-- [ ] 6. Build post-processing pipeline framework
+- [x] 6. Build post-processing pipeline framework
 
-  - [ ] 6.1 Create PostProcessingPipeline core system
+  - [x] 6.1 Create PostProcessingPipeline core system
 
     - Implement PostProcessingPipeline class with effect management
     - Add framebuffer management for intermediate rendering targets
     - Create effect ordering and chaining system
     - _Requirements: 5.1, 5.6, 5.7_
 
-  - [ ] 6.2 Implement built-in post-processing effects
+  - [x] 6.2 Implement built-in post-processing effects
+
+
     - Create tone mapping effect with Reinhard, ACES, and Filmic operators
     - Implement FXAA anti-aliasing with quality settings
     - Add bloom effect with threshold, intensity, and radius controls

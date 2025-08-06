@@ -229,15 +229,16 @@
 
 - [ ] 15. Create example applications and documentation
 
-  - [ ] 15.1 Build shader system demonstration examples
+  - [x] 15.1 Build shader system demonstration examples
 
     - Create PBR material showcase with various material types
-    - Add these examples to GameExample project
-    - Add hot-reload demonstration with real-time shader editing in GameExample
-    - Implement post-processing effects gallery with interactive controls in GameExample
+    - Add hot-reload demonstration with real-time shader editing
+    - Implement post-processing effects gallery with interactive controls
+    - Add these examples to GameExample project too
     - _Requirements: 1.7, 2.1, 5.1_
 
-  - [ ] 15.2 Update engine documentation and API reference
+  - [x] 15.2 Update engine documentation and API reference
+
     - Document all new shader system classes and methods
     - Add comprehensive material system usage examples
     - Create shader development workflow and best practices guide

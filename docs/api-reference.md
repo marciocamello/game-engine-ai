@@ -52,6 +52,47 @@ engine.Run();
 
 ## 🎨 Graphics System
 
+The graphics system provides comprehensive rendering capabilities including primitive rendering, advanced shader management, PBR materials, and post-processing effects.
+
+### Advanced Shader System
+
+Game Engine Kiro features a comprehensive advanced shader system with the following capabilities:
+
+- **PBR Materials**: Physically based rendering with metallic workflow
+- **Hot-Reload System**: Real-time shader recompilation during development
+- **Compute Shaders**: GPU-based parallel computing capabilities
+- **Post-Processing Pipeline**: Flexible screen-space effects system
+- **Shader Variants**: Conditional compilation for different hardware/quality levels
+- **Material Templates**: Pre-configured material setups for common use cases
+
+**Detailed Documentation:**
+
+- [Advanced Shader System API Reference](advanced-shader-system-api.md) - Complete API documentation
+- [Material System Usage Guide](material-system-guide.md) - Comprehensive material system guide
+- [Shader Development Workflow](shader-development-workflow.md) - Best practices and development workflow
+
+**Example Usage:**
+
+```cpp
+// Create PBR material with hot-reload enabled
+auto pbrMaterial = Material::CreateFromTemplate(Material::Type::PBR, "MetalMaterial");
+pbrMaterial->SetAlbedo(Math::Vec3(0.7f, 0.7f, 0.7f));
+pbrMaterial->SetMetallic(1.0f);
+pbrMaterial->SetRoughness(0.2f);
+
+// Load shader with hot-reload
+ShaderManager shaderManager;
+shaderManager.EnableHotReload(true);
+auto shader = shaderManager.LoadShader("PBR", {
+    .vertexPath = "assets/shaders/pbr.vert",
+    .fragmentPath = "assets/shaders/pbr.frag",
+    .enableHotReload = true
+});
+
+pbrMaterial->SetShader(shader);
+pbrMaterial->Bind();
+```
+
 ### GraphicsRenderer
 
 Abstract base class for all renderers.

@@ -301,10 +301,56 @@ namespace GameEngine {
     }
 
     std::shared_ptr<Mesh> PrimitiveRenderer::CreateSphereMesh(int segments) {
-        // Simplified sphere - will create a basic icosphere
+        std::vector<Vertex> vertices;
+        std::vector<uint32_t> indices;
+        
+        // Create sphere using UV sphere method
+        const float PI = 3.14159265359f;
+        const int rings = segments;
+        const int sectors = segments;
+        
+        // Generate vertices
+        for (int r = 0; r <= rings; ++r) {
+            float phi = PI * r / rings; // 0 to PI
+            float y = cos(phi);
+            float ringRadius = sin(phi);
+            
+            for (int s = 0; s <= sectors; ++s) {
+                float theta = 2.0f * PI * s / sectors; // 0 to 2*PI
+                float x = ringRadius * cos(theta);
+                float z = ringRadius * sin(theta);
+                
+                Vertex vertex;
+                vertex.position = {x, y, z};
+                vertex.normal = {x, y, z}; // For unit sphere, position = normal
+                vertex.texCoords = {(float)s / sectors, (float)r / rings};
+                
+                vertices.push_back(vertex);
+            }
+        }
+        
+        // Generate indices
+        for (int r = 0; r < rings; ++r) {
+            for (int s = 0; s < sectors; ++s) {
+                int current = r * (sectors + 1) + s;
+                int next = current + sectors + 1;
+                
+                // First triangle
+                indices.push_back(current);
+                indices.push_back(next);
+                indices.push_back(current + 1);
+                
+                // Second triangle
+                indices.push_back(current + 1);
+                indices.push_back(next);
+                indices.push_back(next + 1);
+            }
+        }
+        
         auto mesh = std::make_shared<Mesh>();
-        // For now, use cube as placeholder
-        return CreateCubeMesh();
+        mesh->SetVertices(vertices);
+        mesh->SetIndices(indices);
+        return mesh;
     }
 
     std::shared_ptr<Mesh> PrimitiveRenderer::CreateCylinderMesh(int segments) {

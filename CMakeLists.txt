@@ -497,7 +497,8 @@ add_integration_test(ShadermanagerintegrationTest tests/integration/test_shaderm
 # Advanced Shader System Integration test
 add_integration_test(AdvancedshadersystemintegrationTest tests/integration/test_advanced_shader_system_integration.cpp)
 
-# Simple FBX test - removed (redundant with integration tests)
+# Final Shader System Validation test
+add_integration_test(FinalShaderSystemValidationTest tests/integration/test_final_shader_system_validation.cpp)
 
 # Discover and add unit tests automatically
 discover_and_add_tests("tests/unit" "unit")

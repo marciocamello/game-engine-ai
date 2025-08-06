@@ -15,6 +15,8 @@ namespace GameEngine {
     class ShaderHotReloader;
     class ShaderVariantManager;
     class ShaderBackgroundCompiler;
+    class ShaderResourcePool;
+    class ShaderMemoryMonitor;
 
     struct ShaderDesc {
         std::string name;
@@ -108,6 +110,16 @@ namespace GameEngine {
         void InitializeHardwareCapabilities();
         void ResumeBackgroundCompilation();
 
+        // Memory management and optimization
+        void EnableResourcePooling(bool enable);
+        bool IsResourcePoolingEnabled() const { return m_resourcePoolingEnabled; }
+        void OptimizeMemoryUsage();
+        void CleanupUnusedShaders();
+        size_t GetMemoryUsage() const;
+        void SetMemoryThreshold(size_t bytes);
+        void EnableMemoryMonitoring(bool enable);
+        bool IsMemoryMonitoringEnabled() const { return m_memoryMonitoringEnabled; }
+
         // Shader variant support
         std::shared_ptr<Shader> CreateShaderVariant(const std::string& baseName, const ShaderVariant& variant);
         std::shared_ptr<Shader> GetShaderVariant(const std::string& baseName, const ShaderVariant& variant);
@@ -143,6 +155,8 @@ namespace GameEngine {
         bool m_debugMode = false;
         bool m_backgroundCompilationEnabled = true;
         bool m_fallbackEnabled = true;
+        bool m_resourcePoolingEnabled = true;
+        bool m_memoryMonitoringEnabled = true;
 
         std::unique_ptr<ShaderHotReloader> m_hotReloader;
         std::function<void(const std::string&)> m_hotReloadCallback;

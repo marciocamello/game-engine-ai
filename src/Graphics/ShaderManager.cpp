@@ -4,6 +4,8 @@
 #include "Graphics/ShaderVariantManager.h"
 #include "Graphics/ShaderBackgroundCompiler.h"
 #include "Graphics/ShaderFallbackManager.h"
+#include "Graphics/ShaderResourcePool.h"
+#include "Graphics/ShaderMemoryMonitor.h"
 #include "Graphics/HardwareCapabilities.h"
 #include "Core/Logger.h"
 #include <filesystem>
@@ -64,6 +66,22 @@ namespace GameEngine {
             InitializeHardwareCapabilities();
         }
         
+        // Initialize resource pooling if enabled
+        if (m_resourcePoolingEnabled) {
+            if (!ShaderResourcePool::GetInstance().Initialize()) {
+                LOG_WARNING("Failed to initialize ShaderResourcePool, disabling resource pooling");
+                m_resourcePoolingEnabled = false;
+            }
+        }
+        
+        // Initialize memory monitoring if enabled
+        if (m_memoryMonitoringEnabled) {
+            if (!ShaderMemoryMonitor::GetInstance().Initialize()) {
+                LOG_WARNING("Failed to initialize ShaderMemoryMonitor, disabling memory monitoring");
+                m_memoryMonitoringEnabled = false;
+            }
+        }
+        
         m_initialized = true;
         LOG_INFO("ShaderManager initialized successfully");
         return true;
@@ -93,6 +111,16 @@ namespace GameEngine {
             ShaderBackgroundCompiler::GetInstance().Shutdown();
         }
         
+        // Shutdown resource pooling
+        if (m_resourcePoolingEnabled) {
+            ShaderResourcePool::GetInstance().Shutdown();
+        }
+        
+        // Shutdown memory monitoring
+        if (m_memoryMonitoringEnabled) {
+            ShaderMemoryMonitor::GetInstance().Shutdown();
+        }
+        
         m_variantManager = nullptr;
         
         m_initialized = false;
@@ -107,6 +135,16 @@ namespace GameEngine {
         // Update hot reloader
         if (m_hotReloader && m_hotReloadEnabled) {
             m_hotReloader->Update();
+        }
+        
+        // Update resource pooling
+        if (m_resourcePoolingEnabled) {
+            ShaderResourcePool::GetInstance().CleanupUnusedShaders();
+        }
+        
+        // Update memory monitoring
+        if (m_memoryMonitoringEnabled) {
+            ShaderMemoryMonitor::GetInstance().Update();
         }
     }
 
@@ -127,20 +165,44 @@ namespace GameEngine {
             if (m_debugMode) {
                 LOG_INFO("Shader already loaded: " + name);
             }
+            
+            // Update memory monitor access
+            if (m_memoryMonitoringEnabled) {
+                ShaderMemoryMonitor::GetInstance().UpdateShaderAccess(name);
+            }
+            
             return it->second;
         }
 
-        // Create shader from description
-        auto shader = CreateShaderFromDesc(desc);
+        // Try to acquire from resource pool first
+        std::shared_ptr<Shader> shader;
+        if (m_resourcePoolingEnabled) {
+            shader = ShaderResourcePool::GetInstance().AcquireShader(name);
+        }
+        
+        // Create shader if not available from pool
         if (!shader) {
-            LOG_ERROR("Failed to create shader: " + name);
-            m_stats.compilationErrors++;
-            return nullptr;
+            shader = CreateShaderFromDesc(desc);
+            if (!shader) {
+                LOG_ERROR("Failed to create shader: " + name);
+                m_stats.compilationErrors++;
+                return nullptr;
+            }
         }
 
         // Register shader
         m_shaders[name] = shader;
         m_shaderDescs[name] = desc;
+        
+        // Register with resource pool
+        if (m_resourcePoolingEnabled) {
+            ShaderResourcePool::GetInstance().RegisterShader(name, shader);
+        }
+        
+        // Register with memory monitor
+        if (m_memoryMonitoringEnabled) {
+            ShaderMemoryMonitor::GetInstance().RegisterShader(name, shader);
+        }
 
         // Register shader files for hot reload
         if (desc.enableHotReload && m_hotReloader) {
@@ -262,6 +324,16 @@ namespace GameEngine {
         if (it != m_shaders.end()) {
             if (m_debugMode) {
                 LOG_INFO("Unloading shader: " + name);
+            }
+            
+            // Release to resource pool if enabled
+            if (m_resourcePoolingEnabled) {
+                ShaderResourcePool::GetInstance().ReleaseShader(name, it->second);
+            }
+            
+            // Unregister from memory monitor
+            if (m_memoryMonitoringEnabled) {
+                ShaderMemoryMonitor::GetInstance().UnregisterShader(name);
             }
             
             // Unregister shader files from hot reload
@@ -904,6 +976,99 @@ namespace GameEngine {
             for (const auto& shaderName : fallbackShaders) {
                 LOG_INFO("  - " + shaderName);
             }
+        }
+    }
+
+    // Memory management and optimization methods
+    void ShaderManager::EnableResourcePooling(bool enable) {
+        if (enable == m_resourcePoolingEnabled) {
+            return;
+        }
+
+        m_resourcePoolingEnabled = enable;
+        
+        if (enable) {
+            if (!ShaderResourcePool::GetInstance().Initialize()) {
+                LOG_ERROR("Failed to initialize ShaderResourcePool");
+                m_resourcePoolingEnabled = false;
+            } else {
+                LOG_INFO("Resource pooling enabled");
+            }
+        } else {
+            ShaderResourcePool::GetInstance().Shutdown();
+            LOG_INFO("Resource pooling disabled");
+        }
+    }
+
+    void ShaderManager::OptimizeMemoryUsage() {
+        if (m_memoryMonitoringEnabled) {
+            ShaderMemoryMonitor::GetInstance().OptimizeMemoryUsage();
+        }
+        
+        if (m_resourcePoolingEnabled) {
+            ShaderResourcePool::GetInstance().CleanupUnusedShaders();
+        }
+        
+        LOG_INFO("Memory optimization completed");
+    }
+
+    void ShaderManager::CleanupUnusedShaders() {
+        if (m_resourcePoolingEnabled) {
+            ShaderResourcePool::GetInstance().ForceCleanup();
+        }
+        
+        if (m_memoryMonitoringEnabled) {
+            auto unusedShaders = ShaderMemoryMonitor::GetInstance().GetUnusedShaders();
+            for (const std::string& shaderName : unusedShaders) {
+                if (HasShader(shaderName)) {
+                    UnloadShader(shaderName);
+                }
+            }
+        }
+        
+        LOG_INFO("Unused shader cleanup completed");
+    }
+
+    size_t ShaderManager::GetMemoryUsage() const {
+        if (m_memoryMonitoringEnabled) {
+            return ShaderMemoryMonitor::GetInstance().GetTotalMemoryUsage();
+        }
+        return 0;
+    }
+
+    void ShaderManager::SetMemoryThreshold(size_t bytes) {
+        if (m_memoryMonitoringEnabled) {
+            ShaderMemoryMonitor::GetInstance().SetMemoryThreshold(bytes);
+        }
+    }
+
+    void ShaderManager::EnableMemoryMonitoring(bool enable) {
+        if (enable == m_memoryMonitoringEnabled) {
+            return;
+        }
+
+        m_memoryMonitoringEnabled = enable;
+        
+        if (enable) {
+            if (!ShaderMemoryMonitor::GetInstance().Initialize()) {
+                LOG_ERROR("Failed to initialize ShaderMemoryMonitor");
+                m_memoryMonitoringEnabled = false;
+            } else {
+                LOG_INFO("Memory monitoring enabled");
+                
+                // Set up callbacks for automatic shader unloading
+                ShaderMemoryMonitor::GetInstance().SetShaderUnloadCallback(
+                    [this](const std::string& shaderName) {
+                        if (HasShader(shaderName)) {
+                            LOG_INFO("Auto-unloading shader due to memory pressure: " + shaderName);
+                            UnloadShader(shaderName);
+                        }
+                    }
+                );
+            }
+        } else {
+            ShaderMemoryMonitor::GetInstance().Shutdown();
+            LOG_INFO("Memory monitoring disabled");
         }
     }
 }

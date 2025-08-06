@@ -41,8 +41,8 @@ namespace GameEngine {
         
         s_initialized = true;
         
-        // Log capability information
-        s_instance.LogCapabilityInfo();
+        // Log capability information (commented out for debugging)
+        // s_instance.LogCapabilityInfo();
         
         LOG_INFO("Hardware capability detection completed");
         return true;

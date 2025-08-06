@@ -252,6 +252,170 @@ bool TestPBRMaterialDefaults() {
     return true;
 }
 
+/**
+ * Test PBR material serialization to JSON
+ * Requirements: 2.5, 2.6 (Material serialization and deserialization)
+ */
+bool TestPBRMaterialSerialization() {
+    TestOutput::PrintTestStart("pbr material serialization");
+
+    PBRMaterial material("SerializationTest");
+    
+    // Set up test properties
+    material.SetAlbedo(Math::Vec3(0.8f, 0.2f, 0.1f));
+    material.SetMetallic(0.7f);
+    material.SetRoughness(0.3f);
+    material.SetAO(0.9f);
+    material.SetEmission(Math::Vec3(0.1f, 0.2f, 0.0f));
+    material.SetEmissionStrength(1.5f);
+    material.SetNormalStrength(0.8f);
+    material.SetAlphaCutoff(0.6f);
+    material.SetUseAlphaCutoff(true);
+    
+    // Test serialization
+    nlohmann::json serialized = material.Serialize();
+    
+    // Verify JSON structure
+    EXPECT_TRUE(serialized.contains("type"));
+    EXPECT_TRUE(serialized.contains("name"));
+    EXPECT_TRUE(serialized.contains("properties"));
+    
+    // Verify type and name
+    EXPECT_EQUAL(serialized["type"].get<int>(), static_cast<int>(Material::Type::PBR));
+    EXPECT_EQUAL(serialized["name"].get<std::string>(), "SerializationTest");
+    
+    // Verify properties exist in JSON
+    auto props = serialized["properties"];
+    EXPECT_TRUE(props.contains("u_albedo"));
+    EXPECT_TRUE(props.contains("u_metallic"));
+    EXPECT_TRUE(props.contains("u_roughness"));
+    EXPECT_TRUE(props.contains("u_ao"));
+    EXPECT_TRUE(props.contains("u_emission"));
+    EXPECT_TRUE(props.contains("u_emissionStrength"));
+    EXPECT_TRUE(props.contains("u_normalStrength"));
+    EXPECT_TRUE(props.contains("u_alphaCutoff"));
+    EXPECT_TRUE(props.contains("u_useAlphaCutoff"));
+
+    TestOutput::PrintTestPass("pbr material serialization");
+    return true;
+}
+
+/**
+ * Test PBR material deserialization from JSON
+ * Requirements: 2.5, 2.6 (Material serialization and deserialization)
+ */
+bool TestPBRMaterialDeserialization() {
+    TestOutput::PrintTestStart("pbr material deserialization");
+
+    // Create test JSON data
+    nlohmann::json testJson = {
+        {"type", static_cast<int>(Material::Type::PBR)},
+        {"name", "DeserializationTest"},
+        {"properties", {
+            {"u_albedo", {
+                {"type", static_cast<int>(MaterialProperty::Type::Vec3)},
+                {"value", {0.6f, 0.4f, 0.2f}}
+            }},
+            {"u_metallic", {
+                {"type", static_cast<int>(MaterialProperty::Type::Float)},
+                {"value", 0.8f}
+            }},
+            {"u_roughness", {
+                {"type", static_cast<int>(MaterialProperty::Type::Float)},
+                {"value", 0.25f}
+            }},
+            {"u_useAlphaCutoff", {
+                {"type", static_cast<int>(MaterialProperty::Type::Bool)},
+                {"value", true}
+            }}
+        }}
+    };
+    
+    // Create material and deserialize
+    PBRMaterial material("TestMaterial");
+    EXPECT_TRUE(material.Deserialize(testJson));
+    
+    // Verify deserialized properties through the property system
+    EXPECT_EQUAL(material.GetName(), "DeserializationTest");
+    EXPECT_TRUE(material.HasProperty("u_albedo"));
+    EXPECT_TRUE(material.HasProperty("u_metallic"));
+    EXPECT_TRUE(material.HasProperty("u_roughness"));
+    EXPECT_TRUE(material.HasProperty("u_useAlphaCutoff"));
+    
+    // Verify property values through the advanced property system
+    auto albedoProperty = material.GetProperty("u_albedo");
+    EXPECT_EQUAL(static_cast<int>(albedoProperty.GetType()), static_cast<int>(MaterialProperty::Type::Vec3));
+    EXPECT_VEC3_NEARLY_EQUAL(albedoProperty.AsVec3(), Math::Vec3(0.6f, 0.4f, 0.2f));
+    
+    auto metallicProperty = material.GetProperty("u_metallic");
+    EXPECT_EQUAL(static_cast<int>(metallicProperty.GetType()), static_cast<int>(MaterialProperty::Type::Float));
+    EXPECT_NEARLY_EQUAL(metallicProperty.AsFloat(), 0.8f);
+    
+    auto roughnessProperty = material.GetProperty("u_roughness");
+    EXPECT_EQUAL(static_cast<int>(roughnessProperty.GetType()), static_cast<int>(MaterialProperty::Type::Float));
+    EXPECT_NEARLY_EQUAL(roughnessProperty.AsFloat(), 0.25f);
+    
+    auto alphaCutoffProperty = material.GetProperty("u_useAlphaCutoff");
+    EXPECT_EQUAL(static_cast<int>(alphaCutoffProperty.GetType()), static_cast<int>(MaterialProperty::Type::Bool));
+    EXPECT_TRUE(alphaCutoffProperty.AsBool());
+
+    TestOutput::PrintTestPass("pbr material deserialization");
+    return true;
+}
+
+/**
+ * Test PBR material round-trip serialization
+ * Requirements: 2.5, 2.6 (Material serialization consistency)
+ */
+bool TestPBRMaterialRoundTripSerialization() {
+    TestOutput::PrintTestStart("pbr material round trip serialization");
+
+    // Create original material with specific properties
+    PBRMaterial originalMaterial("RoundTripTest");
+    originalMaterial.SetAlbedo(Math::Vec3(0.9f, 0.1f, 0.5f));
+    originalMaterial.SetMetallic(0.6f);
+    originalMaterial.SetRoughness(0.4f);
+    originalMaterial.SetAO(0.85f);
+    originalMaterial.SetEmission(Math::Vec3(0.2f, 0.1f, 0.3f));
+    originalMaterial.SetEmissionStrength(2.0f);
+    originalMaterial.SetNormalStrength(1.2f);
+    originalMaterial.SetAlphaCutoff(0.75f);
+    originalMaterial.SetUseAlphaCutoff(false);
+    
+    // Serialize to JSON
+    nlohmann::json serialized = originalMaterial.Serialize();
+    
+    // Create new material and deserialize
+    PBRMaterial deserializedMaterial("TempName");
+    EXPECT_TRUE(deserializedMaterial.Deserialize(serialized));
+    
+    // Compare properties through the property system (since deserialization doesn't sync with PBR struct)
+    EXPECT_EQUAL(deserializedMaterial.GetName(), "RoundTripTest");
+    
+    // Verify that all properties exist in the deserialized material
+    EXPECT_TRUE(deserializedMaterial.HasProperty("u_albedo"));
+    EXPECT_TRUE(deserializedMaterial.HasProperty("u_metallic"));
+    EXPECT_TRUE(deserializedMaterial.HasProperty("u_roughness"));
+    EXPECT_TRUE(deserializedMaterial.HasProperty("u_ao"));
+    EXPECT_TRUE(deserializedMaterial.HasProperty("u_emission"));
+    EXPECT_TRUE(deserializedMaterial.HasProperty("u_emissionStrength"));
+    EXPECT_TRUE(deserializedMaterial.HasProperty("u_normalStrength"));
+    EXPECT_TRUE(deserializedMaterial.HasProperty("u_alphaCutoff"));
+    EXPECT_TRUE(deserializedMaterial.HasProperty("u_useAlphaCutoff"));
+    
+    // Compare specific property values through the property system
+    auto originalAlbedo = originalMaterial.GetProperty("u_albedo");
+    auto deserializedAlbedo = deserializedMaterial.GetProperty("u_albedo");
+    EXPECT_VEC3_NEARLY_EQUAL(deserializedAlbedo.AsVec3(), originalAlbedo.AsVec3());
+    
+    auto originalMetallic = originalMaterial.GetProperty("u_metallic");
+    auto deserializedMetallic = deserializedMaterial.GetProperty("u_metallic");
+    EXPECT_NEARLY_EQUAL(deserializedMetallic.AsFloat(), originalMetallic.AsFloat());
+
+    TestOutput::PrintTestPass("pbr material round trip serialization");
+    return true;
+}
+
 int main() {
     TestOutput::PrintHeader("PBRMaterial");
 
@@ -269,6 +433,9 @@ int main() {
         allPassed &= suite.RunTest("PBR Material Textures", TestPBRMaterialTextures);
         allPassed &= suite.RunTest("PBR Material Property System", TestPBRMaterialPropertySystem);
         allPassed &= suite.RunTest("PBR Material Defaults", TestPBRMaterialDefaults);
+        allPassed &= suite.RunTest("PBR Material Serialization", TestPBRMaterialSerialization);
+        allPassed &= suite.RunTest("PBR Material Deserialization", TestPBRMaterialDeserialization);
+        allPassed &= suite.RunTest("PBR Material Round Trip Serialization", TestPBRMaterialRoundTripSerialization);
 
         // Print detailed summary
         suite.PrintSummary();

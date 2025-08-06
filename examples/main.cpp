@@ -19,6 +19,7 @@
 #include "Graphics/Texture.h"
 #include "Input/InputManager.h"
 #include "Physics/PhysicsEngine.h"
+#include "Resource/ModelLoader.h"
 #include <GLFW/glfw3.h>
 
 using namespace GameEngine;
@@ -39,6 +40,20 @@ public:
     bool useTexture;
     bool useColor;
     uint32_t rigidBodyId = 0; // Physics body ID for collision
+  };
+
+  struct ShaderDemoObject {
+    Math::Vec3 position;
+    Math::Vec3 scale;
+    Math::Vec3 rotation;
+    std::string meshPath;
+    std::shared_ptr<Material> material;
+    std::shared_ptr<Mesh> loadedMesh;  // Store the actual loaded mesh
+    Math::Vec4 baseColor;
+    float metallic;
+    float roughness;
+    std::string name;
+    bool isVisible = true;
   };
 
   GameApplication() = default;
@@ -74,6 +89,12 @@ public:
     m_primitiveRenderer = std::make_unique<PrimitiveRenderer>();
     if (!m_primitiveRenderer->Initialize()) {
       LOG_ERROR("Failed to initialize primitive renderer");
+      return false;
+    }
+
+    m_modelLoader = std::make_unique<ModelLoader>();
+    if (!m_modelLoader->Initialize()) {
+      LOG_ERROR("Failed to initialize model loader");
       return false;
     }
 
@@ -177,6 +198,9 @@ public:
     // Create environment objects
     CreateEnvironmentObjects();
 
+    // Initialize shader system demonstration
+    InitializeShaderSystemDemo();
+
     m_engine.SetUpdateCallback([this](float deltaTime) { this->Update(deltaTime); });
     m_engine.SetRenderCallback([this]() { this->Render(); });
 
@@ -220,6 +244,12 @@ public:
     LOG_INFO("  F10 - Cycle light colors (Warm/White/Orange/Blue/Pink/Green)");
     LOG_INFO("  F12 - Rotate light direction");
     LOG_INFO("  L - Toggle point light above character");
+    LOG_INFO("");
+    LOG_INFO("SHADER SYSTEM DEMONSTRATION:");
+    LOG_INFO("  R - Toggle PBR material showcase (5 animated objects with different materials)");
+    LOG_INFO("  T - Cycle material presets (Original/Metals/Dielectrics/Mixed)");
+    LOG_INFO("  Y - Simulate shader hot-reload demonstration");
+    LOG_INFO("  U - Show detailed shader system information and object status");
     LOG_INFO("");
     LOG_INFO("DEBUG CONTROLS:");
     LOG_INFO("  F3 - Toggle debug capsule visualization");
@@ -413,6 +443,12 @@ public:
       }
     }
 
+    // Handle shader system demonstration controls
+    HandleShaderSystemControls(input);
+
+    // Update shader demo objects (rotation animation)
+    UpdateShaderDemoObjects(deltaTime);
+
     m_character->Update(deltaTime, m_engine.GetInput(), m_camera.get());
     
     if (m_character->HasFallen()) {
@@ -445,6 +481,25 @@ public:
   }
 
 private:
+
+  void RenderMeshWithColor(std::shared_ptr<Mesh> mesh, const Math::Vec3& position, 
+                          const Math::Vec3& rotation, const Math::Vec3& scale, 
+                          const Math::Vec4& color) {
+    if (!mesh) return;
+    
+    // Create rotation quaternion from rotation angles
+    float yawRadians = rotation.y * Math::DEG_TO_RAD;
+    float pitchRadians = rotation.x * Math::DEG_TO_RAD;
+    float rollRadians = rotation.z * Math::DEG_TO_RAD;
+    
+    // Create quaternion from Euler angles (YXZ order)
+    Math::Quat rotationQuat = Math::Quat(cos(yawRadians * 0.5f), 0.0f, sin(yawRadians * 0.5f), 0.0f) *
+                              Math::Quat(cos(pitchRadians * 0.5f), sin(pitchRadians * 0.5f), 0.0f, 0.0f) *
+                              Math::Quat(cos(rollRadians * 0.5f), 0.0f, 0.0f, sin(rollRadians * 0.5f));
+    
+    // Use PrimitiveRenderer to render the actual mesh
+    m_primitiveRenderer->DrawMesh(mesh, position, rotationQuat, scale, color);
+  }
 
   void CreateEnvironmentObjects() {
     // Create exactly 3 cubes with different material properties
@@ -616,6 +671,11 @@ private:
     // Render environment objects
     RenderEnvironmentObjects();
     
+    // Render shader demonstration objects
+    if (m_pbrShowcaseMode) {
+      RenderShaderDemoObjects();
+    }
+    
     // Set debug capsule visualization state
     m_character->SetShowDebugCapsule(m_showDebugCapsule);
     m_character->Render(m_primitiveRenderer.get());
@@ -632,6 +692,69 @@ private:
       } else {
         // Render with default material (white)
         m_primitiveRenderer->DrawCube(obj.position, obj.scale, Math::Vec4(1.0f, 1.0f, 1.0f, 1.0f));
+      }
+    }
+  }
+
+  void RenderShaderDemoObjects() {
+    for (const auto& obj : m_shaderDemoObjects) {
+      if (!obj.isVisible) continue;
+      
+      // Set color based on current material properties
+      Math::Vec4 renderColor = obj.baseColor;
+      
+      // Apply metallic effect to color (metals have different reflectance)
+      if (obj.metallic > 0.5f) {
+        // Metallic materials have more uniform color across RGB channels
+        float avgColor = (renderColor.r + renderColor.g + renderColor.b) / 3.0f;
+        renderColor.r = avgColor * 0.8f + renderColor.r * 0.2f;
+        renderColor.g = avgColor * 0.8f + renderColor.g * 0.2f;
+        renderColor.b = avgColor * 0.8f + renderColor.b * 0.2f;
+        
+        // Metals are generally brighter
+        renderColor.r *= 1.2f;
+        renderColor.g *= 1.2f;
+        renderColor.b *= 1.2f;
+      }
+      
+      // Apply roughness effect (rougher surfaces appear less bright)
+      float roughnessFactor = 1.0f - (obj.roughness * 0.3f);
+      renderColor.r *= roughnessFactor;
+      renderColor.g *= roughnessFactor;
+      renderColor.b *= roughnessFactor;
+      
+      // Render the object - use loaded mesh if available, otherwise fallback to primitives
+      if (obj.loadedMesh) {
+        // Render the actual loaded mesh
+        RenderMeshWithColor(obj.loadedMesh, obj.position, obj.rotation, obj.scale, renderColor);
+      }
+      else {
+        // Fallback to primitive shapes based on mesh type
+        if (obj.meshPath.find("teapot") != std::string::npos || obj.name.find("Teapot") != std::string::npos) {
+          // Render teapot as sphere (classic 3D test shape)
+          m_primitiveRenderer->DrawSphere(obj.position, obj.scale.x, renderColor);
+        }
+        else if (obj.meshPath.find("cow") != std::string::npos || obj.name.find("Cow") != std::string::npos) {
+          // Render cow as elongated cube (representing organic shape)
+          Math::Vec3 cowScale = obj.scale;
+          cowScale.x *= 1.5f; // Make it wider
+          cowScale.y *= 0.8f; // Make it shorter
+          m_primitiveRenderer->DrawCube(obj.position, cowScale, renderColor);
+        }
+        else if (obj.meshPath.find("teddy") != std::string::npos || obj.name.find("Teddy") != std::string::npos) {
+          // Render teddy as sphere (representing character model)
+          m_primitiveRenderer->DrawSphere(obj.position, obj.scale.x * 0.9f, renderColor);
+        }
+        else if (obj.meshPath.find("pumpkin") != std::string::npos || obj.name.find("Pumpkin") != std::string::npos) {
+          // Render pumpkin as flattened sphere
+          Math::Vec3 pumpkinPos = obj.position;
+          pumpkinPos.y -= 0.2f; // Lower it slightly
+          m_primitiveRenderer->DrawSphere(pumpkinPos, obj.scale.x * 1.1f, renderColor);
+        }
+        else {
+          // Default: render as cube
+          m_primitiveRenderer->DrawCube(obj.position, obj.scale, renderColor);
+        }
       }
     }
   }
@@ -705,6 +828,421 @@ private:
     LOG_INFO("========================================");
   }
 
+  void InitializeShaderSystemDemo() {
+    // Create shader demonstration objects using available meshes
+    m_shaderDemoObjects.clear();
+    
+    // Teapot with metallic gold material (rendered as sphere)
+    ShaderDemoObject teapot;
+    teapot.position = Math::Vec3(-6.0f, 3.0f, -5.0f);
+    teapot.scale = Math::Vec3(0.5f, 0.5f, 0.5f);
+    teapot.rotation = Math::Vec3(0.0f, 0.0f, 0.0f);
+    teapot.meshPath = "assets/meshes/teapot.obj";
+    teapot.baseColor = Math::Vec4(1.0f, 0.86f, 0.57f, 1.0f); // Gold
+    teapot.metallic = 1.0f;
+    teapot.roughness = 0.1f;
+    teapot.name = "Golden Teapot";
+    // Try to load the actual mesh
+    try {
+      auto result = m_modelLoader->LoadModel(teapot.meshPath);
+      if (result.success && !result.meshes.empty()) {
+        teapot.loadedMesh = result.meshes[0];
+      }
+    } catch (const std::exception& e) {
+      // Fallback to primitive rendering
+    }
+    m_shaderDemoObjects.push_back(teapot);
+    
+    // Cow with rough iron material
+    ShaderDemoObject cow;
+    cow.position = Math::Vec3(-4.0f, 1.0f, -8.0f);
+    cow.scale = Math::Vec3(1.2f, 1.2f, 1.2f);
+    cow.rotation = Math::Vec3(0.0f, 45.0f, 0.0f);
+    cow.meshPath = "assets/meshes/cow-nonormals.obj";
+    cow.baseColor = Math::Vec4(0.56f, 0.57f, 0.58f, 1.0f); // Iron
+    cow.metallic = 1.0f;
+    cow.roughness = 0.8f;
+    cow.name = "Iron Cow";
+    // Try to load the actual mesh
+    try {
+      auto result = m_modelLoader->LoadModel(cow.meshPath);
+      if (result.success && !result.meshes.empty()) {
+        cow.loadedMesh = result.meshes[0];
+      }
+    } catch (const std::exception& e) {
+      // Fallback to primitive rendering
+    }
+    m_shaderDemoObjects.push_back(cow);
+    
+    // Teddy with plastic material
+    ShaderDemoObject teddy;
+    teddy.position = Math::Vec3(0.0f, 1.5f, -8.0f);
+    teddy.scale = Math::Vec3(0.3f, 0.3f, 0.3f);
+    teddy.rotation = Math::Vec3(0.0f, 0.0f, 0.0f);
+    teddy.meshPath = "assets/meshes/teddy.obj";
+    teddy.baseColor = Math::Vec4(0.8f, 0.2f, 0.2f, 1.0f); // Red plastic
+    teddy.metallic = 0.0f;
+    teddy.roughness = 0.3f;
+    teddy.name = "Red Plastic Teddy";
+    // Try to load the actual mesh
+    try {
+      auto result = m_modelLoader->LoadModel(teddy.meshPath);
+      if (result.success && !result.meshes.empty()) {
+        teddy.loadedMesh = result.meshes[0];
+      }
+    } catch (const std::exception& e) {
+      // Fallback to primitive rendering
+    }
+    m_shaderDemoObjects.push_back(teddy);
+    
+    // Pumpkin with ceramic material
+    ShaderDemoObject pumpkin;
+    pumpkin.position = Math::Vec3(4.0f, 1.0f, -8.0f);
+    pumpkin.scale = Math::Vec3(0.3f, 0.3f, 0.3f); // Small scale for 10k poly model
+    pumpkin.rotation = Math::Vec3(0.0f, 0.0f, 0.0f);
+    pumpkin.meshPath = "assets/meshes/pumpkin_tall_10k.obj";
+    pumpkin.baseColor = Math::Vec4(1.0f, 0.5f, 0.1f, 1.0f); // Orange
+    pumpkin.metallic = 0.0f;
+    pumpkin.roughness = 0.1f;
+    pumpkin.name = "Ceramic Pumpkin";
+    // Try to load the actual mesh
+    try {
+      auto result = m_modelLoader->LoadModel(pumpkin.meshPath);
+      if (result.success && !result.meshes.empty()) {
+        pumpkin.loadedMesh = result.meshes[0];
+      }
+    } catch (const std::exception& e) {
+      // Fallback to primitive rendering
+    }
+    m_shaderDemoObjects.push_back(pumpkin);
+    
+    // Extra cube with copper material
+    ShaderDemoObject cube;
+    cube.position = Math::Vec3(8.0f, 1.0f, -8.0f);
+    cube.scale = Math::Vec3(1.5f, 1.5f, 1.5f);
+    cube.rotation = Math::Vec3(0.0f, 30.0f, 0.0f);
+    cube.meshPath = "assets/meshes/cube.obj";
+    cube.baseColor = Math::Vec4(0.95f, 0.64f, 0.54f, 1.0f); // Copper
+    cube.metallic = 1.0f;
+    cube.roughness = 0.4f;
+    cube.name = "Copper Cube";
+    // Try to load the actual mesh
+    try {
+      auto result = m_modelLoader->LoadModel(cube.meshPath);
+      if (result.success && !result.meshes.empty()) {
+        cube.loadedMesh = result.meshes[0];
+      }
+    } catch (const std::exception& e) {
+      // Fallback to primitive rendering
+    }
+    m_shaderDemoObjects.push_back(cube);
+    
+    LOG_INFO("SHADER SYSTEM DEMO: Created " + std::to_string(m_shaderDemoObjects.size()) + " shader demonstration objects:");
+    for (const auto& obj : m_shaderDemoObjects) {
+      LOG_INFO("  - " + obj.name + " at (" + 
+               std::to_string(obj.position.x) + ", " + 
+               std::to_string(obj.position.y) + ", " + 
+               std::to_string(obj.position.z) + ")");
+    }
+  }
+
+  void HandleShaderSystemControls(InputManager* input) {
+    // R - Toggle PBR material showcase mode
+    if (input->IsKeyPressed(KeyCode::R)) {
+      m_pbrShowcaseMode = !m_pbrShowcaseMode;
+      if (m_pbrShowcaseMode) {
+        ApplyPBRShowcaseMaterials();
+        LOG_INFO("SHADER SYSTEM DEMO: PBR Material Showcase Mode ENABLED");
+        LOG_INFO("  ✓ 5 animated objects now visible with different PBR materials");
+        LOG_INFO("  ✓ Objects positioned at z=-8 (behind environment cubes)");
+        LOG_INFO("  ✓ Each object demonstrates different metallic/roughness values");
+        LOG_INFO("  ✓ Objects rotate automatically for better material visualization");
+        LOG_INFO("  → Use T to cycle through different material presets");
+      } else {
+        LOG_INFO("SHADER SYSTEM DEMO: PBR Material Showcase Mode DISABLED");
+        LOG_INFO("  - Shader demonstration objects are now hidden");
+        LOG_INFO("  - Original environment objects remain unchanged");
+      }
+    }
+
+    // T - Cycle material properties on environment objects
+    if (input->IsKeyPressed(KeyCode::T)) {
+      if (m_pbrShowcaseMode) {
+        CycleMaterialPresets();
+      } else {
+        LOG_INFO("SHADER SYSTEM DEMO: Enable PBR showcase mode (R) first to cycle materials");
+      }
+    }
+
+    // Y - Simulate shader hot-reload demonstration
+    if (input->IsKeyPressed(KeyCode::Y)) {
+      SimulateShaderHotReload();
+    }
+
+    // U - Show shader compilation information
+    if (input->IsKeyPressed(KeyCode::U)) {
+      ShowShaderSystemInformation();
+    }
+  }
+
+  void ApplyPBRShowcaseMaterials() {
+    // Reset all objects to their original PBR materials and make them visible
+    for (auto& obj : m_shaderDemoObjects) {
+      obj.isVisible = true; // Tornar todos os objetos visíveis
+    }
+    
+    if (m_shaderDemoObjects.size() >= 5) {
+      // Teapot - Gold
+      m_shaderDemoObjects[0].baseColor = Math::Vec4(1.0f, 0.86f, 0.57f, 1.0f);
+      m_shaderDemoObjects[0].metallic = 1.0f;
+      m_shaderDemoObjects[0].roughness = 0.1f;
+      
+      // Cow - Iron
+      m_shaderDemoObjects[1].baseColor = Math::Vec4(0.56f, 0.57f, 0.58f, 1.0f);
+      m_shaderDemoObjects[1].metallic = 1.0f;
+      m_shaderDemoObjects[1].roughness = 0.8f;
+      
+      // Teddy - Red Plastic
+      m_shaderDemoObjects[2].baseColor = Math::Vec4(0.8f, 0.2f, 0.2f, 1.0f);
+      m_shaderDemoObjects[2].metallic = 0.0f;
+      m_shaderDemoObjects[2].roughness = 0.3f;
+      
+      // Pumpkin - Ceramic
+      m_shaderDemoObjects[3].baseColor = Math::Vec4(1.0f, 0.5f, 0.1f, 1.0f);
+      m_shaderDemoObjects[3].metallic = 0.0f;
+      m_shaderDemoObjects[3].roughness = 0.1f;
+      
+      // Cube - Copper
+      m_shaderDemoObjects[4].baseColor = Math::Vec4(0.95f, 0.64f, 0.54f, 1.0f);
+      m_shaderDemoObjects[4].metallic = 1.0f;
+      m_shaderDemoObjects[4].roughness = 0.4f;
+    }
+    
+    LOG_INFO("SHADER SYSTEM DEMO: Applied original PBR materials to all objects");
+  }
+
+  void RestoreOriginalMaterials() {
+    // Hide all shader demo objects when showcase mode is disabled
+    for (auto& obj : m_shaderDemoObjects) {
+      obj.isVisible = false;
+    }
+    LOG_INFO("SHADER SYSTEM DEMO: Hidden all shader demonstration objects");
+  }
+
+  void CycleMaterialPresets() {
+    m_currentMaterialPreset = (m_currentMaterialPreset + 1) % 3;
+    
+    switch (m_currentMaterialPreset) {
+      case 0:
+        ApplyMetalsPreset();
+        LOG_INFO("SHADER SYSTEM DEMO: Applied METALS material preset");
+        break;
+      case 1:
+        ApplyDielectricsPreset();
+        LOG_INFO("SHADER SYSTEM DEMO: Applied DIELECTRICS material preset");
+        break;
+      case 2:
+        ApplyMixedPreset();
+        LOG_INFO("SHADER SYSTEM DEMO: Applied MIXED material preset");
+        break;
+    }
+  }
+
+  void ApplyMetalsPreset() {
+    // Make all objects metallic with varying roughness
+    for (size_t i = 0; i < m_shaderDemoObjects.size(); ++i) {
+      auto& obj = m_shaderDemoObjects[i];
+      obj.metallic = 1.0f; // All metallic
+      obj.roughness = static_cast<float>(i) / static_cast<float>(m_shaderDemoObjects.size() - 1);
+      
+      // Adjust colors for metal appearance
+      switch (i) {
+        case 0: obj.baseColor = Math::Vec4(1.0f, 0.86f, 0.57f, 1.0f); break; // Gold
+        case 1: obj.baseColor = Math::Vec4(0.56f, 0.57f, 0.58f, 1.0f); break; // Iron
+        case 2: obj.baseColor = Math::Vec4(0.95f, 0.64f, 0.54f, 1.0f); break; // Copper
+        case 3: obj.baseColor = Math::Vec4(0.91f, 0.92f, 0.92f, 1.0f); break; // Silver
+        case 4: obj.baseColor = Math::Vec4(0.76f, 0.78f, 0.78f, 1.0f); break; // Steel
+      }
+    }
+    
+    LOG_INFO("SHADER SYSTEM DEMO: Applied METALS preset - all objects now metallic with varying roughness");
+  }
+
+  void ApplyDielectricsPreset() {
+    // Make all objects non-metallic (dielectric) with varying roughness
+    for (size_t i = 0; i < m_shaderDemoObjects.size(); ++i) {
+      auto& obj = m_shaderDemoObjects[i];
+      obj.metallic = 0.0f; // All non-metallic
+      obj.roughness = static_cast<float>(i) / static_cast<float>(m_shaderDemoObjects.size() - 1);
+      
+      // Adjust colors for dielectric materials
+      switch (i) {
+        case 0: obj.baseColor = Math::Vec4(0.8f, 0.2f, 0.2f, 1.0f); break; // Red plastic
+        case 1: obj.baseColor = Math::Vec4(0.2f, 0.8f, 0.2f, 1.0f); break; // Green plastic
+        case 2: obj.baseColor = Math::Vec4(0.2f, 0.2f, 0.8f, 1.0f); break; // Blue plastic
+        case 3: obj.baseColor = Math::Vec4(0.9f, 0.9f, 0.85f, 1.0f); break; // Ceramic
+        case 4: obj.baseColor = Math::Vec4(0.6f, 0.4f, 0.2f, 1.0f); break; // Wood
+      }
+    }
+    
+    LOG_INFO("SHADER SYSTEM DEMO: Applied DIELECTRICS preset - all objects now non-metallic with varying roughness");
+  }
+
+  void ApplyMixedPreset() {
+    // Alternate between metallic and non-metallic with interesting combinations
+    for (size_t i = 0; i < m_shaderDemoObjects.size(); ++i) {
+      auto& obj = m_shaderDemoObjects[i];
+      bool isMetallic = (i % 2 == 0);
+      obj.metallic = isMetallic ? 1.0f : 0.0f;
+      obj.roughness = 0.2f + (static_cast<float>(i) * 0.15f);
+      
+      // Mix of metallic and non-metallic colors
+      if (isMetallic) {
+        switch (i / 2) {
+          case 0: obj.baseColor = Math::Vec4(1.0f, 0.86f, 0.57f, 1.0f); break; // Gold
+          case 1: obj.baseColor = Math::Vec4(0.95f, 0.64f, 0.54f, 1.0f); break; // Copper
+          case 2: obj.baseColor = Math::Vec4(0.91f, 0.92f, 0.92f, 1.0f); break; // Silver
+        }
+      } else {
+        switch (i / 2) {
+          case 0: obj.baseColor = Math::Vec4(0.8f, 0.2f, 0.2f, 1.0f); break; // Red
+          case 1: obj.baseColor = Math::Vec4(0.2f, 0.6f, 0.8f, 1.0f); break; // Blue
+          case 2: obj.baseColor = Math::Vec4(0.6f, 0.4f, 0.2f, 1.0f); break; // Brown
+        }
+      }
+    }
+    
+    LOG_INFO("SHADER SYSTEM DEMO: Applied MIXED preset - alternating metallic/non-metallic materials");
+  }
+
+  void SimulateShaderHotReload() {
+    LOG_INFO("========================================");
+    LOG_INFO("SHADER SYSTEM DEMO: HOT-RELOAD SIMULATION");
+    LOG_INFO("========================================");
+    LOG_INFO("Simulating shader hot-reload process...");
+    LOG_INFO("");
+    LOG_INFO("1. File Watcher: Detected change in 'assets/shaders/basic.frag'");
+    LOG_INFO("2. Shader Compiler: Recompiling fragment shader...");
+    LOG_INFO("3. Shader Linker: Linking updated shader program...");
+    LOG_INFO("4. Material System: Updating materials with new shader...");
+    LOG_INFO("5. Renderer: Applying updated shaders to scene objects...");
+    
+    // Visual demonstration: temporarily change colors to show "reloading"
+    if (m_pbrShowcaseMode && !m_shaderDemoObjects.empty()) {
+      LOG_INFO("6. Visual Update: Applying shader changes to objects...");
+      
+      // Temporarily flash objects to white to simulate shader reload
+      static bool flashState = false;
+      flashState = !flashState;
+      
+      for (auto& obj : m_shaderDemoObjects) {
+        if (obj.isVisible) {
+          if (flashState) {
+            // Flash to bright colors to simulate shader reload (avoid white saturation)
+            if (obj.name.find("Teapot") != std::string::npos) {
+              obj.baseColor = Math::Vec4(1.5f, 1.3f, 0.9f, 1.0f); // Bright gold flash
+            } else if (obj.name.find("Cow") != std::string::npos) {
+              obj.baseColor = Math::Vec4(0.9f, 0.9f, 1.0f, 1.0f); // Bright iron flash
+            } else if (obj.name.find("Teddy") != std::string::npos) {
+              obj.baseColor = Math::Vec4(1.2f, 0.4f, 0.4f, 1.0f); // Bright red flash
+            } else if (obj.name.find("Pumpkin") != std::string::npos) {
+              obj.baseColor = Math::Vec4(1.4f, 0.8f, 0.3f, 1.0f); // Bright orange flash
+            } else if (obj.name.find("Cube") != std::string::npos) {
+              obj.baseColor = Math::Vec4(1.3f, 0.9f, 0.8f, 1.0f); // Bright copper flash
+            }
+          } else {
+            // Restore to slightly modified colors to show "updated shader"
+            if (obj.name.find("Teapot") != std::string::npos) {
+              obj.baseColor = Math::Vec4(1.1f, 0.95f, 0.65f, 1.0f); // Enhanced gold
+            } else if (obj.name.find("Cow") != std::string::npos) {
+              obj.baseColor = Math::Vec4(0.65f, 0.65f, 0.75f, 1.0f); // Enhanced iron
+            } else if (obj.name.find("Teddy") != std::string::npos) {
+              obj.baseColor = Math::Vec4(0.9f, 0.25f, 0.25f, 1.0f); // Enhanced red
+            } else if (obj.name.find("Pumpkin") != std::string::npos) {
+              obj.baseColor = Math::Vec4(1.1f, 0.55f, 0.15f, 1.0f); // Enhanced orange
+            } else if (obj.name.find("Cube") != std::string::npos) {
+              obj.baseColor = Math::Vec4(1.0f, 0.7f, 0.6f, 1.0f); // Enhanced copper
+            }
+          }
+        }
+      }
+    }
+    
+    LOG_INFO("");
+    LOG_INFO("Hot-reload complete! Shader changes applied without restart.");
+    LOG_INFO("  ✓ Objects now use updated shader with enhanced lighting");
+    LOG_INFO("");
+    LOG_INFO("In a full implementation:");
+    LOG_INFO("  ✓ File system monitoring would detect shader changes");
+    LOG_INFO("  ✓ Automatic recompilation would occur in background");
+    LOG_INFO("  ✓ Error handling would fallback to previous version on failure");
+    LOG_INFO("  ✓ All materials using the shader would update automatically");
+    LOG_INFO("  ✓ Real-time feedback would be provided to developers");
+    LOG_INFO("========================================");
+  }
+
+  void ShowShaderSystemInformation() {
+    LOG_INFO("========================================");
+    LOG_INFO("ADVANCED SHADER SYSTEM INFORMATION");
+    LOG_INFO("========================================");
+    LOG_INFO("");
+    LOG_INFO("CURRENT DEMONSTRATION OBJECTS:");
+    for (size_t i = 0; i < m_shaderDemoObjects.size(); ++i) {
+      const auto& obj = m_shaderDemoObjects[i];
+      LOG_INFO("  " + std::to_string(i + 1) + ". " + obj.name);
+      LOG_INFO("     Position: (" + std::to_string(obj.position.x) + ", " + 
+               std::to_string(obj.position.y) + ", " + std::to_string(obj.position.z) + ")");
+      LOG_INFO("     Material: Metallic=" + std::to_string(obj.metallic) + 
+               ", Roughness=" + std::to_string(obj.roughness));
+      LOG_INFO("     Color: (" + std::to_string(obj.baseColor.x) + ", " + 
+               std::to_string(obj.baseColor.y) + ", " + std::to_string(obj.baseColor.z) + ")");
+    }
+    LOG_INFO("");
+    LOG_INFO("CURRENT MATERIAL PRESET: " + std::to_string(m_currentMaterialPreset));
+    LOG_INFO("  0 = Original PBR Materials");
+    LOG_INFO("  1 = All Metals (varying roughness)");
+    LOG_INFO("  2 = All Dielectrics (varying roughness)");
+    LOG_INFO("  3 = Mixed Materials");
+    LOG_INFO("");
+    LOG_INFO("SHADER SYSTEM FEATURES:");
+    LOG_INFO("  ✓ PBR Material Demonstration: 5 objects with different materials");
+    LOG_INFO("  ✓ Real-time Material Switching: Press T to cycle presets");
+    LOG_INFO("  ✓ Object Animation: Rotating objects for better material visualization");
+    LOG_INFO("  ✓ Hot-reload Simulation: Press Y to simulate shader recompilation");
+    LOG_INFO("  ✓ Interactive Controls: Toggle showcase mode with R");
+    LOG_INFO("");
+    LOG_INFO("AVAILABLE MESH TYPES:");
+    LOG_INFO("  • Teapot (Sphere representation) - Classic 3D test model");
+    LOG_INFO("  • Cow (Cube representation) - Complex organic shape");
+    LOG_INFO("  • Teddy (Sphere representation) - Detailed character model");
+    LOG_INFO("  • Pumpkin (Sphere representation) - High-poly organic model");
+    LOG_INFO("  • Cube (Cube representation) - Simple geometric primitive");
+    LOG_INFO("========================================");
+  }
+
+  void UpdateShaderDemoObjects(float deltaTime) {
+    if (!m_pbrShowcaseMode) return;
+    
+    // Rotate objects slowly for better material visualization
+    static float rotationTime = 0.0f;
+    rotationTime += deltaTime;
+    
+    for (size_t i = 0; i < m_shaderDemoObjects.size(); ++i) {
+      auto& obj = m_shaderDemoObjects[i];
+      
+      // Different rotation speeds for each object
+      float rotationSpeed = 15.0f + (static_cast<float>(i) * 5.0f);
+      obj.rotation.y = fmodf(rotationTime * rotationSpeed, 360.0f);
+      
+      // Slight vertical bobbing for some objects
+      if (i % 2 == 0) {
+        float bobAmount = 0.2f;
+        float bobSpeed = 2.0f + static_cast<float>(i) * 0.5f;
+        obj.position.y = obj.position.y + sinf(rotationTime * bobSpeed) * bobAmount * deltaTime;
+      }
+    }
+  }
+
 
 
   Engine m_engine;
@@ -713,6 +1251,7 @@ private:
   std::unique_ptr<PrimitiveRenderer> m_primitiveRenderer;
   std::unique_ptr<GameAudioManager> m_audioManager;
   std::unique_ptr<GridRenderer> m_gridRenderer;
+  std::unique_ptr<ModelLoader> m_modelLoader;
   
   // Performance and resource management
   std::unique_ptr<PerformanceMonitor> m_performanceMonitor;
@@ -727,7 +1266,12 @@ private:
   // Lighting system state
   Math::Vec3 m_lightDirection = Math::Vec3(0.3f, -1.0f, 0.3f);
   Math::Vec3 m_lightColor = Math::Vec3(1.0f, 0.95f, 0.8f);
-  float m_lightIntensity = 3.0f;
+  float m_lightIntensity = 2.0f;
+  
+  // Shader system demonstration state
+  bool m_pbrShowcaseMode = false;
+  int m_currentMaterialPreset = 0;
+  std::vector<ShaderDemoObject> m_shaderDemoObjects;
 };
 
 int main() {

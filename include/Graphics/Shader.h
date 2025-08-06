@@ -5,12 +5,14 @@
 #include <unordered_map>
 #include <vector>
 #include <functional>
+#include <memory>
 
 namespace GameEngine {
     class Texture;
     class ShaderCompilationError;
+    class ShaderStateManager;
 
-    class Shader {
+    class Shader : public std::enable_shared_from_this<Shader> {
     public:
         enum class Type { Vertex, Fragment, Geometry, Compute, TessControl, TessEvaluation };
         enum class State { Uncompiled, Compiling, Compiled, Linked, Error };
@@ -30,7 +32,7 @@ namespace GameEngine {
         void Use() const;
         void Unuse() const;
         
-        // Enhanced uniform setters
+        // Enhanced uniform setters (with state management optimization)
         void SetUniform(const std::string& name, bool value);
         void SetUniform(const std::string& name, int value);
         void SetUniform(const std::string& name, float value);
@@ -45,6 +47,16 @@ namespace GameEngine {
         void SetUniformArray(const std::string& name, const std::vector<float>& values);
         void SetUniformArray(const std::string& name, const std::vector<int>& values);
         
+        // Direct uniform setters (bypass state management for immediate updates)
+        void SetUniformDirect(const std::string& name, bool value);
+        void SetUniformDirect(const std::string& name, int value);
+        void SetUniformDirect(const std::string& name, float value);
+        void SetUniformDirect(const std::string& name, const Math::Vec2& value);
+        void SetUniformDirect(const std::string& name, const Math::Vec3& value);
+        void SetUniformDirect(const std::string& name, const Math::Vec4& value);
+        void SetUniformDirect(const std::string& name, const Math::Mat3& value);
+        void SetUniformDirect(const std::string& name, const Math::Mat4& value);
+        
         // Legacy uniform setters (for backward compatibility)
         void SetBool(const std::string& name, bool value) { SetUniform(name, value); }
         void SetInt(const std::string& name, int value) { SetUniform(name, value); }
@@ -55,12 +67,16 @@ namespace GameEngine {
         void SetMat3(const std::string& name, const Math::Mat3& value) { SetUniform(name, value); }
         void SetMat4(const std::string& name, const Math::Mat4& value) { SetUniform(name, value); }
         
-        // Texture binding with automatic slot management
+        // Texture binding with automatic slot management (optimized)
         void BindTexture(const std::string& name, uint32_t textureId, uint32_t slot = 0);
         void BindTexture(const std::string& name, const Texture& texture, uint32_t slot = 0);
         void BindTextureAuto(const std::string& name, uint32_t textureId); // Automatic slot assignment
         void BindTextureAuto(const std::string& name, const Texture& texture); // Automatic slot assignment
         void BindImageTexture(const std::string& name, uint32_t textureId, uint32_t slot, uint32_t access);
+        
+        // Direct texture binding (bypass state management)
+        void BindTextureDirect(const std::string& name, uint32_t textureId, uint32_t slot = 0);
+        void BindTextureDirect(const std::string& name, const Texture& texture, uint32_t slot = 0);
         
         // Storage buffer and uniform buffer binding
         void BindStorageBuffer(const std::string& name, uint32_t bufferId, uint32_t binding);
@@ -78,6 +94,12 @@ namespace GameEngine {
         void ResetTextureSlots();
         uint32_t GetTextureSlot(const std::string& name) const;
         bool HasUniform(const std::string& name) const;
+        
+        // State management utilities
+        void FlushPendingUpdates(); // Force immediate application of queued updates
+        void EnableStateOptimization(bool enable) { m_useStateOptimization = enable; }
+        bool IsStateOptimizationEnabled() const { return m_useStateOptimization; }
+        void RegisterWithStateManager(); // Register this shader with the state manager
         
         uint32_t GetProgramID() const { return m_programID; }
         bool IsValid() const { return m_programID != 0 && m_state == State::Linked; }
@@ -115,5 +137,9 @@ namespace GameEngine {
         
         // Cached shader sources for validation
         std::unordered_map<Type, std::string> m_shaderSources;
+        
+        // State management optimization
+        bool m_useStateOptimization = false; // Disabled by default for safety
+        bool m_registeredWithStateManager = false;
     };
 }

@@ -54,6 +54,18 @@ bool TestShaderHotReloadSystemFunctionality() {
         EXPECT_TRUE(stats.loadedShaders >= 0);
         EXPECT_TRUE(stats.compilationErrors >= 0);
 
+        // Test background compilation functionality
+        shaderManager.EnableBackgroundCompilation(true);
+        EXPECT_TRUE(shaderManager.IsBackgroundCompilationEnabled());
+        
+        // Test background compilation controls
+        shaderManager.SetMaxBackgroundThreads(2);
+        shaderManager.PauseBackgroundCompilation();
+        shaderManager.ResumeBackgroundCompilation();
+        
+        shaderManager.EnableBackgroundCompilation(false);
+        EXPECT_FALSE(shaderManager.IsBackgroundCompilationEnabled());
+
         // Cleanup
         shaderManager.Shutdown();
 
@@ -63,6 +75,62 @@ bool TestShaderHotReloadSystemFunctionality() {
     }
 
     TestOutput::PrintTestPass("shader hot reload system functionality");
+    return true;
+}
+
+/**
+ * Test background shader compilation and loading
+ * Requirements: 9.5, 4.4, 6.1 (Asynchronous shader compilation and progressive loading)
+ */
+bool TestBackgroundShaderCompilation() {
+    TestOutput::PrintTestStart("background shader compilation");
+
+    try {
+        auto& shaderManager = ShaderManager::GetInstance();
+        if (!shaderManager.Initialize()) {
+            TestOutput::PrintTestFail("background shader compilation", "shader manager initialized", "initialization failed");
+            return false;
+        }
+
+        // Enable background compilation
+        shaderManager.EnableBackgroundCompilation(true);
+        EXPECT_TRUE(shaderManager.IsBackgroundCompilationEnabled());
+
+        // Test background compilation controls
+        shaderManager.SetMaxBackgroundThreads(2);
+        
+        // Test progressive loading functionality
+        std::vector<std::string> testShaderPaths = {
+            "assets/shaders/basic_vertex.glsl",
+            "assets/shaders/basic_fragment.glsl"
+        };
+        
+        // Start progressive loading (should not crash even if files don't exist)
+        shaderManager.StartProgressiveShaderLoading(testShaderPaths);
+        
+        // Wait a bit for background processing
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        
+        // Stop progressive loading
+        shaderManager.StopProgressiveShaderLoading();
+        
+        // Test precompilation of common variants
+        shaderManager.PrecompileCommonVariants();
+        
+        // Test pause/resume functionality
+        shaderManager.PauseBackgroundCompilation();
+        shaderManager.ResumeBackgroundCompilation();
+
+        // Cleanup
+        shaderManager.EnableBackgroundCompilation(false);
+        shaderManager.Shutdown();
+
+    } catch (const std::exception& e) {
+        TestOutput::PrintTestFail("background shader compilation", "no exception", e.what());
+        return false;
+    }
+
+    TestOutput::PrintTestPass("background shader compilation");
     return true;
 }
 
@@ -350,6 +418,7 @@ int main() {
 
         // Run all tests
         allPassed &= suite.RunTest("Shader Hot Reload System Functionality", TestShaderHotReloadSystemFunctionality);
+        allPassed &= suite.RunTest("Background Shader Compilation", TestBackgroundShaderCompilation);
         allPassed &= suite.RunTest("Shader Hot Reloader File Watching", TestShaderHotReloaderFileWatching);
         allPassed &= suite.RunTest("Post Processing Pipeline Multiple Effects", TestPostProcessingPipelineMultipleEffects);
         allPassed &= suite.RunTest("Post Processing Effect Ordering", TestPostProcessingEffectOrdering);

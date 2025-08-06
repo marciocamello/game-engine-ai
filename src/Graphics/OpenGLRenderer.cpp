@@ -1,6 +1,7 @@
 #include "Graphics/OpenGLRenderer.h"
 #include "Graphics/Camera.h"
 #include "Graphics/ShaderManager.h"
+#include "Graphics/ShaderStateManager.h"
 #include "Graphics/Shader.h"
 #include "Graphics/PostProcessingPipeline.h"
 #include "Graphics/PrimitiveRenderer.h"
@@ -64,6 +65,12 @@ namespace GameEngine {
         // Initialize ShaderManager
         if (!ShaderManager::GetInstance().Initialize()) {
             LOG_ERROR("Failed to initialize ShaderManager");
+            return false;
+        }
+
+        // Initialize ShaderStateManager
+        if (!ShaderStateManager::GetInstance().Initialize()) {
+            LOG_ERROR("Failed to initialize ShaderStateManager");
             return false;
         }
 
@@ -133,8 +140,9 @@ namespace GameEngine {
             m_mainDepthTexture = 0;
         }
 
-        // Shutdown ShaderManager
+        // Shutdown ShaderManager and ShaderStateManager
         ShaderManager::GetInstance().Shutdown();
+        ShaderStateManager::GetInstance().Shutdown();
         
         if (m_window) {
             glfwDestroyWindow(m_window);
@@ -143,6 +151,9 @@ namespace GameEngine {
     }
 
     void OpenGLRenderer::BeginFrame() {
+        // Begin frame for shader state management
+        ShaderStateManager::GetInstance().BeginFrame();
+        
         if (m_postProcessingEnabled && m_mainFramebuffer != 0) {
             // Render to main framebuffer for post-processing
             glBindFramebuffer(GL_FRAMEBUFFER, m_mainFramebuffer);
@@ -157,6 +168,9 @@ namespace GameEngine {
             // Apply post-processing effects
             ApplyPostProcessing();
         }
+        
+        // End frame for shader state management
+        ShaderStateManager::GetInstance().EndFrame();
     }
 
     void OpenGLRenderer::Present() {

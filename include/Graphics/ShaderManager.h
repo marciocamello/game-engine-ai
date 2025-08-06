@@ -8,11 +8,13 @@
 #include <functional>
 #include <filesystem>
 #include <vector>
+#include <future>
 
 namespace GameEngine {
     class Shader;
     class ShaderHotReloader;
     class ShaderVariantManager;
+    class ShaderBackgroundCompiler;
 
     struct ShaderDesc {
         std::string name;
@@ -83,6 +85,20 @@ namespace GameEngine {
         // Shader compilation and caching
         void PrecompileShaders();
         void ClearShaderCache();
+        
+        // Background compilation
+        std::future<std::shared_ptr<Shader>> LoadShaderAsync(const std::string& name, const ShaderDesc& desc);
+        std::future<std::shared_ptr<Shader>> LoadShaderFromFilesAsync(const std::string& name, const std::string& vertexPath, const std::string& fragmentPath);
+        void StartProgressiveShaderLoading(const std::vector<std::string>& shaderPaths);
+        void StopProgressiveShaderLoading();
+        void PrecompileCommonVariants();
+        
+        // Background compilation control
+        void EnableBackgroundCompilation(bool enable);
+        bool IsBackgroundCompilationEnabled() const { return m_backgroundCompilationEnabled; }
+        void SetMaxBackgroundThreads(size_t count);
+        void PauseBackgroundCompilation();
+        void ResumeBackgroundCompilation();
 
         // Shader variant support
         std::shared_ptr<Shader> CreateShaderVariant(const std::string& baseName, const ShaderVariant& variant);
@@ -116,6 +132,7 @@ namespace GameEngine {
         bool m_initialized = false;
         bool m_hotReloadEnabled = false;
         bool m_debugMode = false;
+        bool m_backgroundCompilationEnabled = true;
 
         std::unique_ptr<ShaderHotReloader> m_hotReloader;
         std::function<void(const std::string&)> m_hotReloadCallback;

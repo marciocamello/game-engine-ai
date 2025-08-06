@@ -227,7 +227,7 @@
     - Create automatic texture compression and optimization
     - _Requirements: 5.5, 9.3, 2.7_
 
-- [ ] 15. Create example applications and documentation
+- [x] 15. Create example applications and documentation
 
   - [x] 15.1 Build shader system demonstration examples
 

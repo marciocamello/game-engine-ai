@@ -751,6 +751,10 @@ private:
           pumpkinPos.y -= 0.2f; // Lower it slightly
           m_primitiveRenderer->DrawSphere(pumpkinPos, obj.scale.x * 1.1f, renderColor);
         }
+        else if (obj.name.find("Sphere") != std::string::npos) {
+          // Render sphere objects as spheres
+          m_primitiveRenderer->DrawSphere(obj.position, obj.scale.x, renderColor);
+        }
         else {
           // Default: render as cube
           m_primitiveRenderer->DrawCube(obj.position, obj.scale, renderColor);
@@ -855,8 +859,8 @@ private:
     
     // Cow with rough iron material
     ShaderDemoObject cow;
-    cow.position = Math::Vec3(-4.0f, 1.0f, -8.0f);
-    cow.scale = Math::Vec3(1.2f, 1.2f, 1.2f);
+    cow.position = Math::Vec3(-2.0f, 1.0f, -6.0f);
+    cow.scale = Math::Vec3(0.5f, 0.5f, 0.5f);
     cow.rotation = Math::Vec3(0.0f, 45.0f, 0.0f);
     cow.meshPath = "assets/meshes/cow-nonormals.obj";
     cow.baseColor = Math::Vec4(0.56f, 0.57f, 0.58f, 1.0f); // Iron
@@ -876,8 +880,8 @@ private:
     
     // Teddy with plastic material
     ShaderDemoObject teddy;
-    teddy.position = Math::Vec3(0.0f, 1.5f, -8.0f);
-    teddy.scale = Math::Vec3(0.3f, 0.3f, 0.3f);
+    teddy.position = Math::Vec3(2.0f, 1.5f, -6.0f);
+    teddy.scale = Math::Vec3(0.1f, 0.1f, 0.1f);
     teddy.rotation = Math::Vec3(0.0f, 0.0f, 0.0f);
     teddy.meshPath = "assets/meshes/teddy.obj";
     teddy.baseColor = Math::Vec4(0.8f, 0.2f, 0.2f, 1.0f); // Red plastic
@@ -897,8 +901,8 @@ private:
     
     // Pumpkin with ceramic material
     ShaderDemoObject pumpkin;
-    pumpkin.position = Math::Vec3(4.0f, 1.0f, -8.0f);
-    pumpkin.scale = Math::Vec3(0.3f, 0.3f, 0.3f); // Small scale for 10k poly model
+    pumpkin.position = Math::Vec3(0.0f, 2.0f, -4.0f); // More isolated position, higher up
+    pumpkin.scale = Math::Vec3(0.03f, 0.03f, 0.03f); // Small scale for 10k poly model
     pumpkin.rotation = Math::Vec3(0.0f, 0.0f, 0.0f);
     pumpkin.meshPath = "assets/meshes/pumpkin_tall_10k.obj";
     pumpkin.baseColor = Math::Vec4(1.0f, 0.5f, 0.1f, 1.0f); // Orange
@@ -936,6 +940,19 @@ private:
       // Fallback to primitive rendering
     }
     m_shaderDemoObjects.push_back(cube);
+    
+    // Add a sphere with chrome material
+    ShaderDemoObject sphere;
+    sphere.position = Math::Vec3(-6.0f, 1.5f, -4.0f);
+    sphere.scale = Math::Vec3(0.8f, 0.8f, 0.8f);
+    sphere.rotation = Math::Vec3(0.0f, 0.0f, 0.0f);
+    sphere.meshPath = ""; // No mesh path - will use primitive sphere
+    sphere.baseColor = Math::Vec4(0.9f, 0.9f, 0.95f, 1.0f); // Chrome color
+    sphere.metallic = 1.0f;
+    sphere.roughness = 0.05f; // Very smooth for chrome effect
+    sphere.name = "Chrome Sphere";
+    sphere.loadedMesh = nullptr; // Force primitive rendering
+    m_shaderDemoObjects.push_back(sphere);
     
     LOG_INFO("SHADER SYSTEM DEMO: Created " + std::to_string(m_shaderDemoObjects.size()) + " shader demonstration objects:");
     for (const auto& obj : m_shaderDemoObjects) {
@@ -1230,15 +1247,16 @@ private:
     for (size_t i = 0; i < m_shaderDemoObjects.size(); ++i) {
       auto& obj = m_shaderDemoObjects[i];
       
-      // Different rotation speeds for each object
-      float rotationSpeed = 15.0f + (static_cast<float>(i) * 5.0f);
-      obj.rotation.y = fmodf(rotationTime * rotationSpeed, 360.0f);
-      
-      // Slight vertical bobbing for some objects
-      if (i % 2 == 0) {
-        float bobAmount = 0.2f;
-        float bobSpeed = 2.0f + static_cast<float>(i) * 0.5f;
-        obj.position.y = obj.position.y + sinf(rotationTime * bobSpeed) * bobAmount * deltaTime;
+      // Pumpkin only floats (no rotation)
+      if (obj.name.find("Pumpkin") != std::string::npos) {
+        float bobAmount = 0.3f;
+        float bobSpeed = 1.5f;
+        static float basePumpkinY = 2.0f; // Store base Y position
+        obj.position.y = basePumpkinY + sinf(rotationTime * bobSpeed) * bobAmount;
+      } else {
+        // All other objects rotate on their own axis
+        float rotationSpeed = 15.0f + (static_cast<float>(i) * 5.0f);
+        obj.rotation.y = fmodf(rotationTime * rotationSpeed, 360.0f);
       }
     }
   }

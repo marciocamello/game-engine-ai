@@ -212,16 +212,16 @@
     - Create alternative implementations for compute shader functionality
     - _Requirements: 8.6, 3.7, 8.3_
 
-- [ ] 14. Optimize memory usage and resource management
+- [x] 14. Optimize memory usage and resource management
 
-  - [ ] 14.1 Implement efficient shader resource management
+  - [x] 14.1 Implement efficient shader resource management
 
     - Add memory pooling for shader objects and resources
     - Implement automatic cleanup of unused shaders and variants
     - Create memory usage monitoring and optimization
     - _Requirements: 9.6, 4.7, 8.3_
 
-  - [ ] 14.2 Optimize texture and framebuffer management
+  - [x] 14.2 Optimize texture and framebuffer management
     - Add efficient framebuffer pooling for post-processing
     - Implement texture atlas support for material textures
     - Create automatic texture compression and optimization
@@ -232,8 +232,9 @@
   - [ ] 15.1 Build shader system demonstration examples
 
     - Create PBR material showcase with various material types
-    - Add hot-reload demonstration with real-time shader editing
-    - Implement post-processing effects gallery with interactive controls
+    - Add these examples to GameExample project
+    - Add hot-reload demonstration with real-time shader editing in GameExample
+    - Implement post-processing effects gallery with interactive controls in GameExample
     - _Requirements: 1.7, 2.1, 5.1_
 
   - [ ] 15.2 Update engine documentation and API reference

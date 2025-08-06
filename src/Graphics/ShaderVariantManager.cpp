@@ -1,6 +1,7 @@
 #include "Graphics/ShaderVariantManager.h"
 #include "Graphics/Shader.h"
 #include "Graphics/ShaderManager.h"
+#include "Graphics/HardwareCapabilities.h"
 #include "Core/Logger.h"
 #include <algorithm>
 #include <chrono>
@@ -292,6 +293,41 @@ namespace GameEngine {
             variant.AddDefine("OPTIMIZED", "1");
             variant.AddFeature("PERFORMANCE_MODE");
         }
+        
+        // Add hardware capability defines
+        if (!context.supportsGeometryShaders) {
+            variant.AddDefine("NO_GEOMETRY_SHADERS", "1");
+            variant.AddFeature("FALLBACK_GEOMETRY");
+        }
+        
+        if (!context.supportsTessellation) {
+            variant.AddDefine("NO_TESSELLATION", "1");
+            variant.AddFeature("FALLBACK_TESSELLATION");
+        }
+        
+        if (!context.supportsComputeShaders) {
+            variant.AddDefine("NO_COMPUTE_SHADERS", "1");
+            variant.AddFeature("FALLBACK_COMPUTE");
+        }
+        
+        if (!context.supportsStorageBuffers) {
+            variant.AddDefine("NO_STORAGE_BUFFERS", "1");
+            variant.AddFeature("FALLBACK_STORAGE");
+        }
+        
+        if (!context.supportsImageLoadStore) {
+            variant.AddDefine("NO_IMAGE_LOAD_STORE", "1");
+            variant.AddFeature("FALLBACK_IMAGE_OPS");
+        }
+        
+        if (!context.supportsAtomicOperations) {
+            variant.AddDefine("NO_ATOMIC_OPERATIONS", "1");
+            variant.AddFeature("FALLBACK_ATOMICS");
+        }
+        
+        // Add performance tier define
+        variant.AddDefine("PERFORMANCE_TIER", std::to_string(context.performanceTier));
+        variant.AddFeature("PERFORMANCE_TIER_" + std::to_string(context.performanceTier));
         
         return variant;
     }
@@ -625,5 +661,69 @@ namespace GameEngine {
         bool oldAndUnused = (m_currentTime - usage.lastUsedTime > m_variantLifetime) && (usage.useCount < 5);
         
         return oldAndUnused;
+    }
+
+    RenderContext ShaderVariantManager::CreateHardwareAwareContext(const RenderContext& baseContext) {
+        RenderContext context = baseContext;
+        PopulateHardwareCapabilities(context);
+        return context;
+    }
+
+    void ShaderVariantManager::PopulateHardwareCapabilities(RenderContext& context) {
+        if (!HardwareCapabilities::IsInitialized()) {
+            LOG_WARNING("Hardware capabilities not initialized, using default values");
+            return;
+        }
+        
+        const auto& capabilities = HardwareCapabilities::GetInstance();
+        
+        // Update hardware capability flags
+        context.supportsGeometryShaders = capabilities.SupportsGeometryShaders();
+        context.supportsTessellation = capabilities.SupportsTessellation();
+        context.supportsComputeShaders = capabilities.SupportsComputeShaders();
+        context.supportsStorageBuffers = capabilities.SupportsStorageBuffers();
+        context.supportsImageLoadStore = capabilities.SupportsImageLoadStore();
+        context.supportsAtomicOperations = capabilities.SupportsAtomicOperations();
+        context.performanceTier = capabilities.GetPerformanceTier();
+        
+        // Adjust limits based on hardware capabilities
+        const auto& shaderLimits = capabilities.GetShaderLimits();
+        
+        // Limit texture units based on hardware
+        int maxSafeTextureUnits = std::min(32, shaderLimits.maxCombinedTextureUnits / 2);
+        
+        // Adjust bone count for skinning based on uniform limits
+        if (context.hasSkinning) {
+            int maxSafeBones = std::min(context.maxBones, shaderLimits.maxVertexUniforms / 16); // Rough estimate
+            context.maxBones = maxSafeBones;
+        }
+        
+        // Adjust light counts based on performance tier
+        switch (context.performanceTier) {
+            case 0: // Low performance
+                context.maxPointLights = std::min(context.maxPointLights, 2);
+                context.maxSpotLights = std::min(context.maxSpotLights, 1);
+                break;
+            case 1: // Medium performance
+                context.maxPointLights = std::min(context.maxPointLights, 4);
+                context.maxSpotLights = std::min(context.maxSpotLights, 2);
+                break;
+            case 2: // High performance
+                context.maxPointLights = std::min(context.maxPointLights, 8);
+                context.maxSpotLights = std::min(context.maxSpotLights, 4);
+                break;
+            case 3: // Ultra performance
+                // No additional limits
+                break;
+        }
+        
+        if (m_debugMode) {
+            LOG_INFO("Hardware-aware context created:");
+            LOG_INFO("  Performance Tier: " + std::to_string(context.performanceTier));
+            LOG_INFO("  Compute Shaders: " + std::string(context.supportsComputeShaders ? "Yes" : "No"));
+            LOG_INFO("  Geometry Shaders: " + std::string(context.supportsGeometryShaders ? "Yes" : "No"));
+            LOG_INFO("  Max Point Lights: " + std::to_string(context.maxPointLights));
+            LOG_INFO("  Max Bones: " + std::to_string(context.maxBones));
+        }
     }
 }

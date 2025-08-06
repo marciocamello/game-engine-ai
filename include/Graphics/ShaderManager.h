@@ -53,6 +53,7 @@ namespace GameEngine {
         std::shared_ptr<Shader> LoadShaderFromFiles(const std::string& name, const std::string& vertexPath, const std::string& fragmentPath);
         std::shared_ptr<Shader> LoadShaderFromSource(const std::string& name, const std::string& vertexSource, const std::string& fragmentSource);
         std::shared_ptr<Shader> GetShader(const std::string& name);
+        std::shared_ptr<Shader> GetShaderWithFallback(const std::string& name); // Get shader with automatic fallback if needed
         void UnloadShader(const std::string& name);
         void UnloadAllShaders();
 
@@ -98,6 +99,13 @@ namespace GameEngine {
         bool IsBackgroundCompilationEnabled() const { return m_backgroundCompilationEnabled; }
         void SetMaxBackgroundThreads(size_t count);
         void PauseBackgroundCompilation();
+        
+        // Hardware fallback integration
+        void EnableFallbackSystem(bool enable) { m_fallbackEnabled = enable; }
+        bool IsFallbackSystemEnabled() const { return m_fallbackEnabled; }
+        bool IsShaderUsingFallback(const std::string& name) const;
+        std::vector<std::string> GetShadersUsingFallbacks() const;
+        void InitializeHardwareCapabilities();
         void ResumeBackgroundCompilation();
 
         // Shader variant support
@@ -128,11 +136,13 @@ namespace GameEngine {
         std::unordered_map<std::string, std::shared_ptr<Shader>> m_shaders;
         std::unordered_map<std::string, ShaderDesc> m_shaderDescs;
         std::unordered_map<std::string, std::string> m_fileToShaderMap; // Maps file paths to shader names
+        std::unordered_map<std::string, bool> m_shaderFallbackStatus; // Tracks which shaders are using fallbacks
 
         bool m_initialized = false;
         bool m_hotReloadEnabled = false;
         bool m_debugMode = false;
         bool m_backgroundCompilationEnabled = true;
+        bool m_fallbackEnabled = true;
 
         std::unique_ptr<ShaderHotReloader> m_hotReloader;
         std::function<void(const std::string&)> m_hotReloadCallback;

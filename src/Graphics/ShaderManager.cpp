@@ -3,6 +3,8 @@
 #include "Graphics/ShaderHotReloader.h"
 #include "Graphics/ShaderVariantManager.h"
 #include "Graphics/ShaderBackgroundCompiler.h"
+#include "Graphics/ShaderFallbackManager.h"
+#include "Graphics/HardwareCapabilities.h"
 #include "Core/Logger.h"
 #include <filesystem>
 #include <fstream>
@@ -55,6 +57,11 @@ namespace GameEngine {
                 LOG_WARNING("Failed to initialize ShaderBackgroundCompiler, disabling background compilation");
                 m_backgroundCompilationEnabled = false;
             }
+        }
+        
+        // Initialize hardware capabilities and fallback system if enabled
+        if (m_fallbackEnabled) {
+            InitializeHardwareCapabilities();
         }
         
         m_initialized = true;
@@ -212,6 +219,42 @@ namespace GameEngine {
             LOG_WARNING("Shader not found: " + name);
         }
         return nullptr;
+    }
+
+    std::shared_ptr<Shader> ShaderManager::GetShaderWithFallback(const std::string& name) {
+        // First try to get the original shader
+        auto originalShader = GetShader(name);
+        
+        // If fallback system is disabled, return original shader (or nullptr)
+        if (!m_fallbackEnabled) {
+            return originalShader;
+        }
+        
+        // Check if a fallback is needed for this shader
+        auto& fallbackManager = ShaderFallbackManager::GetInstance();
+        if (!fallbackManager.IsInitialized()) {
+            if (m_debugMode) {
+                LOG_WARNING("Fallback system not initialized, returning original shader");
+            }
+            return originalShader;
+        }
+        
+        // Try to get fallback shader
+        auto fallbackShader = fallbackManager.GetFallbackShader(name);
+        if (fallbackShader) {
+            // Mark this shader as using fallback
+            m_shaderFallbackStatus[name] = true;
+            
+            if (m_debugMode) {
+                LOG_INFO("Using fallback shader for: " + name);
+            }
+            
+            return fallbackShader;
+        }
+        
+        // No fallback needed or available, return original shader
+        m_shaderFallbackStatus[name] = false;
+        return originalShader;
     }
 
     void ShaderManager::UnloadShader(const std::string& name) {
@@ -821,6 +864,46 @@ namespace GameEngine {
     void ShaderManager::ResumeBackgroundCompilation() {
         if (m_backgroundCompilationEnabled) {
             ShaderBackgroundCompiler::GetInstance().ResumeCompilation();
+        }
+    }
+
+    bool ShaderManager::IsShaderUsingFallback(const std::string& name) const {
+        auto it = m_shaderFallbackStatus.find(name);
+        return (it != m_shaderFallbackStatus.end()) ? it->second : false;
+    }
+
+    std::vector<std::string> ShaderManager::GetShadersUsingFallbacks() const {
+        std::vector<std::string> fallbackShaders;
+        
+        for (const auto& pair : m_shaderFallbackStatus) {
+            if (pair.second) { // If using fallback
+                fallbackShaders.push_back(pair.first);
+            }
+        }
+        
+        return fallbackShaders;
+    }
+
+    void ShaderManager::InitializeHardwareCapabilities() {
+        if (!HardwareCapabilities::Initialize()) {
+            LOG_ERROR("Failed to initialize hardware capabilities");
+            return;
+        }
+        
+        if (!ShaderFallbackManager::GetInstance().Initialize()) {
+            LOG_ERROR("Failed to initialize shader fallback manager");
+            return;
+        }
+        
+        LOG_INFO("Hardware capabilities and fallback system initialized");
+        
+        // Log any shaders that will need fallbacks
+        auto fallbackShaders = GetShadersUsingFallbacks();
+        if (!fallbackShaders.empty()) {
+            LOG_INFO("Shaders using fallbacks:");
+            for (const auto& shaderName : fallbackShaders) {
+                LOG_INFO("  - " + shaderName);
+            }
         }
     }
 }

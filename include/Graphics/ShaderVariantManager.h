@@ -31,10 +31,14 @@ namespace GameEngine {
         bool useDebugMode = false;
         bool useOptimizedPath = true;
         
-        // Hardware capabilities
+        // Hardware capabilities (will be auto-detected)
         bool supportsGeometryShaders = true;
         bool supportsTessellation = true;
         bool supportsComputeShaders = true;
+        bool supportsStorageBuffers = true;
+        bool supportsImageLoadStore = true;
+        bool supportsAtomicOperations = true;
+        int performanceTier = 2; // 0=low, 1=medium, 2=high, 3=ultra
         
         // Performance settings
         int maxBones = 64;
@@ -88,6 +92,10 @@ namespace GameEngine {
         std::shared_ptr<Shader> SelectBestVariant(const std::string& baseName, const RenderContext& context);
         void SetVariantSelectionCallback(std::function<ShaderVariant(const RenderContext&)> callback);
         ShaderVariant GenerateVariantFromContext(const RenderContext& context);
+        
+        // Hardware capability integration
+        RenderContext CreateHardwareAwareContext(const RenderContext& baseContext);
+        void PopulateHardwareCapabilities(RenderContext& context);
 
         // Cache management
         void ClearVariantCache();

@@ -34,6 +34,7 @@ find_package(glad REQUIRED)
 find_package(assimp QUIET)
 find_package(OpenAL QUIET)
 find_package(Bullet CONFIG REQUIRED)
+
 find_package(Lua QUIET)
 find_package(nlohmann_json QUIET)
 find_package(fmt QUIET)
@@ -104,6 +105,28 @@ if(Bullet_FOUND)
         LinearMath
     )
     target_compile_definitions(GameEngineKiro PUBLIC GAMEENGINE_HAS_BULLET)
+endif()
+
+find_package(unofficial-omniverse-physx-sdk CONFIG QUIET)
+if(unofficial-omniverse-physx-sdk_FOUND)
+    target_link_libraries(GameEngineKiro PUBLIC 
+        unofficial::omniverse-physx-sdk::sdk
+    )
+    target_compile_definitions(GameEngineKiro PUBLIC GAMEENGINE_HAS_PHYSX)
+    
+    # Copy GPU acceleration libraries if available
+    if(TARGET unofficial::omniverse-physx-sdk::gpu-library)
+        add_custom_command(TARGET GameEngineKiro POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            $<TARGET_FILE:unofficial::omniverse-physx-sdk::gpu-library>
+            $<TARGET_FILE_DIR:GameEngineKiro>)
+        if(WIN32)
+            add_custom_command(TARGET GameEngineKiro POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                $<TARGET_FILE:unofficial::omniverse-physx-sdk::gpu-device-library>
+                $<TARGET_FILE_DIR:GameEngineKiro>)
+        endif()
+    endif()
 endif()
 
 if(Lua_FOUND)

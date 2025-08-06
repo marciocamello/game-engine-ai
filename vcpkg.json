@@ -12,7 +12,8 @@
         "fmt",
         "openal-soft",
         "bullet3",
-        "assimp"
+        "assimp",
+        "physx"
     ],
     "features": {
         "full": {
@@ -25,9 +26,9 @@
             ]
         },
         "physx": {
-            "description": "Enable NVIDIA PhysX physics (future)",
+            "description": "Enable NVIDIA PhysX physics",
             "dependencies": [
-                "bullet3"
+                "physx"
             ]
         },
         "graphics": {

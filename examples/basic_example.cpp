@@ -9,6 +9,7 @@
 #include "Graphics/OpenGLRenderer.h"
 #include "Graphics/PrimitiveRenderer.h"
 #include "Graphics/GridRenderer.h"
+#include "Graphics/ShaderManager.h"
 #include "Input/InputManager.h"
 #include <GLFW/glfw3.h>
 
@@ -146,6 +147,9 @@ public:
     input->BindAction("move_up", KeyCode::E);      // Move up
     input->BindAction("move_down", KeyCode::Q);    // Move down
     input->BindAction("quit", KeyCode::Escape);
+    input->BindAction("toggle_hot_reload", KeyCode::H);
+    input->BindAction("reload_shaders", KeyCode::R);
+    input->BindAction("show_shader_status", KeyCode::M);
     
     LOG_INFO("Navigation controls bound successfully");
 
@@ -159,6 +163,7 @@ public:
     LOG_INFO("MINIMAL FEATURES:");
     LOG_INFO("  ✓ Professional Grid System: Clean reference grid");
     LOG_INFO("  ✓ Free Camera Navigation: Unreal Engine-style viewport camera");
+    LOG_INFO("  ✓ Advanced Shader System: Hot-reloadable shaders with PBR support");
     LOG_INFO("  ✓ Clean Interface: No distractions, pure navigation");
     LOG_INFO("");
     LOG_INFO("NAVIGATION CONTROLS:");
@@ -172,7 +177,12 @@ public:
     LOG_INFO("  Shift - Increase camera speed");
     LOG_INFO("  Ctrl - Decrease camera speed");
     LOG_INFO("");
-    LOG_INFO("This basic example provides clean scene navigation");
+    LOG_INFO("SHADER SYSTEM DEMONSTRATION:");
+    LOG_INFO("  H - Toggle shader hot-reload system");
+    LOG_INFO("  R - Reload all shaders manually");
+    LOG_INFO("  M - Show shader system status");
+    LOG_INFO("");
+    LOG_INFO("This basic example provides clean scene navigation with advanced shader features");
     LOG_INFO("For comprehensive feature demonstration, see the enhanced example");
     LOG_INFO("========================================");
     return true;
@@ -215,6 +225,30 @@ public:
       glfwSetWindowShouldClose(window, GLFW_TRUE);
       LOG_INFO("Exiting basic scene navigation");
       return;
+    }
+
+    // Handle shader system controls
+    if (input->IsKeyPressed(KeyCode::H)) {
+      auto& shaderManager = ShaderManager::GetInstance();
+      bool currentState = shaderManager.IsHotReloadEnabled();
+      shaderManager.EnableHotReload(!currentState);
+      LOG_INFO("Shader hot-reload " + std::string(!currentState ? "ENABLED" : "DISABLED"));
+    }
+
+    if (input->IsKeyPressed(KeyCode::R)) {
+      auto& shaderManager = ShaderManager::GetInstance();
+      shaderManager.ReloadAllShaders();
+      LOG_INFO("All shaders reloaded manually");
+    }
+
+    if (input->IsKeyPressed(KeyCode::M)) {
+      auto& shaderManager = ShaderManager::GetInstance();
+      auto stats = shaderManager.GetShaderStats();
+      LOG_INFO("SHADER SYSTEM STATUS:");
+      LOG_INFO("  Total Shaders: " + std::to_string(stats.totalShaders));
+      LOG_INFO("  Loaded Shaders: " + std::to_string(stats.loadedShaders));
+      LOG_INFO("  Compilation Errors: " + std::to_string(stats.compilationErrors));
+      LOG_INFO("  Hot-reload Enabled: " + std::string(shaderManager.IsHotReloadEnabled() ? "YES" : "NO"));
     }
 
     // Update camera

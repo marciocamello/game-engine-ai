@@ -2,6 +2,7 @@
 #include "Graphics/Texture.h"
 #include "Graphics/ShaderError.h"
 #include "Graphics/ShaderProfiler.h"
+#include "Graphics/ShaderStateManager.h"
 #include "Core/Logger.h"
 #include <glad/glad.h>
 #include <fstream>
@@ -13,6 +14,11 @@ namespace GameEngine {
     }
 
     Shader::~Shader() {
+        // Unregister from state manager if registered
+        if (m_registeredWithStateManager && m_programID != 0) {
+            ShaderStateManager::GetInstance().UnregisterShader(m_programID);
+        }
+        
         if (m_programID) {
             glDeleteProgram(m_programID);
         }
@@ -233,6 +239,9 @@ namespace GameEngine {
         // Register shader with profiler
         ShaderProfiler::GetInstance().RegisterShader("Shader", m_programID);
         
+        // Register with state manager for optimization
+        RegisterWithStateManager();
+        
         return true;
     }
 
@@ -291,7 +300,13 @@ namespace GameEngine {
 
     void Shader::Use() const {
         if (m_programID) {
-            glUseProgram(m_programID);
+            if (m_useStateOptimization && m_registeredWithStateManager) {
+                // Use state manager for optimized state changes
+                ShaderStateManager::GetInstance().SetActiveShaderByProgramId(m_programID);
+            } else {
+                // Direct OpenGL call
+                glUseProgram(m_programID);
+            }
             
             // Start timing for profiling
             ShaderProfiler::GetInstance().BeginShaderTiming("Shader");
@@ -319,100 +334,206 @@ namespace GameEngine {
 
 
 
-    // Enhanced uniform setters
+    // Enhanced uniform setters (with state management optimization)
     void Shader::SetUniform(const std::string& name, bool value) {
-        glUniform1i(GetUniformLocation(name), static_cast<int>(value));
+        if (m_useStateOptimization) {
+            ShaderStateManager::GetInstance().QueueUniformUpdate(name, value);
+        } else {
+            SetUniformDirect(name, value);
+        }
     }
 
     void Shader::SetUniform(const std::string& name, int value) {
-        glUniform1i(GetUniformLocation(name), value);
+        if (m_useStateOptimization) {
+            ShaderStateManager::GetInstance().QueueUniformUpdate(name, value);
+        } else {
+            SetUniformDirect(name, value);
+        }
     }
 
     void Shader::SetUniform(const std::string& name, float value) {
-        glUniform1f(GetUniformLocation(name), value);
+        if (m_useStateOptimization) {
+            ShaderStateManager::GetInstance().QueueUniformUpdate(name, value);
+        } else {
+            SetUniformDirect(name, value);
+        }
     }
 
     void Shader::SetUniform(const std::string& name, const Math::Vec2& value) {
-        glUniform2fv(GetUniformLocation(name), 1, &value[0]);
+        if (m_useStateOptimization) {
+            ShaderStateManager::GetInstance().QueueUniformUpdate(name, value);
+        } else {
+            SetUniformDirect(name, value);
+        }
     }
 
     void Shader::SetUniform(const std::string& name, const Math::Vec3& value) {
-        glUniform3fv(GetUniformLocation(name), 1, &value[0]);
+        if (m_useStateOptimization) {
+            ShaderStateManager::GetInstance().QueueUniformUpdate(name, value);
+        } else {
+            SetUniformDirect(name, value);
+        }
     }
 
     void Shader::SetUniform(const std::string& name, const Math::Vec4& value) {
-        glUniform4fv(GetUniformLocation(name), 1, &value[0]);
+        if (m_useStateOptimization) {
+            ShaderStateManager::GetInstance().QueueUniformUpdate(name, value);
+        } else {
+            SetUniformDirect(name, value);
+        }
     }
 
     void Shader::SetUniform(const std::string& name, const Math::Mat3& value) {
-        glUniformMatrix3fv(GetUniformLocation(name), 1, GL_FALSE, &value[0][0]);
+        if (m_useStateOptimization) {
+            ShaderStateManager::GetInstance().QueueUniformUpdate(name, value);
+        } else {
+            SetUniformDirect(name, value);
+        }
     }
 
     void Shader::SetUniform(const std::string& name, const Math::Mat4& value) {
-        glUniformMatrix4fv(GetUniformLocation(name), 1, GL_FALSE, &value[0][0]);
+        if (m_useStateOptimization) {
+            ShaderStateManager::GetInstance().QueueUniformUpdate(name, value);
+        } else {
+            SetUniformDirect(name, value);
+        }
     }
 
     void Shader::SetUniformArray(const std::string& name, const std::vector<Math::Mat4>& values) {
-        if (!values.empty()) {
-            glUniformMatrix4fv(GetUniformLocation(name), static_cast<GLsizei>(values.size()), 
-                             GL_FALSE, &values[0][0][0]);
+        if (m_useStateOptimization) {
+            ShaderStateManager::GetInstance().QueueUniformArrayUpdate(name, values);
+        } else {
+            if (!values.empty()) {
+                glUniformMatrix4fv(GetUniformLocation(name), static_cast<GLsizei>(values.size()), 
+                                 GL_FALSE, &values[0][0][0]);
+            }
         }
     }
 
     void Shader::SetUniformArray(const std::string& name, const std::vector<Math::Vec3>& values) {
-        if (!values.empty()) {
-            glUniform3fv(GetUniformLocation(name), static_cast<GLsizei>(values.size()), &values[0][0]);
+        if (m_useStateOptimization) {
+            ShaderStateManager::GetInstance().QueueUniformArrayUpdate(name, values);
+        } else {
+            if (!values.empty()) {
+                glUniform3fv(GetUniformLocation(name), static_cast<GLsizei>(values.size()), &values[0][0]);
+            }
         }
     }
 
     void Shader::SetUniformArray(const std::string& name, const std::vector<Math::Vec4>& values) {
-        if (!values.empty()) {
-            glUniform4fv(GetUniformLocation(name), static_cast<GLsizei>(values.size()), &values[0][0]);
+        if (m_useStateOptimization) {
+            ShaderStateManager::GetInstance().QueueUniformArrayUpdate(name, values);
+        } else {
+            if (!values.empty()) {
+                glUniform4fv(GetUniformLocation(name), static_cast<GLsizei>(values.size()), &values[0][0]);
+            }
         }
     }
 
     void Shader::SetUniformArray(const std::string& name, const std::vector<float>& values) {
-        if (!values.empty()) {
-            glUniform1fv(GetUniformLocation(name), static_cast<GLsizei>(values.size()), values.data());
+        if (m_useStateOptimization) {
+            ShaderStateManager::GetInstance().QueueUniformArrayUpdate(name, values);
+        } else {
+            if (!values.empty()) {
+                glUniform1fv(GetUniformLocation(name), static_cast<GLsizei>(values.size()), values.data());
+            }
         }
     }
 
     void Shader::SetUniformArray(const std::string& name, const std::vector<int>& values) {
-        if (!values.empty()) {
-            glUniform1iv(GetUniformLocation(name), static_cast<GLsizei>(values.size()), values.data());
+        if (m_useStateOptimization) {
+            ShaderStateManager::GetInstance().QueueUniformArrayUpdate(name, values);
+        } else {
+            if (!values.empty()) {
+                glUniform1iv(GetUniformLocation(name), static_cast<GLsizei>(values.size()), values.data());
+            }
         }
     }
 
-    // Texture binding with automatic slot management
+    // Direct uniform setters (bypass state management for immediate updates)
+    void Shader::SetUniformDirect(const std::string& name, bool value) {
+        glUniform1i(GetUniformLocation(name), static_cast<int>(value));
+    }
+
+    void Shader::SetUniformDirect(const std::string& name, int value) {
+        glUniform1i(GetUniformLocation(name), value);
+    }
+
+    void Shader::SetUniformDirect(const std::string& name, float value) {
+        glUniform1f(GetUniformLocation(name), value);
+    }
+
+    void Shader::SetUniformDirect(const std::string& name, const Math::Vec2& value) {
+        glUniform2fv(GetUniformLocation(name), 1, &value[0]);
+    }
+
+    void Shader::SetUniformDirect(const std::string& name, const Math::Vec3& value) {
+        glUniform3fv(GetUniformLocation(name), 1, &value[0]);
+    }
+
+    void Shader::SetUniformDirect(const std::string& name, const Math::Vec4& value) {
+        glUniform4fv(GetUniformLocation(name), 1, &value[0]);
+    }
+
+    void Shader::SetUniformDirect(const std::string& name, const Math::Mat3& value) {
+        glUniformMatrix3fv(GetUniformLocation(name), 1, GL_FALSE, &value[0][0]);
+    }
+
+    void Shader::SetUniformDirect(const std::string& name, const Math::Mat4& value) {
+        glUniformMatrix4fv(GetUniformLocation(name), 1, GL_FALSE, &value[0][0]);
+    }
+
+    // Texture binding with automatic slot management (optimized)
     void Shader::BindTexture(const std::string& name, uint32_t textureId, uint32_t slot) {
-        glActiveTexture(GL_TEXTURE0 + slot);
-        glBindTexture(GL_TEXTURE_2D, textureId);
-        SetUniform(name, static_cast<int>(slot));
+        if (m_useStateOptimization) {
+            ShaderStateManager::GetInstance().QueueTextureBinding(name, textureId, GL_TEXTURE_2D);
+        } else {
+            BindTextureDirect(name, textureId, slot);
+        }
     }
 
     void Shader::BindTexture(const std::string& name, const Texture& texture, uint32_t slot) {
-        BindTexture(name, texture.GetID(), slot);
+        if (m_useStateOptimization) {
+            ShaderStateManager::GetInstance().QueueTextureBinding(name, texture);
+        } else {
+            BindTextureDirect(name, texture, slot);
+        }
     }
 
     void Shader::BindTextureAuto(const std::string& name, uint32_t textureId) {
-        // Check if this texture uniform already has a slot assigned
-        auto it = m_textureSlots.find(name);
-        uint32_t slot;
-        
-        if (it != m_textureSlots.end()) {
-            // Use existing slot
-            slot = it->second;
+        if (m_useStateOptimization) {
+            ShaderStateManager::GetInstance().QueueTextureBinding(name, textureId, GL_TEXTURE_2D);
         } else {
-            // Assign new slot
-            slot = GetNextTextureSlot();
-            m_textureSlots[name] = slot;
+            // Check if this texture uniform already has a slot assigned
+            auto it = m_textureSlots.find(name);
+            uint32_t slot;
+            
+            if (it != m_textureSlots.end()) {
+                // Use existing slot
+                slot = it->second;
+            } else {
+                // Assign new slot
+                slot = GetNextTextureSlot();
+                m_textureSlots[name] = slot;
+            }
+            
+            BindTextureDirect(name, textureId, slot);
         }
-        
-        BindTexture(name, textureId, slot);
     }
 
     void Shader::BindTextureAuto(const std::string& name, const Texture& texture) {
         BindTextureAuto(name, texture.GetID());
+    }
+
+    // Direct texture binding (bypass state management)
+    void Shader::BindTextureDirect(const std::string& name, uint32_t textureId, uint32_t slot) {
+        glActiveTexture(GL_TEXTURE0 + slot);
+        glBindTexture(GL_TEXTURE_2D, textureId);
+        SetUniformDirect(name, static_cast<int>(slot));
+    }
+
+    void Shader::BindTextureDirect(const std::string& name, const Texture& texture, uint32_t slot) {
+        BindTextureDirect(name, texture.GetID(), slot);
     }
 
     void Shader::BindImageTexture(const std::string& name, uint32_t textureId, uint32_t slot, uint32_t access) {
@@ -478,13 +599,22 @@ namespace GameEngine {
     }
 
     void Shader::ResetTextureSlots() {
-        m_nextTextureSlot = 0;
-        m_textureSlots.clear();
+        if (m_useStateOptimization) {
+            ShaderStateManager::GetInstance().ResetTextureSlots();
+        } else {
+            m_nextTextureSlot = 0;
+            m_textureSlots.clear();
+        }
     }
 
     uint32_t Shader::GetTextureSlot(const std::string& name) const {
-        auto it = m_textureSlots.find(name);
-        return (it != m_textureSlots.end()) ? it->second : 0;
+        if (m_useStateOptimization) {
+            uint32_t slot = ShaderStateManager::GetInstance().GetTextureSlot(name);
+            return (slot != UINT32_MAX) ? slot : 0;
+        } else {
+            auto it = m_textureSlots.find(name);
+            return (it != m_textureSlots.end()) ? it->second : 0;
+        }
     }
 
     bool Shader::HasUniform(const std::string& name) const {
@@ -524,6 +654,10 @@ namespace GameEngine {
         }
 
         m_state = State::Linked;
+        
+        // Register with state manager for optimization
+        RegisterWithStateManager();
+        
         return true;
     }
 
@@ -581,5 +715,18 @@ namespace GameEngine {
         }
         
         return performanceWarnings;
+    }
+
+    void Shader::FlushPendingUpdates() {
+        if (m_useStateOptimization) {
+            ShaderStateManager::GetInstance().FlushPendingUpdates();
+        }
+    }
+
+    void Shader::RegisterWithStateManager() {
+        if (m_programID != 0 && !m_registeredWithStateManager) {
+            ShaderStateManager::GetInstance().RegisterShader(m_programID, "Shader_" + std::to_string(m_programID));
+            m_registeredWithStateManager = true;
+        }
     }
 }

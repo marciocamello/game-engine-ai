@@ -2,6 +2,7 @@
 #include "Graphics/Shader.h"
 #include "Graphics/ShaderHotReloader.h"
 #include "Graphics/ShaderVariantManager.h"
+#include "Graphics/ShaderBackgroundCompiler.h"
 #include "Core/Logger.h"
 #include <filesystem>
 #include <fstream>
@@ -48,6 +49,14 @@ namespace GameEngine {
             OnShaderFileError(filepath, error);
         });
         
+        // Initialize background compiler if enabled
+        if (m_backgroundCompilationEnabled) {
+            if (!ShaderBackgroundCompiler::GetInstance().Initialize()) {
+                LOG_WARNING("Failed to initialize ShaderBackgroundCompiler, disabling background compilation");
+                m_backgroundCompilationEnabled = false;
+            }
+        }
+        
         m_initialized = true;
         LOG_INFO("ShaderManager initialized successfully");
         return true;
@@ -70,6 +79,11 @@ namespace GameEngine {
         if (m_hotReloader) {
             m_hotReloader->Shutdown();
             m_hotReloader.reset();
+        }
+        
+        // Shutdown background compiler
+        if (m_backgroundCompilationEnabled) {
+            ShaderBackgroundCompiler::GetInstance().Shutdown();
         }
         
         m_variantManager = nullptr;
@@ -667,5 +681,146 @@ namespace GameEngine {
         }
         
         return m_variantManager->GetVariants(baseName);
+    }
+
+    // Background compilation methods
+    std::future<std::shared_ptr<Shader>> ShaderManager::LoadShaderAsync(const std::string& name, const ShaderDesc& desc) {
+        if (!m_backgroundCompilationEnabled) {
+            // Fallback to synchronous loading
+            auto promise = std::promise<std::shared_ptr<Shader>>();
+            auto future = promise.get_future();
+            promise.set_value(LoadShader(name, desc));
+            return future;
+        }
+
+        // Load shader sources
+        std::string vertexSource, fragmentSource, geometrySource, computeSource;
+        
+        if (!desc.vertexPath.empty()) {
+            std::ifstream file(desc.vertexPath);
+            if (file.is_open()) {
+                std::stringstream buffer;
+                buffer << file.rdbuf();
+                vertexSource = buffer.str();
+            }
+        }
+        
+        if (!desc.fragmentPath.empty()) {
+            std::ifstream file(desc.fragmentPath);
+            if (file.is_open()) {
+                std::stringstream buffer;
+                buffer << file.rdbuf();
+                fragmentSource = buffer.str();
+            }
+        }
+        
+        if (!desc.geometryPath.empty()) {
+            std::ifstream file(desc.geometryPath);
+            if (file.is_open()) {
+                std::stringstream buffer;
+                buffer << file.rdbuf();
+                geometrySource = buffer.str();
+            }
+        }
+        
+        if (!desc.computePath.empty()) {
+            std::ifstream file(desc.computePath);
+            if (file.is_open()) {
+                std::stringstream buffer;
+                buffer << file.rdbuf();
+                computeSource = buffer.str();
+            }
+        }
+
+        // Submit to background compiler
+        return ShaderBackgroundCompiler::GetInstance().SubmitCompilationJob(
+            name, vertexSource, fragmentSource, geometrySource, computeSource, desc.variant, 0,
+            [this, name, desc](std::shared_ptr<Shader> shader) {
+                if (shader) {
+                    // Register the compiled shader
+                    RegisterShader(name, shader);
+                    m_shaderDescs[name] = desc;
+                    
+                    // Set up hot reload if enabled
+                    if (desc.enableHotReload && m_hotReloader) {
+                        RegisterShaderFiles(name, desc);
+                    }
+                }
+            }
+        );
+    }
+
+    std::future<std::shared_ptr<Shader>> ShaderManager::LoadShaderFromFilesAsync(const std::string& name, const std::string& vertexPath, const std::string& fragmentPath) {
+        ShaderDesc desc;
+        desc.name = name;
+        desc.vertexPath = vertexPath;
+        desc.fragmentPath = fragmentPath;
+        desc.enableHotReload = true;
+        
+        return LoadShaderAsync(name, desc);
+    }
+
+    void ShaderManager::StartProgressiveShaderLoading(const std::vector<std::string>& shaderPaths) {
+        if (!m_backgroundCompilationEnabled) {
+            LOG_WARNING("Background compilation disabled, cannot start progressive loading");
+            return;
+        }
+
+        ShaderBackgroundCompiler::GetInstance().StartProgressiveLoading(shaderPaths);
+        LOG_INFO("Started progressive loading of " + std::to_string(shaderPaths.size()) + " shaders");
+    }
+
+    void ShaderManager::StopProgressiveShaderLoading() {
+        if (m_backgroundCompilationEnabled) {
+            ShaderBackgroundCompiler::GetInstance().StopProgressiveLoading();
+        }
+    }
+
+    void ShaderManager::PrecompileCommonVariants() {
+        if (!m_backgroundCompilationEnabled) {
+            LOG_WARNING("Background compilation disabled, cannot precompile variants");
+            return;
+        }
+
+        ShaderBackgroundCompiler::GetInstance().PrecompileCommonVariants();
+        LOG_INFO("Started precompilation of common shader variants");
+    }
+
+    void ShaderManager::EnableBackgroundCompilation(bool enable) {
+        if (enable == m_backgroundCompilationEnabled) {
+            return;
+        }
+
+        m_backgroundCompilationEnabled = enable;
+        
+        if (enable) {
+            if (!ShaderBackgroundCompiler::GetInstance().Initialize()) {
+                LOG_ERROR("Failed to initialize ShaderBackgroundCompiler");
+                m_backgroundCompilationEnabled = false;
+            } else {
+                LOG_INFO("Background compilation enabled");
+            }
+        } else {
+            ShaderBackgroundCompiler::GetInstance().Shutdown();
+            LOG_INFO("Background compilation disabled");
+        }
+    }
+
+    void ShaderManager::SetMaxBackgroundThreads(size_t count) {
+        if (m_backgroundCompilationEnabled) {
+            ShaderBackgroundCompiler::GetInstance().SetMaxWorkerThreads(count);
+        }
+    }
+
+    void ShaderManager::PauseBackgroundCompilation() {
+        if (m_backgroundCompilationEnabled) {
+            ShaderBackgroundCompiler::GetInstance().PauseCompilation();
+        }
+    }
+
+    void ShaderManager::ResumeBackgroundCompilation() {
+        if (m_backgroundCompilationEnabled) {
+            ShaderBackgroundCompiler::GetInstance().ResumeCompilation();
+        }
     }
 }

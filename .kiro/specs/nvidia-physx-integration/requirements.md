@@ -4,6 +4,20 @@
 
 This specification covers the integration of NVIDIA PhysX as a high-performance alternative physics backend for Game Engine Kiro v1.1. The goal is to provide developers with the choice between Bullet Physics (compatibility-focused) and NVIDIA PhysX (performance-focused) while maintaining a unified API interface.
 
+### PhysX Version Compatibility
+
+**Current Target**: PhysX 5.5.0 (available via vcpkg)
+**Future Target**: PhysX 5.6.1+ (when available)
+
+**Key PhysX 5.6.1+ Changes to Consider**:
+
+- GPU source code now available (requires building from source)
+- Friction model simplified to PxFrictionType::ePATCH only
+- Binary platform conversion and deterministic serialization removed
+- Angular joint drive parameters completely reworked
+- Enhanced character controller features
+- Improved custom geometry support
+
 ## Requirements
 
 ### Requirement 1: Dual-Backend Physics Architecture
@@ -117,3 +131,31 @@ This specification covers the integration of NVIDIA PhysX as a high-performance 
 5. WHEN the scripting system accesses physics THEN both backends SHALL expose the same scripting interface
 6. WHEN the editor tools interact with physics THEN both backends SHALL support the same editor functionality
 7. WHEN saving/loading game state THEN both backends SHALL maintain compatible save formats
+
+### Requirement 9: PhysX 5.6.1+ Future Compatibility
+
+**User Story:** As a game developer, I want the PhysX integration to be ready for future PhysX versions so that I can upgrade seamlessly when newer versions become available.
+
+#### Acceptance Criteria
+
+1. WHEN PhysX 5.6.1+ becomes available THEN the system SHALL support building GPU binaries from source
+2. WHEN using friction materials THEN the system SHALL use only PxFrictionType::ePATCH (modern friction model)
+3. WHEN configuring joint drives THEN the system SHALL use the new angular drive configuration API
+4. WHEN using character controllers THEN the system SHALL leverage enhanced character controller features
+5. WHEN creating custom geometry THEN the system SHALL support improved custom geometry callbacks
+6. WHEN serializing physics data THEN the system SHALL handle the removal of deterministic binary serialization
+7. WHEN migrating from older PhysX versions THEN the system SHALL provide compatibility helpers for deprecated features
+
+### Requirement 10: Character Controller Integration
+
+**User Story:** As a game developer, I want advanced character controller features from PhysX so that I can create better character movement systems.
+
+#### Acceptance Criteria
+
+1. WHEN creating character controllers THEN PhysX SHALL support both box and capsule controller shapes
+2. WHEN characters move on slopes THEN the system SHALL provide automatic step-up functionality
+3. WHEN characters interact with moving platforms THEN the system SHALL handle kinematic surface velocities
+4. WHEN multiple characters interact THEN the system SHALL provide character-to-character collision handling
+5. WHEN characters need custom collision behavior THEN the system SHALL support behavior callbacks
+6. WHEN debugging character movement THEN the system SHALL provide visualization for controller volumes
+7. WHEN optimizing character performance THEN the system SHALL support efficient character controller caching

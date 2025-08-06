@@ -232,6 +232,66 @@
     - Create GPU acceleration showcase example
     - _Requirements: 1.5, 3.2, 5.2_
 
+- [ ] 17. PhysX 5.6.1+ Future Compatibility
+
+  - [ ] 17.1 Prepare for GPU source code building
+
+    - Research GPU binary building requirements
+    - Create build system integration for GPU source compilation
+    - Add CUDA development environment detection
+    - Document GPU binary building process
+    - _Requirements: 9.1_
+
+  - [ ] 17.2 Implement modern friction model support
+
+    - Update friction material creation to use PxFrictionType::ePATCH only
+    - Create migration helpers for legacy friction settings
+    - Add validation for deprecated friction types
+    - Update documentation for modern friction model
+    - _Requirements: 9.2_
+
+  - [ ] 17.3 Prepare for angular joint drive rework
+
+    - Research new angular drive configuration API
+    - Create compatibility layer for current joint drive usage
+    - Plan migration strategy for PxD6Drive::eSWING deprecation
+    - Implement new PxD6Joint::setAngularDriveConfig() usage
+    - _Requirements: 9.3_
+
+  - [ ] 17.4 Enhanced character controller preparation
+
+    - Research PhysX 5.6.1+ character controller improvements
+    - Plan integration with existing character movement systems
+    - Design enhanced collision detection features
+    - Prepare for improved slope handling capabilities
+    - _Requirements: 9.4, 10.1-10.7_
+
+- [ ] 18. Character Controller Advanced Features
+
+  - [ ] 18.1 Implement PhysX character controller integration
+
+    - Create PxController wrapper for engine character system
+    - Implement box and capsule controller shape support
+    - Add automatic step-up functionality for slopes
+    - Create character-to-character collision handling
+    - _Requirements: 10.1, 10.2, 10.5_
+
+  - [ ] 18.2 Add kinematic surface velocity support
+
+    - Implement moving platform character interaction
+    - Create conveyor belt and rotating surface support
+    - Add character behavior callbacks for custom collision response
+    - Integrate with existing movement component system
+    - _Requirements: 10.3, 10.4_
+
+  - [ ] 18.3 Character controller optimization and debugging
+
+    - Implement efficient character controller caching
+    - Add debug visualization for controller volumes
+    - Create performance profiling for character movement
+    - Add character controller statistics and monitoring
+    - _Requirements: 10.6, 10.7_
+
 - [ ] 17. Final integration and optimization
   - Run comprehensive integration tests with all engine systems
   - Validate performance improvements meet target benchmarks (2x+ improvement)

@@ -4,6 +4,20 @@
 
 This design document outlines the integration of NVIDIA PhysX as a high-performance alternative physics backend for Game Engine Kiro v1.1. The design focuses on creating a dual-backend architecture that allows seamless switching between Bullet Physics and NVIDIA PhysX while maintaining API compatibility and maximizing performance benefits.
 
+### PhysX Version Considerations
+
+**Current Implementation**: PhysX 5.5.0 (via vcpkg)
+**Target Version**: PhysX 5.6.1+ (when available)
+
+**Key Changes in PhysX 5.6.1+**:
+
+- GPU source code is now available (no more binaries)
+- Friction type simplification (only PxFrictionType::ePATCH supported)
+- Binary platform conversion removed
+- Angular joint drive parameters reworked
+- Character controller improvements
+- Custom geometry enhancements
+
 ## Architecture
 
 ### Dual-Backend Physics Architecture
@@ -137,6 +151,11 @@ public:
     void EnableAdaptiveForce(bool enable);
     void SetBroadPhaseType(BroadPhaseType type);
 
+    // PhysX 5.6.1+ specific features
+    void ConfigureAngularDriveModel(AngularDriveModel model);
+    void SetupCustomGeometry(const CustomGeometryDesc& desc);
+    void EnableCharacterControllerEnhancements(bool enable);
+
 private:
     // PhysX core objects
     physx::PxFoundation* m_foundation = nullptr;
@@ -151,6 +170,7 @@ private:
 
     // Object management
     std::unordered_map<uint32_t, physx::PxRigidActor*> m_rigidBodies;
+    std::unordered_map<uint32_t, physx::PxController*> m_characterControllers;
     std::unique_ptr<PhysXErrorCallback> m_errorCallback;
     std::unique_ptr<PhysXAllocatorCallback> m_allocatorCallback;
 
@@ -158,11 +178,19 @@ private:
     mutable PhysicsStats m_stats;
     bool m_gpuAccelerationEnabled = false;
 
+    // PhysX 5.6.1+ compatibility
+    bool m_useModernFrictionModel = true;
+    AngularDriveModel m_angularDriveModel = AngularDriveModel::SwingTwist;
+
     // Helper methods
     physx::PxRigidDynamic* CreateDynamicRigidBody(const RigidBodyDesc& desc);
     physx::PxRigidStatic* CreateStaticRigidBody(const RigidBodyDesc& desc);
     physx::PxShape* CreateCollisionShape(const CollisionShapeDesc& desc);
     physx::PxMaterial* GetOrCreateMaterial(float staticFriction, float dynamicFriction, float restitution);
+
+    // PhysX 5.6.1+ helpers
+    void SetupModernFrictionModel(physx::PxMaterial* material);
+    void ConfigureJointDriveParameters(physx::PxD6Joint* joint, const JointDriveConfig& config);
 };
 ```
 
@@ -470,6 +498,108 @@ private:
     void SetOptimalBroadPhase();
     void ConfigureGPUBuffers();
     void OptimizeParticleSystem();
+};
+```
+
+## PhysX 5.6.1+ Migration Considerations
+
+### GPU Development Changes
+
+```cpp
+// PhysX 5.6.1+ requires building GPU binaries from source
+class PhysXGPUBuilder {
+public:
+    bool BuildGPUBinaries(const std::string& cudaPath);
+    bool ValidateGPUBinaries();
+    void SetupGPUBuildEnvironment();
+
+private:
+    std::string m_cudaPath;
+    std::string m_physxSourcePath;
+    bool m_gpuBinariesBuilt = false;
+};
+```
+
+### Friction Model Updates
+
+```cpp
+// PhysX 5.6.1+ only supports PxFrictionType::ePATCH
+class ModernFrictionManager {
+public:
+    void SetupPatchFriction(physx::PxMaterial* material);
+    void MigrateLegacyFrictionSettings(const LegacyFrictionConfig& legacy);
+
+private:
+    // Only ePATCH friction type is supported in 5.6.1+
+    void ValidateFrictionType(physx::PxFrictionType::Enum type);
+};
+```
+
+### Angular Joint Drive Rework
+
+```cpp
+enum class AngularDriveModel {
+    SLERP,      // Use PxD6Drive::eSLERP
+    SwingTwist  // Use PxD6Drive::eTWIST/eSWING1/eSWING2
+};
+
+class ModernJointDriveManager {
+public:
+    void SetAngularDriveConfig(physx::PxD6Joint* joint, AngularDriveModel model);
+    void MigrateLegacySwingDrive(physx::PxD6Joint* joint);
+
+private:
+    void SetupSLERPDrive(physx::PxD6Joint* joint);
+    void SetupSwingTwistDrive(physx::PxD6Joint* joint);
+    void ValidateDriveConfiguration(physx::PxD6Joint* joint, AngularDriveModel model);
+};
+```
+
+### Character Controller Enhancements
+
+```cpp
+class EnhancedCharacterController {
+public:
+    // PhysX 5.6.1+ character controller improvements
+    void SetupAdvancedCollisionDetection();
+    void EnableImprovedSlopeHandling();
+    void ConfigureEnhancedStepOffset();
+
+private:
+    physx::PxController* m_controller = nullptr;
+    bool m_enhancedFeaturesEnabled = false;
+};
+```
+
+### Custom Geometry Support
+
+```cpp
+class CustomGeometryManager {
+public:
+    // PhysX 5.6.1+ enhanced custom geometry
+    uint32_t CreateCustomGeometry(const CustomGeometryDesc& desc);
+    void UpdateCustomGeometry(uint32_t geometryId, const CustomGeometryData& data);
+    void SetCustomGeometryCallbacks(uint32_t geometryId, const CustomGeometryCallbacks& callbacks);
+
+private:
+    std::unordered_map<uint32_t, physx::PxCustomGeometry*> m_customGeometries;
+    uint32_t m_nextGeometryId = 1;
+};
+```
+
+### Serialization Changes
+
+```cpp
+// PhysX 5.6.1+ removes binary platform conversion
+class ModernSerializationManager {
+public:
+    // Note: Deterministic binary serialization removed in 5.6.1+
+    bool SerializeScene(physx::PxScene* scene, const std::string& filename);
+    bool DeserializeScene(const std::string& filename, physx::PxScene*& scene);
+
+private:
+    // Use regular binary serialization (determinism may be recovered in future)
+    void WarnAboutDeterminismChanges();
 };
 ```
 

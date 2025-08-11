@@ -1,0 +1,36 @@
+{
+    "projectName": "GameExample",
+    "projectVersion": "1.0.0",
+    "description": "Comprehensive demonstration of Game Engine Kiro features including advanced character movement, 3D audio, FBX models, and physics debugging",
+    "author": "Game Engine Kiro Team",
+    "requiredModules": [
+        "Core",
+        "Graphics",
+        "Input",
+        "Physics",
+        "Audio"
+    ],
+    "optionalModules": [
+        "Scripting"
+    ],
+    "assetPath": "assets/",
+    "configPath": "config/",
+    "buildPath": "build/",
+    "minEngineVersion": "1.0.0",
+    "maxEngineVersion": "2.0.0",
+    "projectSettings": {
+        "windowTitle": "Game Engine Kiro - GameExample",
+        "windowWidth": "1920",
+        "windowHeight": "1080",
+        "fullscreen": "false",
+        "enablePhysicsDebug": "true",
+        "masterVolume": "1.0",
+        "mouseSensitivity": "1.0",
+        "defaultMovementComponent": "Hybrid",
+        "enableFallDetection": "true",
+        "fallLimit": "-5.0",
+        "spawnPositionX": "0.0",
+        "spawnPositionY": "1.0",
+        "spawnPositionZ": "0.0"
+    }
+}

@@ -1,0 +1,27 @@
+{
+    "projectName": "BasicExample",
+    "projectVersion": "1.0.0",
+    "description": "Clean demonstration of core movement mechanics with WASD movement, jumping, and third-person camera",
+    "author": "Game Engine Kiro Team",
+    "requiredModules": [
+        "Core",
+        "Graphics",
+        "Input",
+        "Physics"
+    ],
+    "optionalModules": [
+        "Audio"
+    ],
+    "assetPath": "assets/",
+    "configPath": "config/",
+    "buildPath": "build/",
+    "minEngineVersion": "1.0.0",
+    "projectSettings": {
+        "windowTitle": "Game Engine Kiro - BasicExample",
+        "windowWidth": "1280",
+        "windowHeight": "720",
+        "fullscreen": "false",
+        "enablePhysicsDebug": "false",
+        "mouseSensitivity": "1.0"
+    }
+}

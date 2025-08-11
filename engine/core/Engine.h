@@ -3,6 +3,7 @@
 #include <memory>
 #include <chrono>
 #include <functional>
+#include <string>
 
 namespace GameEngine {
     class GraphicsRenderer;
@@ -12,9 +13,20 @@ namespace GameEngine {
     class InputManager;
     class ScriptingEngine;
     class Camera;
+    class ModuleRegistry;
+    struct EngineConfig;
+    
+    namespace Graphics {
+        class IGraphicsModule;
+    }
     
     namespace Physics {
+        class IPhysicsModule;
         class PhysicsDebugManager;
+    }
+    
+    namespace Audio {
+        class IAudioModule;
     }
 
     class Engine {
@@ -22,18 +34,24 @@ namespace GameEngine {
         Engine();
         ~Engine();
 
-        bool Initialize();
+        bool Initialize(const std::string& configPath = "");
         void Run();
         void Shutdown();
 
-        // Getters for engine subsystems
-        GraphicsRenderer* GetRenderer() const { return m_renderer.get(); }
-        ResourceManager* GetResourceManager() const { return m_resourceManager.get(); }
-        PhysicsEngine* GetPhysics() const { return m_physics.get(); }
-        AudioEngine* GetAudio() const { return m_audio.get(); }
-        InputManager* GetInput() const { return m_input.get(); }
-        ScriptingEngine* GetScripting() const { return m_scripting.get(); }
+        // Getters for engine subsystems (legacy compatibility)
+        GraphicsRenderer* GetRenderer() const;
+        ResourceManager* GetResourceManager() const;
+        PhysicsEngine* GetPhysics() const;
+        AudioEngine* GetAudio() const;
+        InputManager* GetInput() const;
+        ScriptingEngine* GetScripting() const;
         Physics::PhysicsDebugManager* GetPhysicsDebugManager() const { return m_physicsDebugManager.get(); }
+
+        // Module system access
+        ModuleRegistry* GetModuleRegistry() const;
+        Graphics::IGraphicsModule* GetGraphicsModule() const;
+        Physics::IPhysicsModule* GetPhysicsModule() const;
+        Audio::IAudioModule* GetAudioModule() const;
 
         float GetDeltaTime() const { return m_deltaTime; }
         bool IsRunning() const { return m_isRunning; }
@@ -48,11 +66,25 @@ namespace GameEngine {
     private:
         void Update(float deltaTime);
         void Render();
+        
+        // Module system initialization
+        bool InitializeModuleSystem();
+        bool LoadConfiguration(const std::string& configPath);
+        bool RegisterDefaultModules();
+        bool InitializeRemainingSubsystems();
+        void ShutdownModuleSystem();
+        
+        // Legacy subsystem initialization (fallback)
+        bool InitializeLegacySubsystems();
+        void ShutdownLegacySubsystems();
 
-        std::unique_ptr<GraphicsRenderer> m_renderer;
+        // Module system
+        ModuleRegistry* m_moduleRegistry;
+        EngineConfig* m_engineConfig;
+        bool m_useModuleSystem;
+
+        // Legacy subsystem pointers (for compatibility)
         std::unique_ptr<ResourceManager> m_resourceManager;
-        std::unique_ptr<PhysicsEngine> m_physics;
-        std::unique_ptr<AudioEngine> m_audio;
         std::unique_ptr<InputManager> m_input;
         std::unique_ptr<ScriptingEngine> m_scripting;
         std::unique_ptr<Physics::PhysicsDebugManager> m_physicsDebugManager;

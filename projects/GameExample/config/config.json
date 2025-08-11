@@ -1,0 +1,107 @@
+{
+    "engine": {
+        "name": "Game Engine Kiro",
+        "version": "1.0.0"
+    },
+    "graphics": {
+        "api": "OpenGL",
+        "window": {
+            "width": 1920,
+            "height": 1080,
+            "fullscreen": false,
+            "title": "Game Engine Kiro - Demo"
+        },
+        "rendering": {
+            "vsync": true,
+            "msaa_samples": 4,
+            "max_fps": 60
+        },
+        "features": {
+            "dlss": false,
+            "fsr": false,
+            "hdr": false
+        }
+    },
+    "audio": {
+        "master_volume": 1.0,
+        "music_volume": 0.8,
+        "sfx_volume": 1.0,
+        "spatial_audio": true
+    },
+    "input": {
+        "mouse_sensitivity": 1.0,
+        "gamepad_deadzone": 0.1,
+        "bindings": {
+            "move_forward": [
+                "W",
+                "Gamepad_LeftStick_Up"
+            ],
+            "move_backward": [
+                "S",
+                "Gamepad_LeftStick_Down"
+            ],
+            "move_left": [
+                "A",
+                "Gamepad_LeftStick_Left"
+            ],
+            "move_right": [
+                "D",
+                "Gamepad_LeftStick_Right"
+            ],
+            "jump": [
+                "Space",
+                "Gamepad_A"
+            ],
+            "run": [
+                "LeftShift",
+                "Gamepad_LeftBumper"
+            ],
+            "interact": [
+                "E",
+                "Gamepad_X"
+            ],
+            "menu": [
+                "Escape",
+                "Gamepad_Start"
+            ]
+        }
+    },
+    "physics": {
+        "gravity": [
+            0.0,
+            -9.81,
+            0.0
+        ],
+        "timestep": 0.016667,
+        "max_substeps": 10
+    },
+    "character": {
+        "default_movement_component": "Hybrid",
+        "fall_detection": {
+            "enabled": true,
+            "fall_limit": -5.0,
+            "spawn_position": [
+                0.0,
+                1.0,
+                0.0
+            ]
+        },
+        "movement_switching": {
+            "enabled": false,
+            "available_components": [
+                "CharacterMovement",
+                "Physics",
+                "Hybrid"
+            ]
+        }
+    },
+    "world": {
+        "streaming_distance": 1000.0,
+        "lod_distances": [
+            100.0,
+            300.0,
+            500.0
+        ],
+        "chunk_size": 64.0
+    }
+}

@@ -80,25 +80,14 @@ echo  Build Completed Successfully!
 echo ========================================
 echo.
 echo Files created:
-echo   - Executable: build\Release\GameExample.exe
-echo   - Library: build\Release\GameEngineKiro.lib
-echo   - Assets: build\Release\assets\
+echo   - Engine Library: build\Release\GameEngineKiro.lib
+echo   - [ProjectName]: build\projects\[ProjectName]\Release\[ProjectName].exe
+echo   - All Tests: build\Release\*Test.exe
 echo.
-echo To run the game:
-echo   cd build\Release
-echo   GameExample.exe
+echo To run examples:
+echo   [ProjectName]: build/projects/[ProjectName]/Release/
 echo.
-echo Or simply double-click: build\Release\GameExample.exe
+echo To run tests: .\scripts\run_tests.bat
 echo.
-
-REM Ask if user wants to run the game
-set /p choice="Do you want to run the game now? (y/n): "
-if /i "%choice%"=="y" (
-    echo.
-    echo Starting Game Engine Kiro...
-    cd build\Release
-    start GameExample.exe
-    cd ..\..
-)
 
 pause

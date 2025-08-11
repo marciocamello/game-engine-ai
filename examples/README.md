@@ -104,8 +104,11 @@ This directory contains example applications that demonstrate the capabilities o
 # Development console with multiple options
 .\scripts\dev.bat
 
-# Run with logging
-.\scripts\start.bat
+# Run GameExample
+build\projects\GameExample\Release\GameExample.exe
+
+# Run BasicExample
+build\projects\BasicExample\Release\BasicExample.exe
 
 # Monitor logs in real-time
 .\scripts\monitor.bat

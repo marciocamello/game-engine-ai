@@ -211,14 +211,20 @@ scripts\run_coverage_analysis.bat [build] [verbose] [open]
 - `verbose` - Saída detalhada
 - `open` - Abre o relatório HTML automaticamente
 
-### 🎮 `start.bat` - Launcher do Jogo
+### 🎮 Running Examples
 
-Script para iniciar o jogo compilado.
+To run the example projects after building:
 
-**Uso:**
+**GameExample (Comprehensive):**
 
 ```cmd
-scripts\start.bat
+build\projects\GameExample\Release\GameExample.exe
+```
+
+**BasicExample (Simple):**
+
+```cmd
+build\projects\BasicExample\Release\BasicExample.exe
 ```
 
 ### 📦 `setup_dependencies.bat` - Setup de Dependências

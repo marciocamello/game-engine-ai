@@ -158,8 +158,15 @@ goto :main_menu
 
 :run_logs
 echo.
-echo Starting with logging...
-call start.bat
+echo Starting GameExample...
+cd build\projects\GameExample\Release
+if exist GameExample.exe (
+    start GameExample.exe
+    echo GameExample started!
+) else (
+    echo ERROR: GameExample.exe not found! Please build first.
+)
+cd ..\..\..\..
 goto :main_menu
 
 :perf_test

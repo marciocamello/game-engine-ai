@@ -129,7 +129,7 @@ scripts/
 ├── run_physics_tests.bat        # Physics-specific tests
 ├── run_tests.bat                # All tests runner (MANDATORY before task completion)
 ├── setup_dependencies.bat       # Dependency setup
-├── start.bat                    # Application launcher
+
 ├── test_runner.bat              # Test execution utility
 └── README.md                    # Scripts documentation
 ```

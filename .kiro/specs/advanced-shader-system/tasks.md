@@ -259,4 +259,4 @@
 **Windows Development Workflow:**
 
 - Use `.\scripts\build.bat` to build project
-- Use `.\scripts\start.bat` to build test GameExample with debug logs
+- Use `build\projects\GameExample\Release\GameExample.exe` to run GameExample

@@ -103,7 +103,7 @@
   - Add test configuration system for enabling/disabling test categories
   - _Requirements: 3.3, 3.4, 3.5_
 
-- [ ] 14. Create hierarchical CMake build system
+- [-] 14. Create hierarchical CMake build system
 
   - Create root CMakeLists.txt that orchestrates engine modules and projects
   - Implement engine module CMakeLists.txt template and discovery

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "IEngineModule.h"
+#include "Core/IEngineModule.h"
 #include "../../include/Physics/PhysicsEngine.h"
 
 namespace GameEngine {

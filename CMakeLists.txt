@@ -41,6 +41,8 @@ find_package(Stb REQUIRED)
 
 # Engine source files
 file(GLOB_RECURSE ENGINE_SOURCES
+    "engine/core/*.cpp"
+    "engine/modules/*.cpp"
     "src/Core/*.cpp"
     "src/Graphics/*.cpp"
     "src/Resource/*.cpp"
@@ -56,6 +58,9 @@ file(GLOB_RECURSE ENGINE_SOURCES
 )
 
 file(GLOB_RECURSE ENGINE_HEADERS
+    "engine/core/*.h"
+    "engine/modules/*.h"
+    "engine/interfaces/*.h"
     "include/Core/*.h"
     "include/Graphics/*.h"
     "include/Resource/*.h"
@@ -75,6 +80,7 @@ add_library(GameEngineKiro STATIC ${ENGINE_SOURCES} ${ENGINE_HEADERS})
 
 target_include_directories(GameEngineKiro PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/include
+    ${CMAKE_CURRENT_SOURCE_DIR}/engine
     ${CMAKE_CURRENT_SOURCE_DIR}/third_party
 )
 

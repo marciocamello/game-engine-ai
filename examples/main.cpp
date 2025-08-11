@@ -3,7 +3,7 @@
 // environment objects, professional grid, performance monitoring, and advanced systems.
 // For a simpler introduction to core mechanics, see basic_example.cpp
 
-#include "Core/Engine.h"
+#include "../engine/core/Engine.h"
 #include "Core/Logger.h"
 #include "Core/PerformanceMonitor.h"
 #include "Core/AssetValidator.h"

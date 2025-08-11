@@ -184,6 +184,30 @@ if exist "build\Release\ShadermanagerTest.exe" (
     )
 )
 
+REM Run ModuleRegistry unit test
+if exist "build\Release\ModuleregistryTest.exe" (
+    echo [INFO] Running ModuleregistryTest...
+    build\Release\ModuleregistryTest.exe >nul 2>&1
+    if errorlevel 1 (
+        echo [FAILED] ModuleregistryTest
+        goto :test_failed
+    ) else (
+        echo [PASS] ModuleregistryTest
+    )
+)
+
+REM Run ModuleConfigLoader unit test
+if exist "build\Release\ModuleconfigloaderTest.exe" (
+    echo [INFO] Running ModuleconfigloaderTest...
+    build\Release\ModuleconfigloaderTest.exe >nul 2>&1
+    if errorlevel 1 (
+        echo [FAILED] ModuleconfigloaderTest
+        goto :test_failed
+    ) else (
+        echo [PASS] ModuleconfigloaderTest
+    )
+)
+
 echo.
 echo Running Integration Tests...
 echo ----------------------------------------

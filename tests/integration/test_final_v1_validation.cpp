@@ -1,5 +1,5 @@
-#include "Core/Engine.h"
-#include "Core/Logger.h"
+#include "../../engine/core/Engine.h"
+#include "../../engine/core/Logger.h"
 #include "Graphics/GraphicsRenderer.h"
 #include "Physics/PhysicsEngine.h"
 #include "Audio/AudioEngine.h"

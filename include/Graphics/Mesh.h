@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Core/Math.h"
+#include "../../engine/core/Math.h"
 #include "Resource/ResourceManager.h"
 #include "Graphics/BoundingVolumes.h"
 #include <vector>

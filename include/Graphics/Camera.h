@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Core/Math.h"
+#include "../../engine/core/Math.h"
 
 namespace GameEngine {
     enum class CameraType {

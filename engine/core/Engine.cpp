@@ -1,13 +1,13 @@
-#include "Core/Engine.h"
-#include "Core/Logger.h"
-#include "Graphics/GraphicsRenderer.h"
-#include "Resource/ResourceManager.h"
-#include "Physics/PhysicsEngine.h"
-#include "Physics/PhysicsDebugManager.h"
-#include "Audio/AudioEngine.h"
-#include "Input/InputManager.h"
-#include "Scripting/ScriptingEngine.h"
-#include "Graphics/Camera.h"
+#include "Engine.h"
+#include "Logger.h"
+#include "../../include/Graphics/GraphicsRenderer.h"
+#include "../../include/Resource/ResourceManager.h"
+#include "../../include/Physics/PhysicsEngine.h"
+#include "../../include/Physics/PhysicsDebugManager.h"
+#include "../../include/Audio/AudioEngine.h"
+#include "../../include/Input/InputManager.h"
+#include "../../include/Scripting/ScriptingEngine.h"
+#include "../../include/Graphics/Camera.h"
 
 #include <GLFW/glfw3.h>
 

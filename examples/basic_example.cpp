@@ -2,7 +2,7 @@
 // This example provides a clean environment for scene navigation, similar to Unreal Engine's viewport
 // Demonstrates: Free camera navigation, professional grid system, minimal clean interface
 
-#include "Core/Engine.h"
+#include "../engine/core/Engine.h"
 #include "Core/Logger.h"
 #include "Graphics/Camera.h"
 #include "Graphics/GraphicsRenderer.h"

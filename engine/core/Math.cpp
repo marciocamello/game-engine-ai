@@ -1,4 +1,4 @@
-#include "Core/Math.h"
+#include "Math.h"
 
 namespace GameEngine {
     namespace Math {

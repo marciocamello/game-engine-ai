@@ -2,7 +2,7 @@
 #include "Resource/ResourceMemoryPool.h"
 #include "Resource/LRUResourceCache.h"
 #include "Resource/GPUUploadOptimizer.h"
-#include "Core/Logger.h"
+#include "../../engine/core/Logger.h"
 #include <filesystem>
 #include <sstream>
 

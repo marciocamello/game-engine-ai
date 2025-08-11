@@ -1,0 +1,46 @@
+{
+    "engineVersion": "1.0.0",
+    "configVersion": "1.0.0",
+    "modules": [
+        {
+            "name": "Core",
+            "version": "1.0.0",
+            "enabled": true,
+            "parameters": {
+                "logLevel": "INFO",
+                "maxThreads": "4"
+            }
+        },
+        {
+            "name": "Graphics",
+            "version": "1.0.0",
+            "enabled": true,
+            "parameters": {
+                "renderer": "OpenGL",
+                "vsync": "true",
+                "fullscreen": "false",
+                "resolution": "1920x1080"
+            }
+        },
+        {
+            "name": "Physics",
+            "version": "1.0.0",
+            "enabled": true,
+            "parameters": {
+                "engine": "Bullet",
+                "gravity": "-9.81",
+                "maxRigidBodies": "1000"
+            }
+        },
+        {
+            "name": "Audio",
+            "version": "1.0.0",
+            "enabled": true,
+            "parameters": {
+                "backend": "OpenAL",
+                "maxSources": "32",
+                "masterVolume": "1.0"
+            }
+        }
+    ]
+}

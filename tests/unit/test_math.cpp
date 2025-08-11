@@ -2,7 +2,7 @@
 #include <cassert>
 #include <cmath>
 #include "TestUtils.h"
-#include "Core/Math.h"
+#include "../../engine/core/Math.h"
 
 using namespace GameEngine;
 using namespace GameEngine::Testing;

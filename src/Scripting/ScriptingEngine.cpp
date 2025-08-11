@@ -1,5 +1,5 @@
 #include "Scripting/ScriptingEngine.h"
-#include "Core/Logger.h"
+#include "../../engine/core/Logger.h"
 
 namespace GameEngine {
     ScriptingEngine::ScriptingEngine() {

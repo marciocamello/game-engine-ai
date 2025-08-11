@@ -208,6 +208,18 @@ if exist "build\Release\ModuleconfigloaderTest.exe" (
     )
 )
 
+REM Run ProjectTemplate unit test
+if exist "build\Release\ProjecttemplateTest.exe" (
+    echo [INFO] Running ProjecttemplateTest...
+    build\Release\ProjecttemplateTest.exe >nul 2>&1
+    if errorlevel 1 (
+        echo [FAILED] ProjecttemplateTest
+        goto :test_failed
+    ) else (
+        echo [PASS] ProjecttemplateTest
+    )
+)
+
 echo.
 echo Running Integration Tests...
 echo ----------------------------------------

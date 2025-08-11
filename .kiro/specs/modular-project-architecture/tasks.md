@@ -87,20 +87,20 @@
   - Write unit tests for project configuration parsing and validation
   - _Requirements: 4.5, 7.1, 7.2_
 
-- [ ] 12. Create dedicated test project structure
+- [x] 12. Create dedicated project test structure
 
-  - Create projects/Tests/ directory with separate CMakeLists.txt
-  - Move all existing unit tests to projects/Tests/unit/ directory
-  - Move all existing integration tests to projects/Tests/integration/ directory
-  - Update test include paths and build configuration for new structure
-  - _Requirements: 3.1, 3.2, 3.4_
+  - Create projects/Tests/ directory with separate CMakeLists.txt for future project testing
+  - Keep existing engine tests in tests/ directory (unit/ and integration/ subdirectories)
+  - Create project test template structure with unit/ and integration/ subdirectories
+  - Document the dual test architecture (engine tests vs project tests)
+  - _Requirements: 3.1, 3.2, 3.4, 3.5_
 
-- [ ] 13. Implement modular test framework
+- [ ] 13. Enhance test framework for dual architecture
 
-  - Create test discovery system that automatically finds test files
-  - Implement test categorization (unit, integration, performance)
+  - Maintain existing engine test discovery system in tests/ directory
+  - Create project test discovery system for projects/Tests/ directory
+  - Implement test categorization (unit, integration, performance) for both structures
   - Add test configuration system for enabling/disabling test categories
-  - Write tests for the test framework itself
   - _Requirements: 3.3, 3.4, 3.5_
 
 - [ ] 14. Create hierarchical CMake build system

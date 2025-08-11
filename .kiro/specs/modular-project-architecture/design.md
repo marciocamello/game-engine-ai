@@ -254,36 +254,56 @@ The new CMake structure uses a hierarchical approach:
 
 ## Testing Strategy
 
-### Modular Test Architecture
+### Dual Test Architecture
 
-The testing system is completely separated from game projects:
+The testing system maintains separation between engine tests and project tests:
+
+#### Engine Tests (Current Structure)
+
+```
+tests/
+├── unit/                    # Unit tests for engine components
+│   ├── test_math.cpp       # Core engine tests
+│   ├── test_audio_engine.cpp # Audio module tests
+│   └── test_resource_manager.cpp # Resource tests
+├── integration/            # Integration tests between engine modules
+│   ├── test_bullet_integration.cpp # Physics integration
+│   ├── test_openal_integration.cpp # Audio integration
+│   └── test_model_loader_assimp.cpp # Resource integration
+└── TestUtils.h             # Shared testing utilities
+```
+
+#### Project Tests (Future Structure)
 
 ```
 projects/Tests/
-├── CMakeLists.txt           # Test suite build configuration
-├── unit/                    # Unit tests for individual modules
-│   ├── core/               # Core engine tests
-│   ├── graphics/           # Graphics module tests
-│   ├── physics/            # Physics module tests
-│   └── audio/              # Audio module tests
-├── integration/            # Integration tests between modules
-├── performance/            # Performance and benchmark tests
-├── utilities/              # Test utilities and frameworks
-└── config/                 # Test configuration files
+├── CMakeLists.txt           # Project test suite build configuration
+├── unit/                    # Unit tests for game projects
+│   ├── GameExample/        # GameExample-specific tests
+│   └── BasicExample/       # BasicExample-specific tests
+├── integration/            # Integration tests for game projects
+├── utilities/              # Project test utilities
+└── config/                 # Project test configuration files
 ```
 
-### Module Testing Strategy
+### Engine Testing Strategy
 
-1. **Unit Tests**: Each module includes comprehensive unit tests
-2. **Integration Tests**: Tests for module interactions and dependencies
+1. **Unit Tests**: Engine modules include comprehensive unit tests in `tests/unit/`
+2. **Integration Tests**: Tests for module interactions in `tests/integration/`
 3. **Mock Modules**: Lightweight mock implementations for testing
 4. **Performance Tests**: Benchmarking and performance regression detection
 
+### Project Testing Strategy (Future)
+
+1. **Game Logic Tests**: Unit tests for game-specific components
+2. **Gameplay Integration**: Tests for game mechanics and systems
+3. **Project-Specific Mocks**: Mock implementations for game testing
+
 ### Test Execution
 
-1. **Independent Test Builds**: Tests can be built and run without game projects
-2. **Module-Specific Testing**: Run tests for specific modules only
-3. **Automated Test Discovery**: CMake automatically discovers and includes tests
+1. **Engine Tests**: Continue using existing `.\scripts\run_tests.bat` for engine testing
+2. **Project Tests**: Independent test builds for game projects (when implemented)
+3. **Automated Discovery**: CMake automatically discovers tests in both structures
 4. **Continuous Integration**: Support for automated testing in CI/CD pipelines
 
 ### Test Configuration

@@ -34,15 +34,15 @@ This specification addresses the critical need to reorganize the Game Engine Kir
 
 ### Requirement 3: Separated Test Architecture
 
-**User Story:** As a developer, I want all tests to be organized in a separate project structure, so that test compilation and execution doesn't interfere with game development and I can run tests independently.
+**User Story:** As a developer, I want tests to be organized in a clear structure that separates engine tests from project tests, so that I can test engine components independently and potentially add project-specific tests in the future.
 
 #### Acceptance Criteria
 
-1. WHEN organizing tests THEN the system SHALL create a dedicated `projects/Tests/` directory
-2. WHEN building tests THEN the system SHALL use a separate CMakeLists.txt for test compilation
-3. WHEN running tests THEN the system SHALL support running tests without building game projects
-4. WHEN adding new tests THEN the system SHALL automatically discover and include them in the test suite
-5. WHEN organizing test types THEN the system SHALL maintain separation between unit tests and integration tests
+1. WHEN organizing engine tests THEN the system SHALL maintain the existing `tests/` directory structure for engine core, modules, and plugins
+2. WHEN organizing project tests THEN the system SHALL create a dedicated `projects/Tests/` directory for future game project testing
+3. WHEN building engine tests THEN the system SHALL continue using the existing test compilation system
+4. WHEN building project tests THEN the system SHALL use a separate CMakeLists.txt for project test compilation
+5. WHEN organizing test types THEN the system SHALL maintain separation between unit tests and integration tests in both structures
 
 ### Requirement 4: Game Project Template System
 

@@ -1,56 +1,64 @@
 # Project Unit Tests
 
-This directory contains unit tests for game projects (GameExample, BasicExample, etc.).
+This directory contains unit tests for game project components.
 
 ## Structure
 
 ```
 unit/
-├── GameExample/          # Unit tests for GameExample project
-├── BasicExample/         # Unit tests for BasicExample project
+├── GameExample/          # GameExample unit tests
+│   ├── test_game_logic.cpp
+│   ├── test_player_controller.cpp
+│   └── test_game_state.cpp
+├── BasicExample/         # BasicExample unit tests
+│   ├── test_basic_logic.cpp
+│   └── test_basic_rendering.cpp
 └── README.md            # This file
 ```
 
-## Test Naming Convention
+## Test Standards
 
-- Test files should be named `test_[component].cpp`
-- Test executables will be named `Project[Component]Test.exe`
-- Follow the same testing standards as engine tests
+All project unit tests must follow the same standards as engine tests:
+
+- Use the exact template structure from `testing-standards.md`
+- Include proper error handling with try/catch blocks
+- Use standardized output format with `TestUtils.h`
+- Return correct exit codes (0 for pass, 1 for fail)
+- Include requirement references in test comments
 
 ## Example Test Structure
 
 ```cpp
-#include "TestUtils.h"
-#include "projects/GameExample/include/GameSpecificComponent.h"
+#include "../../TestUtils.h"
+#include "GameExample/GameLogic.h"
 
 using namespace GameEngine;
 using namespace GameEngine::Testing;
 
 /**
- * Test game specific feature
- * Requirements: X.X (requirement description)
+ * Test game logic initialization
+ * Requirements: Game.1.1 (game initialization)
  */
-bool TestGameSpecificFeature() {
-    TestOutput::PrintTestStart("game specific feature");
+bool TestGameLogicInitialization() {
+    TestOutput::PrintTestStart("game logic initialization");
 
     // Test implementation here
-    // Use EXPECT_* macros for assertions:
-    // EXPECT_TRUE(condition)
-    // EXPECT_EQUAL(expected, actual)
+    GameLogic logic;
+    EXPECT_TRUE(logic.Initialize());
 
-    TestOutput::PrintTestPass("game specific feature");
+    TestOutput::PrintTestPass("game logic initialization");
     return true;
 }
 
 int main() {
-    TestOutput::PrintHeader("GameExample Component");
+    TestOutput::PrintHeader("GameLogic");
 
     bool allPassed = true;
 
     try {
-        TestSuite suite("GameExample Component Tests");
+        TestSuite suite("GameLogic Tests");
 
-        allPassed &= suite.RunTest("Game Specific Feature", TestGameSpecificFeature);
+        allPassed &= suite.RunTest("Game Logic Initialization", TestGameLogicInitialization);
 
         suite.PrintSummary();
         TestOutput::PrintFooter(allPassed);
@@ -66,8 +74,18 @@ int main() {
 }
 ```
 
-## Notes
+## Current Status
 
-- Engine tests remain in the root `tests/` directory
-- This directory is for testing game-specific logic and components
-- Currently no tests are implemented - this is a template structure for future use
+- ✅ Directory structure ready
+- ✅ Test discovery system implemented
+- ✅ CMake integration ready
+- ❌ No actual tests implemented yet
+
+## Future Implementation
+
+When game projects need unit testing:
+
+1. Create subdirectory for the project (e.g., `GameExample/`)
+2. Add test files following the naming convention `test_*.cpp`
+3. Follow the same testing standards as engine tests
+4. Tests will be automatically discovered and included in builds

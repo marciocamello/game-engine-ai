@@ -293,6 +293,30 @@ function(print_test_summary)
     endif()
 endfunction()
 
+# Enhanced Test Runner executable
+add_executable(EnhancedTestRunner
+    engine/core/TestRunner.cpp
+    engine/core/TestFramework.cpp
+)
+
+target_link_libraries(EnhancedTestRunner PRIVATE GameEngineKiro)
+target_include_directories(EnhancedTestRunner PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/engine)
+
+# Apply coverage settings to enhanced test runner
+apply_coverage_settings(EnhancedTestRunner)
+
+# Test Configuration Manager executable
+add_executable(TestConfigManager
+    engine/core/TestConfigManager.cpp
+    engine/core/TestFramework.cpp
+)
+
+target_link_libraries(TestConfigManager PRIVATE GameEngineKiro)
+target_include_directories(TestConfigManager PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/engine)
+
+# Apply coverage settings to test config manager
+apply_coverage_settings(TestConfigManager)
+
 # Include example projects as subdirectories
 add_subdirectory(projects/GameExample)
 add_subdirectory(projects/BasicExample)

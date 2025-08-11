@@ -1,36 +1,26 @@
 {
-    "projectTestConfig": {
-        "version": "1.0.0",
-        "description": "Configuration for project-specific tests",
-        "testCategories": {
-            "unit": {
-                "enabled": true,
-                "description": "Unit tests for game project components"
-            },
-            "integration": {
-                "enabled": true,
-                "description": "Integration tests for game project workflows"
-            },
-            "performance": {
-                "enabled": false,
-                "description": "Performance tests for game projects (disabled by default)"
-            }
-        },
-        "testEnvironment": {
-            "mockAssets": true,
-            "mockAudio": true,
-            "mockGraphics": false,
-            "logLevel": "INFO"
-        },
-        "projects": {
-            "GameExample": {
-                "enabled": false,
-                "description": "Tests for GameExample project (not implemented yet)"
-            },
-            "BasicExample": {
-                "enabled": false,
-                "description": "Tests for BasicExample project (not implemented yet)"
-            }
-        }
-    }
+    "enableIntegrationTests": true,
+    "enablePerformanceTests": false,
+    "enableUnitTests": true,
+    "enabledCategories": {
+        "integration": true,
+        "performance": false,
+        "unit": true
+    },
+    "excludePatterns": [
+        "**/temp_*",
+        "**/debug_*",
+        "**/.backup/**"
+    ],
+    "outputFormat": "standard",
+    "performanceIterations": 1000,
+    "performanceTimeoutMs": 30000.0,
+    "showTimings": true,
+    "testDirectories": [
+        "tests/unit",
+        "tests/integration",
+        "projects/Tests/unit",
+        "projects/Tests/integration"
+    ],
+    "verboseOutput": false
 }

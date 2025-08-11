@@ -506,6 +506,9 @@ add_integration_test(AdvancedshadersystemintegrationTest tests/integration/test_
 # Final Shader System Validation test
 add_integration_test(FinalShaderSystemValidationTest tests/integration/test_final_shader_system_validation.cpp)
 
+# Bullet Physics Module integration test
+add_integration_test(BulletPhysicsModuleTest tests/integration/test_bullet_physics_module.cpp)
+
 # Discover and add unit tests automatically
 discover_and_add_tests("tests/unit" "unit")
 

@@ -64,3 +64,4 @@ coverage_reports
 !coverage_reports/coverage_baseline.json
 
 /docs/resources
+cache

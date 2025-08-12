@@ -213,16 +213,16 @@ bool TestModelLoadingErrorHandling() {
     EXPECT_TRUE(loader.Initialize());
     
     // Test loading non-existent file
-    auto model1 = loader.LoadModel("non_existent_file.obj");
-    EXPECT_NULL(model1);
+    auto result1 = loader.LoadModel("non_existent_file.obj");
+    EXPECT_FALSE(result1.success);
     
     // Test loading with invalid path
-    auto model2 = loader.LoadModel("");
-    EXPECT_NULL(model2);
+    auto result2 = loader.LoadModel("");
+    EXPECT_FALSE(result2.success);
     
     // Test loading with unsupported format
-    auto model3 = loader.LoadModel("test.xyz");
-    EXPECT_NULL(model3);
+    auto result3 = loader.LoadModel("test.xyz");
+    EXPECT_FALSE(result3.success);
     
     // Create a corrupted file for testing
     std::filesystem::create_directories("test_assets");
@@ -236,21 +236,21 @@ bool TestModelLoadingErrorHandling() {
         corruptedFile.close();
         
         // Test loading corrupted file
-        auto model4 = loader.LoadModel(corruptedPath);
-        // Should either return null or handle gracefully
+        auto result4 = loader.LoadModel(corruptedPath);
+        // Should either return failure or handle gracefully
         
         std::filesystem::remove(corruptedPath);
     }
     
     // Test loading from empty memory buffer
     std::vector<uint8_t> emptyData;
-    auto model5 = loader.LoadModelFromMemory(emptyData, "obj");
-    EXPECT_NULL(model5);
+    auto result5 = loader.LoadModelFromMemory(emptyData, "obj");
+    EXPECT_FALSE(result5.success);
     
     // Test loading from invalid memory data
     std::vector<uint8_t> invalidData = {0xFF, 0xFE, 0xFD, 0xFC};
-    auto model6 = loader.LoadModelFromMemory(invalidData, "obj");
-    EXPECT_NULL(model6);
+    auto result6 = loader.LoadModelFromMemory(invalidData, "obj");
+    EXPECT_FALSE(result6.success);
     
     // Verify loader statistics after errors (if available)
     TestOutput::PrintInfo("Error handling completed - statistics would be shown here");
@@ -281,17 +281,13 @@ bool TestModelLoadingResourceManagement() {
     
     if (CreateTestOBJFile(testPath)) {
         // Load model first time
-        auto model1 = loader.LoadModel(testPath);
+        auto result1 = loader.LoadModel(testPath);
         
         // Load same model again (should use cache if implemented)
-        auto model2 = loader.LoadModel(testPath);
+        auto result2 = loader.LoadModel(testPath);
         
-        // Both should be valid (or both null if not supported)
-        if (model1) {
-            EXPECT_NOT_NULL(model2);
-        } else {
-            EXPECT_NULL(model2);
-        }
+        // Both should have same success status
+        EXPECT_EQUAL(result1.success, result2.success);
         
         std::filesystem::remove(testPath);
     }
@@ -342,7 +338,7 @@ bool TestModelValidationAndIntegrity() {
                 EXPECT_TRUE(bounds.IsValid());
                 
                 auto sphere = mesh->GetBoundingSphere();
-                EXPECT_TRUE(sphere.GetRadius() > 0.0f);
+                EXPECT_TRUE(sphere.radius > 0.0f);
             }
             
             TestOutput::PrintInfo("Model validation completed successfully");

@@ -9,6 +9,7 @@
 #include <thread>
 
 using namespace GameEngine;
+using namespace GameEngine::Testing;
 
 bool TestModelCacheInitialization() {
     TestOutput::PrintTestStart("model cache initialization");

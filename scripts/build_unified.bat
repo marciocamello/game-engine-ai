@@ -11,6 +11,8 @@ set BUILD_ENGINE=OFF
 set BUILD_PROJECTS=OFF
 set BUILD_TESTS=OFF
 set SPECIFIC_PROJECT=
+set BUILD_TYPE=Release
+set ENABLE_COVERAGE=OFF
 set CMAKE_ARGS=
 set BUILD_TYPE_DESC=
 
@@ -41,9 +43,28 @@ if "%1"=="--project" (
     shift
     goto :parse_args
 )
+
 if "%1"=="--all" (
     set BUILD_ENGINE=ON
     set BUILD_PROJECTS=ON
+    set BUILD_TESTS=ON
+    shift
+    goto :parse_args
+)
+if "%1"=="--debug" (
+    set BUILD_TYPE=Debug
+    shift
+    goto :parse_args
+)
+if "%1"=="--release" (
+    set BUILD_TYPE=Release
+    shift
+    goto :parse_args
+)
+if "%1"=="--coverage" (
+    set BUILD_TYPE=Debug
+    set ENABLE_COVERAGE=ON
+    set BUILD_ENGINE=ON
     set BUILD_TESTS=ON
     shift
     goto :parse_args
@@ -114,8 +135,13 @@ if "%BUILD_ENGINE%"=="ON" (
 ) else (
     set CMAKE_ARGS=%CMAKE_ARGS% -DBUILD_ENGINE=OFF
 )
+if "%ENABLE_COVERAGE%"=="ON" (
+    set CMAKE_ARGS=%CMAKE_ARGS% -DENABLE_COVERAGE=ON
+)
 
 echo Build Configuration: %BUILD_TYPE_DESC%
+echo Build Type: %BUILD_TYPE%
+if "%ENABLE_COVERAGE%"=="ON" echo Coverage: Enabled
 if not "%SPECIFIC_PROJECT%"=="" echo Specific Project: %SPECIFIC_PROJECT%
 
 REM Verify dependencies
@@ -132,7 +158,7 @@ cd build
 REM Configure with CMake
 echo.
 echo Configuring build system...
-cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=../vcpkg/scripts/buildsystems/vcpkg.cmake -A x64 %CMAKE_ARGS%
+cmake .. -DCMAKE_BUILD_TYPE=%BUILD_TYPE% -DCMAKE_TOOLCHAIN_FILE=../vcpkg/scripts/buildsystems/vcpkg.cmake -A x64 %CMAKE_ARGS%
 if errorlevel 1 (
     echo ERROR: CMake configuration failed!
     cd ..
@@ -142,7 +168,7 @@ if errorlevel 1 (
 REM Build
 echo.
 echo Building...
-cmake --build . --config Release
+cmake --build . --config %BUILD_TYPE%
 if errorlevel 1 (
     echo ERROR: Build failed!
     cd ..
@@ -158,23 +184,25 @@ echo Build Completed Successfully!
 echo ========================================
 echo.
 echo Built Components:
-if "%BUILD_ENGINE%"=="ON" echo   - Engine Library: build\Release\GameEngineKiro.lib
+if "%BUILD_ENGINE%"=="ON" echo   - Engine Library: build\%BUILD_TYPE%\GameEngineKiro.lib
 if "%BUILD_PROJECTS%"=="ON" (
     if not "%SPECIFIC_PROJECT%"=="" (
-        echo   - Project ^(%SPECIFIC_PROJECT%^): build\projects\%SPECIFIC_PROJECT%\Release\%SPECIFIC_PROJECT%.exe
+        echo   - Project ^(%SPECIFIC_PROJECT%^): build\projects\%SPECIFIC_PROJECT%\%BUILD_TYPE%\%SPECIFIC_PROJECT%.exe
     ) else (
-        echo   - Game Projects: build\projects\[ProjectName]\Release\[ProjectName].exe
+        echo   - Game Projects: build\projects\[ProjectName]\%BUILD_TYPE%\[ProjectName].exe
     )
 )
-if "%BUILD_TESTS%"=="ON" echo   - Tests: build\Release\*Test.exe
+if "%BUILD_TESTS%"=="ON" echo   - Tests: build\%BUILD_TYPE%\*Test.exe
+if "%ENABLE_COVERAGE%"=="ON" echo   - Coverage: Enabled ^(use run_coverage_analysis.bat^)
 
 echo.
 echo Quick Commands:
 if "%BUILD_PROJECTS%"=="ON" (
-    echo   Run GameExample: build\projects\GameExample\Release\GameExample.exe
-    echo   Run BasicExample: build\projects\BasicExample\Release\BasicExample.exe
+    echo   Run GameExample: build\projects\GameExample\%BUILD_TYPE%\GameExample.exe
+    echo   Run BasicExample: build\projects\BasicExample\%BUILD_TYPE%\BasicExample.exe
 )
 if "%BUILD_TESTS%"=="ON" echo   Run All Tests: .\scripts\run_tests.bat
+if "%ENABLE_COVERAGE%"=="ON" echo   Generate Coverage: .\scripts\run_coverage_analysis.bat
 echo   Monitor Logs: .\scripts\monitor.bat
 
 goto :end
@@ -191,6 +219,11 @@ echo   --tests           Build all test suites
 echo   --project NAME    Build specific project only
 echo   --all             Build everything ^(default if no options^)
 echo.
+echo Build Types:
+echo   --debug           Build in Debug mode
+echo   --release         Build in Release mode ^(default^)
+echo   --coverage        Build with coverage support ^(Debug + Tests^)
+echo.
 echo Common Combinations:
 echo   build_unified.bat                        # Build everything
 echo   build_unified.bat --engine               # Engine only
@@ -199,6 +232,8 @@ echo   build_unified.bat --tests                # Tests only
 echo   build_unified.bat --engine --tests       # Engine + Tests
 echo   build_unified.bat --engine --projects    # Engine + Projects
 echo   build_unified.bat --project GameExample  # Specific project only
+echo   build_unified.bat --debug --tests        # Debug build with tests
+echo   build_unified.bat --coverage             # Coverage analysis build
 echo.
 echo Legacy Compatibility:
 echo   --engine-only     Same as --engine
@@ -212,12 +247,15 @@ echo Examples:
 echo   # Development workflow
 echo   build_unified.bat --engine --tests       # Build and test engine
 echo   build_unified.bat --project GameExample  # Test specific project
+echo   build_unified.bat --debug --all          # Full debug build
+echo   build_unified.bat --coverage             # Coverage analysis
 echo   build_unified.bat --all                  # Full build for release
 echo.
 echo   # CI/CD scenarios
 echo   build_unified.bat --engine               # Build engine artifact
 echo   build_unified.bat --tests                # Run test suite
 echo   build_unified.bat --projects             # Build all projects
+echo   build_unified.bat --coverage             # Generate coverage reports
 echo.
 
 :end

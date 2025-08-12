@@ -6,18 +6,23 @@ echo  Game Engine Kiro - Debug Launcher
 echo ========================================
 echo.
 
-:: Check if Debug build exists
-if not exist "build\Debug\GameExample.exe" (
+:: Check if Debug build exists (check both old and new structure)
+set DEBUG_EXE_FOUND=0
+if exist "build\Debug\GameExample.exe" set DEBUG_EXE_FOUND=1
+if exist "build\projects\GameExample\Debug\GameExample.exe" set DEBUG_EXE_FOUND=1
+
+if %DEBUG_EXE_FOUND%==0 (
     echo ERROR: Debug build not found!
     echo.
     echo Building Debug version...
-    mkdir build 2>nul
-    cd build
-    cmake .. -DCMAKE_BUILD_TYPE=Debug -DCMAKE_TOOLCHAIN_FILE=../vcpkg/scripts/buildsystems/vcpkg.cmake
-    cmake --build . --config Debug
-    cd ..
+    call scripts\build_unified.bat --debug --projects
     
-    if not exist "build\Debug\GameExample.exe" (
+    REM Check again after build
+    set DEBUG_EXE_FOUND=0
+    if exist "build\Debug\GameExample.exe" set DEBUG_EXE_FOUND=1
+    if exist "build\projects\GameExample\Debug\GameExample.exe" set DEBUG_EXE_FOUND=1
+    
+    if %DEBUG_EXE_FOUND%==0 (
         echo Failed to build Debug version!
         pause
         exit /b 1
@@ -74,9 +79,15 @@ echo.
 echo Running Debug with Console Output...
 echo Press Ctrl+C to stop debugging
 echo.
-cd build\Debug
-GameExample.exe
-cd ..\..
+if exist "build\projects\GameExample\Debug\GameExample.exe" (
+    cd build\projects\GameExample\Debug
+    GameExample.exe
+    cd ..\..\..\..
+) else (
+    cd build\Debug
+    GameExample.exe
+    cd ..\..
+)
 goto :end
 
 :file_debug
@@ -84,9 +95,15 @@ echo.
 echo Running Debug with File Logging...
 echo Logs will be saved to: !LOG_FILE!
 echo.
-cd build\Debug
-GameExample.exe > "..\..\!LOG_FILE!" 2>&1
-cd ..\..
+if exist "build\projects\GameExample\Debug\GameExample.exe" (
+    cd build\projects\GameExample\Debug
+    GameExample.exe > "..\..\..\..\!LOG_FILE!" 2>&1
+    cd ..\..\..\..
+) else (
+    cd build\Debug
+    GameExample.exe > "..\..\!LOG_FILE!" 2>&1
+    cd ..\..
+)
 echo.
 echo Debug session completed!
 echo Log file: !LOG_FILE!
@@ -97,10 +114,17 @@ echo.
 echo Running with Memory Leak Detection...
 echo This will run slower but detect memory issues
 echo.
-cd build\Debug
-set _CRTDBG_MAP_ALLOC=1
-GameExample.exe > "..\..\!LOG_FILE!" 2>&1
-cd ..\..
+if exist "build\projects\GameExample\Debug\GameExample.exe" (
+    cd build\projects\GameExample\Debug
+    set _CRTDBG_MAP_ALLOC=1
+    GameExample.exe > "..\..\..\..\!LOG_FILE!" 2>&1
+    cd ..\..\..\..
+) else (
+    cd build\Debug
+    set _CRTDBG_MAP_ALLOC=1
+    GameExample.exe > "..\..\!LOG_FILE!" 2>&1
+    cd ..\..
+)
 echo.
 echo Memory debug completed!
 echo Check log file for memory leak reports: !LOG_FILE!
@@ -113,11 +137,19 @@ echo Collecting performance data...
 echo.
 set "PROFILE_FILE=logs\profile_%date:~-4,4%%date:~-10,2%%date:~-7,2%_%time:~0,2%%time:~3,2%%time:~6,2%.txt"
 set "PROFILE_FILE=!PROFILE_FILE: =0!"
-cd build\Debug
-echo Performance Profile - %date% %time% > "..\..\!PROFILE_FILE!"
-echo ================================== >> "..\..\!PROFILE_FILE!"
-GameExample.exe > "..\..\!PROFILE_FILE!" 2>&1
-cd ..\..
+if exist "build\projects\GameExample\Debug\GameExample.exe" (
+    cd build\projects\GameExample\Debug
+    echo Performance Profile - %date% %time% > "..\..\..\..\!PROFILE_FILE!"
+    echo ================================== >> "..\..\..\..\!PROFILE_FILE!"
+    GameExample.exe > "..\..\..\..\!PROFILE_FILE!" 2>&1
+    cd ..\..\..\..
+) else (
+    cd build\Debug
+    echo Performance Profile - %date% %time% > "..\..\!PROFILE_FILE!"
+    echo ================================== >> "..\..\!PROFILE_FILE!"
+    GameExample.exe > "..\..\!PROFILE_FILE!" 2>&1
+    cd ..\..
+)
 echo.
 echo Profiling completed!
 echo Profile saved to: !PROFILE_FILE!

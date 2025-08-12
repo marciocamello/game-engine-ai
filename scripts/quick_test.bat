@@ -12,6 +12,9 @@ if not exist "build\Release" (
     exit /b 1
 )
 
+echo Running quick tests to verify basic functionality...
+echo.
+
 REM Run Math unit test
 echo [INFO] Running Math unit test...
 if exist "build\Release\MathTest.exe" (

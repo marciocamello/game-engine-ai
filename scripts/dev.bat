@@ -10,12 +10,19 @@ echo  Game Engine Kiro - Development Hub
 echo ========================================
 echo.
 echo Project Status:
-if exist "build\Release\GameExample.exe" (
+set RELEASE_BUILD_FOUND=0
+set DEBUG_BUILD_FOUND=0
+if exist "build\Release\GameExample.exe" set RELEASE_BUILD_FOUND=1
+if exist "build\projects\GameExample\Release\GameExample.exe" set RELEASE_BUILD_FOUND=1
+if exist "build\Debug\GameExample.exe" set DEBUG_BUILD_FOUND=1
+if exist "build\projects\GameExample\Debug\GameExample.exe" set DEBUG_BUILD_FOUND=1
+
+if %RELEASE_BUILD_FOUND%==1 (
     echo   [OK] Release Build: Ready
 ) else (
     echo   [--] Release Build: Missing
 )
-if exist "build\Debug\GameExample.exe" (
+if %DEBUG_BUILD_FOUND%==1 (
     echo   [OK] Debug Build: Ready
 ) else (
     echo   [--] Debug Build: Missing
@@ -92,18 +99,14 @@ goto :main_menu
 :build_release
 echo.
 echo Building Release version...
-call build_unified.bat --tests
+call scripts\build_unified.bat --all
 pause
 goto :main_menu
 
 :build_debug
 echo.
 echo Building Debug version...
-mkdir build 2>nul
-cd build
-cmake .. -DCMAKE_BUILD_TYPE=Debug -DCMAKE_TOOLCHAIN_FILE=../vcpkg/scripts/buildsystems/vcpkg.cmake
-cmake --build . --config Debug
-cd ..
+call scripts\build_unified.bat --debug --all
 pause
 goto :main_menu
 
@@ -123,15 +126,20 @@ goto :main_menu
 echo.
 echo Rebuilding everything...
 if exist "build" rmdir /s /q build
-call setup_dependencies.bat
-call build_unified.bat --tests
+call scripts\setup_dependencies.bat
+call scripts\build_unified.bat --all
 pause
 goto :main_menu
 
 :start_release
 echo.
 echo Starting Release version...
-if exist "build\Release\GameExample.exe" (
+if exist "build\projects\GameExample\Release\GameExample.exe" (
+    cd build\projects\GameExample\Release
+    start "" GameExample.exe
+    cd ..\..\..\..
+    echo Game started!
+) else if exist "build\Release\GameExample.exe" (
     cd build\Release
     start "" GameExample.exe
     cd ..\..
@@ -145,7 +153,12 @@ goto :main_menu
 :start_debug
 echo.
 echo Starting Debug version...
-if exist "build\Debug\GameExample.exe" (
+if exist "build\projects\GameExample\Debug\GameExample.exe" (
+    cd build\projects\GameExample\Debug
+    start "" GameExample.exe
+    cd ..\..\..\..
+    echo Debug game started!
+) else if exist "build\Debug\GameExample.exe" (
     cd build\Debug
     start "" GameExample.exe
     cd ..\..
@@ -172,10 +185,21 @@ goto :main_menu
 :perf_test
 echo.
 echo Running performance test...
-if exist "build\Release\GameExample.exe" (
+if exist "build\projects\GameExample\Release\GameExample.exe" (
     echo Starting performance monitoring...
     if not exist "logs" mkdir logs
     set "PERF_LOG=logs\perf_%date:~-4,4%%date:~-10,2%%date:~-7,2%_%time:~0,2%%time:~3,2%%time:~6,2%.log"
+    set "PERF_LOG=!PERF_LOG: =0!"
+    cd build\projects\GameExample\Release
+    echo Performance Test - %date% %time% > "..\..\..\..\!PERF_LOG!"
+    GameExample.exe >> "..\..\..\..\!PERF_LOG!" 2>&1
+    cd ..\..\..\..
+    echo Performance test completed!
+    echo Log saved to: !PERF_LOG!
+) else if exist "build\Release\GameExample.exe" (
+    echo Starting performance monitoring...
+    if not exist "logs" mkdir logs
+    set "PERF_LOG=logs\perf_%date:~-4,4%%date:~-10,2%%date:~-7,2%_%time:~0,2%%time:~6,2%.log"
     set "PERF_LOG=!PERF_LOG: =0!"
     cd build\Release
     echo Performance Test - %date% %time% > "..\..\!PERF_LOG!"
@@ -215,7 +239,13 @@ goto :main_menu
 :memory_check
 echo.
 echo Running memory check...
-if exist "build\Debug\GameExample.exe" (
+if exist "build\projects\GameExample\Debug\GameExample.exe" (
+    echo Starting memory leak detection...
+    cd build\projects\GameExample\Debug
+    set _CRTDBG_MAP_ALLOC=1
+    GameExample.exe
+    cd ..\..\..\..
+) else if exist "build\Debug\GameExample.exe" (
     echo Starting memory leak detection...
     cd build\Debug
     set _CRTDBG_MAP_ALLOC=1

@@ -7,13 +7,16 @@ echo  Game Engine Kiro - Enhanced Test Runner
 echo ========================================
 
 REM Check if build directory exists
-if not exist "build\Release" (
+set BUILD_DIR=build\Release
+if exist "build\Debug" if not exist "build\Release" set BUILD_DIR=build\Debug
+
+if not exist "%BUILD_DIR%" (
     echo [ERROR] Build directory not found. Please run scripts\build_unified.bat --tests first.
     exit /b 1
 )
 
 REM Check if enhanced test runner exists
-if not exist "build\Release\EnhancedTestRunner.exe" (
+if not exist "%BUILD_DIR%\EnhancedTestRunner.exe" (
     echo [ERROR] Enhanced test runner not found. Please run scripts\build_unified.bat --tests first.
     exit /b 1
 )
@@ -31,7 +34,7 @@ echo Running enhanced test framework with command: %COMMAND%
 echo.
 
 REM Execute enhanced test runner
-build\Release\EnhancedTestRunner.exe %COMMAND%
+%BUILD_DIR%\EnhancedTestRunner.exe %COMMAND%
 
 REM Check result
 if errorlevel 1 (

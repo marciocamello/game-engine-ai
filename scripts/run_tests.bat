@@ -94,20 +94,27 @@ if errorlevel 1 exit /b 1
 exit /b 0
 
 :run_unit_tests_internal
-REM Auto-discover and run unit tests (exclude Integration tests)
+REM Auto-discover and run unit tests (exclude Integration tests and EnhancedTestRunner)
 for %%f in ("build\Release\*Test.exe") do (
     set "testname=%%~nf"
     setlocal enabledelayedexpansion
+    REM Skip integration tests and test runner utility
     echo !testname! | findstr /i "Integration" >nul
     if errorlevel 1 (
-        echo [INFO] Running !testname!...
-        "%%f" >nul 2>&1
+        echo !testname! | findstr /i "EnhancedTestRunner" >nul
         if errorlevel 1 (
-            echo [FAILED] !testname!
-            endlocal
-            exit /b 1
-        ) else (
-            echo [PASS] !testname!
+            echo !testname! | findstr /i "TestConfigManager" >nul
+            if errorlevel 1 (
+                echo [INFO] Running !testname!...
+                "%%f" >nul 2>&1
+                if errorlevel 1 (
+                    echo [FAILED] !testname!
+                    endlocal
+                    exit /b 1
+                ) else (
+                    echo [PASS] !testname!
+                )
+            )
         )
     )
     endlocal
@@ -180,164 +187,53 @@ if exist "build\projects\%SPECIFIC_PROJECT%" (
     echo [ERROR] Project %SPECIFIC_PROJECT% not found or no tests available
     exit /b 1
 )
-exit /b 0cts\Tests\Release" (
-    echo [INFO] Project test structure found
-    
-    REM Look for project test executables
-    if exist "build\projects\Tests\Release\*.exe" (
-        for %%f in (build\projects\Tests\Release\*.exe) do (
-            echo [INFO] Running %%~nf...
-            "%%f" >nul 2>&1
-            if errorlevel 1 (
-                echo [FAILED] %%~nf
-                exit /b 1
-            ) else (
-                echo [PASS] %%~nf
-            )
-        )
-    ) else (
-        echo [INFO] No project test executables found
-    )
-) else (
-    echo [INFO] Project test structure not built yet
-)
-
-exit /b 0
-
-:run_specific_project_tests_internal
-echo.
-echo Running Tests for Project: %SPECIFIC_PROJECT%...
-echo ----------------------------------------
-
-REM Check if specific project test structure exists
-if exist "build\projects\Tests\%SPECIFIC_PROJECT%\Release" (
-    echo [INFO] Project test structure found for %SPECIFIC_PROJECT%
-    
-    REM Look for project-specific test executables
-    if exist "build\projects\Tests\%SPECIFIC_PROJECT%\Release\*.exe" (
-        for %%f in (build\projects\Tests\%SPECIFIC_PROJECT%\Release\*.exe) do (
-            echo [INFO] Running %%~nf...
-            "%%f" >nul 2>&1
-            if errorlevel 1 (
-                echo [FAILED] %%~nf
-                exit /b 1
-            ) else (
-                echo [PASS] %%~nf
-            )
-        )
-    ) else (
-        echo [INFO] No test executables found for project %SPECIFIC_PROJECT%
-    )
-) else (
-    echo [INFO] Project test structure not built for %SPECIFIC_PROJECT%
-)
-
-exit /b 0
-
-:run_unit_tests_internal
-echo.
-echo Running Unit Tests Only...
-echo ----------------------------------------
-
-REM Run only unit tests (those in tests/unit/)
-call :run_engine_unit_tests_only
-if errorlevel 1 exit /b 1
-
-REM Run project unit tests if they exist
-if exist "build\projects\Tests\unit\Release" (
-    for %%f in (build\projects\Tests\unit\Release\*.exe) do (
-        echo [INFO] Running %%~nf...
-        "%%f" >nul 2>&1
-        if errorlevel 1 (
-            echo [FAILED] %%~nf
-            exit /b 1
-        ) else (
-            echo [PASS] %%~nf
-        )
-    )
-)
-
-exit /b 0
-
-:run_integration_tests_internal
-echo.
-echo Running Integration Tests Only...
-echo ----------------------------------------
-
-REM Run only integration tests (those in tests/integration/)
-call :run_engine_integration_tests_only
-if errorlevel 1 exit /b 1
-
-REM Run project integration tests if they exist
-if exist "build\projects\Tests\integration\Release" (
-    for %%f in (build\projects\Tests\integration\Release\*.exe) do (
-        echo [INFO] Running %%~nf...
-        "%%f" >nul 2>&1
-        if errorlevel 1 (
-            echo [FAILED] %%~nf
-            exit /b 1
-        ) else (
-            echo [PASS] %%~nf
-        )
-    )
-)
-
 exit /b 0
 
 :run_engine_unit_tests_only
-REM Run Math unit test
-if exist "build\Release\MathTest.exe" (
-    echo [INFO] Running MathTest...
-    build\Release\MathTest.exe >nul 2>&1
+REM Auto-discover and run unit tests only (exclude Integration tests and utilities)
+for %%f in ("build\Release\*Test.exe") do (
+    set "testname=%%~nf"
+    setlocal enabledelayedexpansion
+    REM Skip integration tests and test runner utilities
+    echo !testname! | findstr /i "Integration" >nul
     if errorlevel 1 (
-        echo [FAILED] MathTest
-        exit /b 1
-    ) else (
-        echo [PASS] MathTest
+        echo !testname! | findstr /i "EnhancedTestRunner" >nul
+        if errorlevel 1 (
+            echo !testname! | findstr /i "TestConfigManager" >nul
+            if errorlevel 1 (
+                echo [INFO] Running !testname!...
+                "%%f" >nul 2>&1
+                if errorlevel 1 (
+                    echo [FAILED] !testname!
+                    endlocal
+                    exit /b 1
+                ) else (
+                    echo [PASS] !testname!
+                )
+            )
+        )
     )
+    endlocal
 )
-
-REM Run Matrix unit test
-if exist "build\Release\MatrixTest.exe" (
-    echo [INFO] Running MatrixTest...
-    build\Release\MatrixTest.exe >nul 2>&1
-    if errorlevel 1 (
-        echo [FAILED] MatrixTest
-        exit /b 1
-    ) else (
-        echo [PASS] MatrixTest
-    )
-)
-
-REM Run Quaternion unit test
-if exist "build\Release\QuaternionTest.exe" (
-    echo [INFO] Running QuaternionTest...
-    build\Release\QuaternionTest.exe >nul 2>&1
-    if errorlevel 1 (
-        echo [FAILED] QuaternionTest
-        exit /b 1
-    ) else (
-        echo [PASS] QuaternionTest
-    )
-)
-
-REM Continue with other unit tests...
-REM (Additional unit tests would be listed here)
-
 exit /b 0
 
 :run_engine_integration_tests_only
-REM Run BulletUtilsSimpleTest
-if exist "build\Release\BulletUtilsSimpleTest.exe" (
-    echo [INFO] Running BulletUtilsSimpleTest...
-    build\Release\BulletUtilsSimpleTest.exe >nul 2>&1
+REM Auto-discover and run integration tests only
+for %%f in ("build\Release\*IntegrationTest.exe") do (
+    set "testname=%%~nf"
+    setlocal enabledelayedexpansion
+    echo [INFO] Running !testname!...
+    "%%f" >nul 2>&1
     if errorlevel 1 (
-        echo [FAILED] BulletUtilsSimpleTest
+        echo [FAILED] !testname!
+        endlocal
         exit /b 1
     ) else (
-        echo [PASS] BulletUtilsSimpleTest
+        echo [PASS] !testname!
     )
+    endlocal
 )
+exit /b 0
 
 :test_success
 echo.

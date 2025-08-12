@@ -467,6 +467,19 @@ std::shared_ptr<Texture> MaterialImporter::FindTexture(const std::string& textur
         }
     }
 
+    // 5. Use ResourceManager's fallback system for missing textures
+    if (m_resourceManager->IsFallbackResourcesEnabled()) {
+        LOG_INFO("Texture not found, using ResourceManager fallback system for: " + texturePath);
+        
+        // Let ResourceManager handle the fallback creation by attempting to load the missing texture
+        // This will trigger the automatic fallback creation in ResourceManager::CreateResource
+        auto texture = m_resourceManager->Load<Texture>(texturePath);
+        if (texture) {
+            LOG_DEBUG("Successfully created fallback texture via ResourceManager: " + texturePath);
+            return texture;
+        }
+    }
+
     return nullptr;
 }
 

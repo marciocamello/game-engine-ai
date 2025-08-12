@@ -79,9 +79,9 @@ bool TestTextureSearchAndFallbackSystem() {
     TestOutput::PrintInfo("Fallback textures created: " + std::to_string(fallbackCount));
     TestOutput::PrintInfo("Missing textures encountered: " + std::to_string(missingCount));
     
-    // Test 8: Test texture finding with non-existent file
+    // Test 8: Test texture finding with non-existent file - should return fallback texture
     auto foundTexture = importer.FindTexture("non_existent_texture.png", "");
-    EXPECT_NULL(foundTexture); // Should return null for non-existent texture
+    EXPECT_NOT_NULL(foundTexture); // Should return fallback texture when fallback resources are enabled
     
     // Test 9: Clear cache and verify statistics reset
     importer.ClearCache();

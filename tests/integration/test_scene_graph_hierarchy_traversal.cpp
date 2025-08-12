@@ -59,8 +59,26 @@ std::shared_ptr<Model> CreateHierarchicalTestModel() {
     rightHandNode->AddMeshIndex(2); // Shared mesh
     eyesNode->AddMeshIndex(3);
     
-    // Note: SetRootNode method not available in current API
-    // This would be set during model loading
+    // Set the root node on the model by replacing the default one
+    // Since there's no SetRootNode method, we need to work with the existing structure
+    auto modelRootNode = model->GetRootNode();
+    if (modelRootNode) {
+        // Clear existing children from the default root node
+        auto existingChildren = modelRootNode->GetChildren();
+        for (auto& child : existingChildren) {
+            modelRootNode->RemoveChild(child);
+        }
+        
+        // Add our hierarchy as children of the model's root node
+        for (auto& child : rootNode->GetChildren()) {
+            modelRootNode->AddChild(child);
+        }
+        
+        // Copy mesh associations from our root to the model's root
+        for (auto meshIndex : rootNode->GetMeshIndices()) {
+            modelRootNode->AddMeshIndex(meshIndex);
+        }
+    }
     
     return model;
 }
@@ -552,7 +570,14 @@ bool TestSceneGraphSerialization() {
         const std::string& parentName = pair.second;
         
         auto child = reconstructedRoot->FindChild(childName);
-        auto parent = reconstructedRoot->FindChild(parentName);
+        std::shared_ptr<ModelNode> parent;
+        
+        // Handle root node case
+        if (parentName == "Root") {
+            parent = reconstructedRoot;
+        } else {
+            parent = reconstructedRoot->FindChild(parentName);
+        }
         
         EXPECT_NOT_NULL(child);
         EXPECT_NOT_NULL(parent);

@@ -153,7 +153,16 @@
   - Ensure all integration tests compile successfully with new module system
   - _Requirements: 3.1, 3.2, 3.3_
 
-- [ ] 20. Implement comprehensive error handling and validation
+- [x] 20. Fix failing tests and improve test discovery system
+
+  - Fix BoundingvolumecalculatorTest unit test failures
+  - Fix ScenegraphhierarchytraversalIntegrationTest integration test failures
+  - Update test runner script to automatically discover all tests without hardcoding
+  - Ensure all discovered tests pass with the new modular architecture
+  - Validate that test discovery system works for future test additions
+  - _Requirements: 3.1, 3.2, 3.3, 3.4_
+
+- [ ] 21. Implement comprehensive error handling and validation
 
   - Add detailed error messages for module loading failures
   - Implement graceful fallback mechanisms for missing modules
@@ -161,7 +170,7 @@
   - Write tests for error handling scenarios and edge cases
   - _Requirements: 5.3, 5.4_
 
-- [ ] 21. Create documentation and migration guide
+- [ ] 22. Create documentation and migration guide
 
   - Write documentation for new modular architecture
   - Create migration guide for existing projects and developers
@@ -169,7 +178,7 @@
   - Create examples and tutorials for new project creation
   - _Requirements: 4.1, 4.2_
 
-- [ ] 22. Final integration testing and validation
+- [ ] 23. Final integration testing and validation
   - Run comprehensive integration tests across all modules and projects
   - Validate that all existing functionality works with new architecture
   - Perform performance testing to ensure no regressions

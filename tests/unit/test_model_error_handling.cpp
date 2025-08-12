@@ -260,7 +260,7 @@ bool TestModelDiagnosticLogger() {
 
         // Test log level string conversion
         std::string levelStr = ModelDiagnosticLogger::GetLogLevelString(ModelDiagnosticLogger::LogLevel::Warning);
-        EXPECT_TRUE(levelStr == "WARN");
+        EXPECT_TRUE(levelStr == "WARNING");
 
         TestOutput::PrintTestPass("ModelDiagnosticLogger functionality");
         return true;

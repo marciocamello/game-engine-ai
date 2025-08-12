@@ -9,7 +9,7 @@ Get up and running with Game Engine Kiro in minutes!
 ```cmd
 git clone https://github.com/yourusername/GameEngineKiro.git
 cd GameEngineKiro
-setup_dependencies.bat && build.bat
+setup_dependencies.bat && build_unified.bat --tests
 ```
 
 ### Linux/macOS
@@ -17,7 +17,7 @@ setup_dependencies.bat && build.bat
 ```bash
 git clone https://github.com/yourusername/GameEngineKiro.git
 cd GameEngineKiro
-setup_dependencies.bat && build.bat
+setup_dependencies.bat && build_unified.bat --tests
 ```
 
 That's it! Your game engine is ready to use.
@@ -98,7 +98,7 @@ Math::Vec4 m_color{1.0f, 0.2f, 0.2f, 1.0f}; // Red character
 ### 3. Rebuild and Run
 
 ```cmd
-build.bat
+build_unified.bat --tests
 ```
 
 Your character is now red! 🔴
@@ -240,7 +240,7 @@ setup_dependencies.bat   # Windows
 
 # Rebuild from scratch
 rmdir /s /q build
-build.bat
+build_unified.bat --tests
 ```
 
 ### Low FPS

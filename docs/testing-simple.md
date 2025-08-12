@@ -63,7 +63,7 @@ int main() {
 
 ```bash
 # Build and run
-./build.bat
+.\scripts\build_unified.bat --tests
 
 # Run specific test
 ./build/Release/MathTest.exe

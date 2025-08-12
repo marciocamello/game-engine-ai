@@ -4,14 +4,14 @@ Este diretório contém scripts para automatizar a execução de testes no Game 
 
 ## Scripts Disponíveis
 
-### 🏗️ `build.bat` - Build do Projeto
+### 🏗️ `build_unified.bat --tests` - Build do Projeto
 
-Script principal para compilar o projeto.
+Script principal para compilar o projeto com testes.
 
 **Uso:**
 
 ```cmd
-scripts\build.bat
+scripts\build_unified.bat --tests
 ```
 
 ### 🚀 `run_tests.bat` - Executor Avançado de Testes
@@ -138,7 +138,7 @@ Os scripts automaticamente:
 
 1. Crie o teste seguindo os padrões estabelecidos
 2. Adicione ao CMakeLists.txt usando as funções helper
-3. Compile com `build.bat`
+3. Compile com `.\scripts\build_unified.bat --tests`
 4. Os scripts automaticamente descobrirão o novo teste
 
 ### Modificando Scripts
@@ -150,7 +150,7 @@ Os scripts automaticamente:
 
 ### "Build directory not found"
 
-Execute `build.bat` primeiro para compilar os testes.
+Execute `.\scripts\build_unified.bat --tests` primeiro para compilar os testes.
 
 ### "Test executable not found"
 

@@ -1,0 +1,145 @@
+{
+    "modules": {
+        "Core": {
+            "defaultEnabled": true,
+            "parameters": {
+                "logLevel": {
+                    "type": "string",
+                    "default": "INFO",
+                    "options": [
+                        "DEBUG",
+                        "INFO",
+                        "WARNING",
+                        "ERROR",
+                        "CRITICAL"
+                    ]
+                },
+                "maxThreads": {
+                    "type": "string",
+                    "default": "auto",
+                    "description": "Number of threads or 'auto' for hardware detection"
+                }
+            }
+        },
+        "Graphics": {
+            "defaultEnabled": true,
+            "parameters": {
+                "renderer": {
+                    "type": "string",
+                    "default": "OpenGL",
+                    "options": [
+                        "OpenGL",
+                        "Vulkan"
+                    ]
+                },
+                "vsync": {
+                    "type": "boolean",
+                    "default": true
+                },
+                "fullscreen": {
+                    "type": "boolean",
+                    "default": false
+                },
+                "resolution": {
+                    "type": "string",
+                    "default": "1280x720",
+                    "description": "Format: WIDTHxHEIGHT"
+                },
+                "msaa": {
+                    "type": "integer",
+                    "default": 4,
+                    "options": [
+                        1,
+                        2,
+                        4,
+                        8,
+                        16
+                    ]
+                }
+            }
+        },
+        "Physics": {
+            "defaultEnabled": true,
+            "parameters": {
+                "engine": {
+                    "type": "string",
+                    "default": "Bullet",
+                    "options": [
+                        "Bullet",
+                        "PhysX"
+                    ]
+                },
+                "gravity": {
+                    "type": "float",
+                    "default": -9.81,
+                    "description": "Gravity acceleration in m/s²"
+                },
+                "maxRigidBodies": {
+                    "type": "integer",
+                    "default": 1000
+                },
+                "timeStep": {
+                    "type": "float",
+                    "default": 0.016667,
+                    "description": "Physics simulation time step in seconds"
+                }
+            }
+        },
+        "Audio": {
+            "defaultEnabled": true,
+            "parameters": {
+                "backend": {
+                    "type": "string",
+                    "default": "OpenAL",
+                    "options": [
+                        "OpenAL",
+                        "FMOD"
+                    ]
+                },
+                "maxSources": {
+                    "type": "integer",
+                    "default": 32
+                },
+                "masterVolume": {
+                    "type": "float",
+                    "default": 1.0,
+                    "range": [
+                        0.0,
+                        1.0
+                    ]
+                },
+                "dopplerFactor": {
+                    "type": "float",
+                    "default": 1.0,
+                    "range": [
+                        0.0,
+                        10.0
+                    ]
+                }
+            }
+        },
+        "Input": {
+            "defaultEnabled": true,
+            "parameters": {
+                "mouseSensitivity": {
+                    "type": "float",
+                    "default": 1.0,
+                    "range": [
+                        0.1,
+                        10.0
+                    ]
+                },
+                "keyRepeatDelay": {
+                    "type": "float",
+                    "default": 0.5,
+                    "description": "Initial delay before key repeat in seconds"
+                },
+                "keyRepeatRate": {
+                    "type": "float",
+                    "default": 0.05,
+                    "description": "Key repeat rate in seconds"
+                }
+            }
+        }
+    }
+}

@@ -67,7 +67,7 @@ This document outlines our comprehensive testing strategy following industry bes
 
 ```bash
 # Build and run tests
-./build.bat
+.\scripts\build_unified.bat --tests
 
 # Run specific integration test
 ./build/Release/BulletIntegrationTest.exe

@@ -85,6 +85,6 @@ echo   - Bullet3 (physics simulation)
 echo   - Lua (scripting)
 echo.
 echo You can now build the project using:
-echo   build.bat
+echo   .\scripts\build_unified.bat --tests
 echo.
 pause

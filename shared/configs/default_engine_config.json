@@ -1,0 +1,59 @@
+{
+    "engineVersion": "1.0.0",
+    "configVersion": "1.0.0",
+    "modules": [
+        {
+            "name": "Core",
+            "version": "1.0.0",
+            "enabled": true,
+            "parameters": {
+                "logLevel": "INFO",
+                "maxThreads": "auto"
+            }
+        },
+        {
+            "name": "Graphics",
+            "version": "1.0.0",
+            "enabled": true,
+            "parameters": {
+                "renderer": "OpenGL",
+                "vsync": "true",
+                "fullscreen": "false",
+                "resolution": "1280x720",
+                "msaa": "4"
+            }
+        },
+        {
+            "name": "Physics",
+            "version": "1.0.0",
+            "enabled": true,
+            "parameters": {
+                "engine": "Bullet",
+                "gravity": "-9.81",
+                "maxRigidBodies": "1000",
+                "timeStep": "0.016667"
+            }
+        },
+        {
+            "name": "Audio",
+            "version": "1.0.0",
+            "enabled": true,
+            "parameters": {
+                "backend": "OpenAL",
+                "maxSources": "32",
+                "masterVolume": "1.0",
+                "dopplerFactor": "1.0"
+            }
+        },
+        {
+            "name": "Input",
+            "version": "1.0.0",
+            "enabled": true,
+            "parameters": {
+                "mouseSensitivity": "1.0",
+                "keyRepeatDelay": "0.5",
+                "keyRepeatRate": "0.05"
+            }
+        }
+    ]
+}

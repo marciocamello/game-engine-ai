@@ -71,7 +71,7 @@ Game Engine Kiro uses a lightweight, framework-independent testing system design
 1. **Build the project** to ensure all tests are compiled:
 
    ```cmd
-   .\scripts\build.bat
+   .\scripts\build_unified.bat --tests
    ```
 
 2. **Run an existing test** to verify the system works:
@@ -287,7 +287,7 @@ Tests are automatically built with the main project:
 
 ```cmd
 # Build all tests
-.\scripts\build.bat
+.\scripts\build_unified.bat --tests
 
 # Build specific configuration
 mkdir build && cd build
@@ -1031,7 +1031,7 @@ int main() {
 
 ```cmd
 # Build the project (tests are auto-discovered)
-.\scripts\build.bat
+.\scripts\build_unified.bat --tests
 
 # Run your new test
 .\build\Release\NewcomponentTest.exe
@@ -1125,7 +1125,7 @@ The testing system is designed to work with CI/CD pipelines:
 setlocal enabledelayedexpansion
 
 echo Building tests...
-call .\scripts\build.bat
+call .\scripts\build_unified.bat --tests
 if errorlevel 1 (
     echo Build failed!
     exit /b 1

@@ -1,0 +1,28 @@
+{
+    "name": "Default",
+    "type": "Basic",
+    "properties": {
+        "albedo": [
+            0.8,
+            0.8,
+            0.8,
+            1.0
+        ],
+        "metallic": 0.0,
+        "roughness": 0.5,
+        "emission": [
+            0.0,
+            0.0,
+            0.0
+        ]
+    },
+    "textures": {
+        "diffuse": "textures/default_diffuse.png",
+        "normal": "textures/default_normal.png",
+        "specular": "textures/default_specular.png"
+    },
+    "shaders": {
+        "vertex": "shaders/basic_vertex.glsl",
+        "fragment": "shaders/basic_fragment.glsl"
+    }
+}

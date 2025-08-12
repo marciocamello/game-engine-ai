@@ -8,7 +8,7 @@ echo ========================================
 
 REM Check if build directory exists
 if not exist "build\Release" (
-    echo [ERROR] Build directory not found. Please run scripts\build.bat first.
+    echo [ERROR] Build directory not found. Please run scripts\build_unified.bat --tests first.
     exit /b 1
 )
 

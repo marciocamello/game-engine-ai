@@ -8,11 +8,11 @@
 
 - [x] 1. Verify and fix Bullet Physics build integration
 
-  - Confirm Bullet3 is properly installed via vcpkg (run `.\build.bat` to verify)
+  - Confirm Bullet3 is properly installed via vcpkg (run `.\scripts\build_unified.bat --tests` to verify)
   - Add Bullet Physics headers to include paths in CMakeLists.txt
   - Fix the existing `find_package(Bullet QUIET)` configuration
   - Create basic Bullet Physics initialization test to verify library integration
-  - Test build on Windows with PowerShell: `.\build.bat`
+  - Test build on Windows with PowerShell: `.\scripts\build_unified.bat --tests`
   - _Requirements: 1.1, 1.4_
 
 - [x] 2. Create math type conversion utilities
@@ -40,7 +40,7 @@
   - Initialize Bullet Physics components (broadphase, collision config, dispatcher, solver, dynamics world)
   - Implement Step method to call Bullet's stepSimulation
   - Add proper resource cleanup in destructor
-  - Test compilation with `.\build.bat` on Windows
+  - Test compilation with `.\scripts\build_unified.bat --tests` on Windows
   - _Requirements: 1.1, 1.2, 5.3_
 
 - [x] 5. Replace PhysicsEngine placeholder methods with Bullet implementations
@@ -233,7 +233,7 @@
 
 **Windows Development Workflow:**
 
-- Use `.\scripts\build.bat` to build project with Bullet Physics integration
+- Use `.\scripts\build_unified.bat --tests` to build project with Bullet Physics integration
 - Use `.\scripts\dev.bat` for development builds with debug symbols
 - Visual Studio 2022 for debugging and development
 

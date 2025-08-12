@@ -73,7 +73,7 @@ O script cria os seguintes arquivos em `.vscode/`:
 
 **Solução:**
 
-1. Verifique se o build foi executado: `.\build.bat`
+1. Verifique se o build foi executado: `.\scripts\build_unified.bat --tests`
 2. Confirme que existe `build/compile_commands.json`
 3. Execute: `.\scripts\reload_intellisense.bat`
 
@@ -225,7 +225,7 @@ code .
 
 ```powershell
 # Build completo
-.\build.bat
+.\scripts\build_unified.bat --tests
 
 # Executar jogo
 .\build\Release\GameExample.exe

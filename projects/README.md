@@ -25,7 +25,7 @@ Each project is self-contained with its own CMakeLists.txt, source files, and co
 The main engine CMakeLists.txt includes these projects automatically:
 
 ```bash
-.\scripts\build.bat
+.\scripts\build_unified.bat --tests
 ```
 
 ### Option 2: Build Individual Projects

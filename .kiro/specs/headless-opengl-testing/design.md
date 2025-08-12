@@ -285,7 +285,7 @@ vcpkg.json additions:
 
 ### Build Script Integration
 
-The `/scripts/build.bat` will automatically:
+The `/scripts/build_unified.bat --tests` will automatically:
 
 1. Detect available headless rendering libraries
 2. Configure CMake with appropriate flags

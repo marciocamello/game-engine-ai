@@ -35,7 +35,7 @@ This feature implements headless OpenGL testing capabilities for Game Engine Kir
 #### Acceptance Criteria
 
 1. WHEN building tests THEN CMakeLists.txt SHALL automatically detect and configure headless testing dependencies
-2. WHEN running /scripts/build.bat THEN headless test executables SHALL be built alongside existing tests
+2. WHEN running /scripts/build_unified.bat --tests THEN headless test executables SHALL be built alongside existing tests
 3. WHEN executing tests THEN they SHALL follow the same naming convention as current integration tests
 4. IF headless dependencies are missing THEN the build SHALL gracefully fallback with clear warnings
 

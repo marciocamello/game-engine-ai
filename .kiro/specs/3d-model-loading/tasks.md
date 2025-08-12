@@ -259,7 +259,6 @@
 
 - [x] 16. Final integration and validation
 
-
   - Run comprehensive integration tests with all supported model formats
   - Validate performance benchmarks for loading times and memory usage
   - Test error handling and recovery with corrupted and invalid files
@@ -270,4 +269,4 @@
 
 **Windows Development Workflow:**
 
-- Use `.\scripts\build.bat` to build project
+- Use `.\scripts\build_unified.bat --tests` to build project

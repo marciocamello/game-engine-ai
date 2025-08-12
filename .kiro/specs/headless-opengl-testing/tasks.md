@@ -125,7 +125,7 @@
   - Add test executable targets with proper dependencies
   - _Requirements: 3.1, 3.2, 5.2, 5.3_
 
-- [ ] 7.2 Update scripts/build.bat for headless testing
+- [ ] 7.2 Update scripts/build_unified.bat --tests for headless testing
 
   - Add headless testing detection and configuration
   - Provide clear feedback on available test modes

@@ -69,18 +69,26 @@ endforeach()
 
 # Dependencies are inherited from the engine library target
 
-# Copy shared assets from engine
-add_custom_command(TARGET BasicExample POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../assets $<TARGET_FILE_DIR:BasicExample>/assets
-    COMMENT "Copying shared engine assets to build directory"
-)
-
-# Copy project-specific assets if they exist
-if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/assets)
-    add_custom_command(TARGET BasicExample POST_BUILD
+# Deploy assets and configurations using the new system
+# This function is defined in the root CMakeLists.txt and handles:
+# 1. Project-specific assets (highest priority)
+# 2. Shared engine assets (medium priority)
+# 3. Legacy assets (lowest priority, backward compatibility)
+if(COMMAND deploy_project_assets)
+    deploy_project_assets(${PROJECT_NAME} $<TARGET_FILE_DIR:${PROJECT_NAME}>)
+else()
+    # Fallback for when function is not available
+    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_directory
-        ${CMAKE_CURRENT_SOURCE_DIR}/assets $<TARGET_FILE_DIR:BasicExample>/assets
-        COMMENT "Copying BasicExample project assets to build directory"
+        ${CMAKE_CURRENT_SOURCE_DIR}/../../assets $<TARGET_FILE_DIR:${PROJECT_NAME}>/assets
+        COMMENT "Copying assets (fallback method)"
     )
+endif()
+
+# Deploy configurations using the new system
+if(COMMAND deploy_project_configs)
+    deploy_project_configs(${PROJECT_NAME} $<TARGET_FILE_DIR:${PROJECT_NAME}>)
+else()
+    # Fallback for when function is not available
+    message(STATUS "Configuration deployment function not available for ${PROJECT_NAME}")
 endif()

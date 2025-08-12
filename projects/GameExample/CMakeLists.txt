@@ -70,31 +70,32 @@ endforeach()
 
 # Dependencies are inherited from the engine library target
 
-# Copy shared assets from engine
-add_custom_command(TARGET GameExample POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_directory
-    ${CMAKE_CURRENT_SOURCE_DIR}/../../assets $<TARGET_FILE_DIR:GameExample>/assets
-    COMMENT "Copying shared engine assets to build directory"
-)
-
-# Copy project-specific assets if they exist
-if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/assets)
-    add_custom_command(TARGET GameExample POST_BUILD
+# Deploy assets and configurations using the new system
+# This function is defined in the root CMakeLists.txt and handles:
+# 1. Project-specific assets (highest priority)
+# 2. Shared engine assets (medium priority)
+# 3. Legacy assets (lowest priority, backward compatibility)
+if(COMMAND deploy_project_assets)
+    deploy_project_assets(${PROJECT_NAME} $<TARGET_FILE_DIR:${PROJECT_NAME}>)
+else()
+    # Fallback for when function is not available
+    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
         COMMAND ${CMAKE_COMMAND} -E copy_directory
-        ${CMAKE_CURRENT_SOURCE_DIR}/assets $<TARGET_FILE_DIR:GameExample>/assets
-        COMMENT "Copying GameExample project assets to build directory"
+        ${CMAKE_CURRENT_SOURCE_DIR}/../../assets $<TARGET_FILE_DIR:${PROJECT_NAME}>/assets
+        COMMENT "Copying assets (fallback method)"
     )
 endif()
 
-# Copy configuration files
-add_custom_command(TARGET GameExample POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-    ${CMAKE_CURRENT_SOURCE_DIR}/config/config.json $<TARGET_FILE_DIR:GameExample>/config.json
-    COMMENT "Copying GameExample configuration"
-)
-
-add_custom_command(TARGET GameExample POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E copy_if_different
-    ${CMAKE_CURRENT_SOURCE_DIR}/config/engine_config.json $<TARGET_FILE_DIR:GameExample>/engine_config.json
-    COMMENT "Copying GameExample engine configuration"
-)
+# Deploy configurations using the new system
+if(COMMAND deploy_project_configs)
+    deploy_project_configs(${PROJECT_NAME} $<TARGET_FILE_DIR:${PROJECT_NAME}>)
+else()
+    # Fallback for when function is not available
+    if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/config/engine_config.json)
+        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            ${CMAKE_CURRENT_SOURCE_DIR}/config/engine_config.json $<TARGET_FILE_DIR:${PROJECT_NAME}>/engine_config.json
+            COMMENT "Copying engine configuration (fallback method)"
+        )
+    endif()
+endif()

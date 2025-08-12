@@ -18,7 +18,7 @@
   - NEVER use: `rm`, `del`, `rmdir` or other deletion commands
   - NEVER use commands that could delete project files
 - **PROHIBITED to use cmake commands directly**
-  - ALWAYS use `.\scripts\build.bat` for builds
+  - ALWAYS use `.\scripts\build_unified.bat --tests` for builds
   - NEVER execute `cmake` or `cmake --build` manually
 
 ### 2. BUILD AND TESTS - GOLDEN RULE
@@ -86,7 +86,7 @@
 
 #### Mandatory Scripts
 
-- **Build**: `.\scripts\build.bat` (ONLY permitted command)
+- **Build**: `.\scripts\build_unified.bat --tests` (ONLY permitted command)
 - **Tests**: `.\scripts\run_tests.bat`
 - **Debug**: `.\scripts\debug.bat`
 - **Logs**: `.\scripts\monitor.bat`
@@ -107,7 +107,7 @@
 
 ### Before Completing Task
 
-1. Complete build: `.\scripts\build.bat`
+1. Complete build: `.\scripts\build_unified.bat --tests`
 2. All tests: `.\scripts\run_tests.bat`
 3. Check error logs
 4. Confirm NOTHING is broken
@@ -128,7 +128,7 @@ Before any commit or task completion:
 ```powershell
 # 1. Clean build
 Remove-Item -Recurse -Force build -ErrorAction SilentlyContinue
-.\scripts\build.bat
+.\scripts\build_unified.bat --tests
 
 # 2. All tests
 .\scripts\run_tests.bat

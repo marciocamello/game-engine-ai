@@ -252,7 +252,7 @@ bool TestBasicWorldInitialization() {
 
 ## BEFORE COMPLETING ANY TASK WITH TESTS
 
-1. **Build successfully**: `.\scripts\build.bat`
+1. **Build successfully**: `.\scripts\build_unified.bat --tests`
 2. **All tests pass**: `.\scripts\run_tests.bat`
 3. **New tests follow template exactly**
 4. **Output format matches existing tests**

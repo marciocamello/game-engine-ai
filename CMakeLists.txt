@@ -336,6 +336,84 @@ function(apply_coverage_settings target_name)
     endif()
 endfunction()
 
+# Function to deploy assets for a project
+function(deploy_project_assets project_name target_dir)
+    set(project_asset_dir "${CMAKE_CURRENT_SOURCE_DIR}/projects/${project_name}/assets")
+    set(shared_asset_dir "${CMAKE_CURRENT_SOURCE_DIR}/shared/assets")
+    set(legacy_asset_dir "${CMAKE_CURRENT_SOURCE_DIR}/assets")
+    
+    # Copy project-specific assets (highest priority)
+    if(EXISTS ${project_asset_dir})
+        add_custom_command(TARGET ${project_name} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_directory
+            ${project_asset_dir} ${target_dir}/assets
+            COMMENT "Copying ${project_name} project assets"
+        )
+    endif()
+    
+    # Copy shared assets (medium priority, don't overwrite project assets)
+    if(EXISTS ${shared_asset_dir})
+        add_custom_command(TARGET ${project_name} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_directory
+            ${shared_asset_dir} ${target_dir}/assets
+            COMMENT "Copying shared engine assets"
+        )
+    endif()
+    
+    # Copy legacy assets (lowest priority, don't overwrite existing)
+    if(EXISTS ${legacy_asset_dir})
+        add_custom_command(TARGET ${project_name} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_directory
+            ${legacy_asset_dir} ${target_dir}/assets
+            COMMENT "Copying legacy assets for backward compatibility"
+        )
+    endif()
+endfunction()
+
+# Function to deploy configurations for a project
+function(deploy_project_configs project_name target_dir)
+    set(project_config_dir "${CMAKE_CURRENT_SOURCE_DIR}/projects/${project_name}/config")
+    set(shared_config_dir "${CMAKE_CURRENT_SOURCE_DIR}/shared/configs")
+    
+    # Copy project-specific configurations
+    if(EXISTS ${project_config_dir}/engine_config.json)
+        add_custom_command(TARGET ${project_name} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            ${project_config_dir}/engine_config.json ${target_dir}/engine_config.json
+            COMMENT "Copying ${project_name} engine configuration"
+        )
+    elseif(EXISTS ${shared_config_dir}/default_engine_config.json)
+        add_custom_command(TARGET ${project_name} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            ${shared_config_dir}/default_engine_config.json ${target_dir}/engine_config.json
+            COMMENT "Copying default engine configuration"
+        )
+    endif()
+    
+    if(EXISTS ${project_config_dir}/project_config.json)
+        add_custom_command(TARGET ${project_name} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            ${project_config_dir}/project_config.json ${target_dir}/project_config.json
+            COMMENT "Copying ${project_name} project configuration"
+        )
+    elseif(EXISTS ${shared_config_dir}/default_project_config.json)
+        add_custom_command(TARGET ${project_name} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            ${shared_config_dir}/default_project_config.json ${target_dir}/project_config.json
+            COMMENT "Copying default project configuration"
+        )
+    endif()
+    
+    # Copy any additional config files
+    if(EXISTS ${project_config_dir}/config.json)
+        add_custom_command(TARGET ${project_name} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            ${project_config_dir}/config.json ${target_dir}/config.json
+            COMMENT "Copying ${project_name} additional configuration"
+        )
+    endif()
+endfunction()
+
 # Function to create a unit test executable with standard configuration
 function(add_unit_test test_name source_file)
     # Create the executable

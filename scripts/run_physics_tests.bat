@@ -25,7 +25,7 @@ REM Build project first if requested
 if "%BUILD_FIRST%"=="true" (
     echo.
     echo Building project...
-    call build.bat
+    call build_unified.bat --tests
     if !errorlevel! neq 0 (
         echo Build failed! Exiting.
         exit /b 1
@@ -36,7 +36,7 @@ if "%BUILD_FIRST%"=="true" (
 REM Check if build directory exists
 if not exist "build\Release" (
     echo ERROR: Build directory not found!
-    echo Please run 'scripts\build.bat' first to compile the project.
+    echo Please run 'scripts\build_unified.bat --tests' first to compile the project.
     exit /b 1
 )
 
@@ -224,7 +224,7 @@ REM Recommendations
 echo.
 echo RECOMMENDATIONS:
 if !SKIPPED_TESTS! gtr 0 (
-    echo   - Run 'scripts\build.bat' to build missing test executables
+    echo   - Run 'scripts\build_unified.bat --tests' to build missing test executables
 )
 if !FAILED_TESTS! gtr 0 (
     echo   - Run with 'verbose' flag to see detailed failure information

@@ -118,7 +118,7 @@ assets/
 
 ```
 scripts/
-├── build.bat                    # Main build script (ONLY permitted build command)
+├── build_unified.bat --tests    # Main build script (ONLY permitted build command)
 ├── build_coverage.bat           # Code coverage build
 ├── debug.bat                    # Debug build script
 ├── dev.bat                      # Development console

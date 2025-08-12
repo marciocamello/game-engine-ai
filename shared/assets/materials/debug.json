@@ -1,0 +1,21 @@
+{
+    "name": "Debug",
+    "type": "Unlit",
+    "properties": {
+        "albedo": [
+            1.0,
+            0.0,
+            1.0,
+            1.0
+        ],
+        "wireframe": true,
+        "cullFace": false
+    },
+    "textures": {
+        "diffuse": "textures/grid.png"
+    },
+    "shaders": {
+        "vertex": "shaders/basic_vertex.glsl",
+        "fragment": "shaders/basic_fragment.glsl"
+    }
+}

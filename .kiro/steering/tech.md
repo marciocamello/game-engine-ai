@@ -33,11 +33,11 @@
 
 ```powershell
 # Windows - ONLY permitted build command (NEVER use cmake directly)
-.\scripts\build.bat
+.\scripts\build_unified.bat --tests
 
 # Clean build - ONLY permitted cleanup command
 Remove-Item -Recurse -Force build -ErrorAction SilentlyContinue
-.\scripts\build.bat
+.\scripts\build_unified.bat --tests
 
 # Development console with multiple options
 .\scripts\dev.bat

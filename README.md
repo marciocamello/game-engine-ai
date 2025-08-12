@@ -6,14 +6,14 @@ A modern 3D game engine built with AI assistance, designed for third-person acti
 
 ```bash
 # Build the engine
-./build.bat
+.\scripts\build_unified.bat --tests
 
 # Run example game
 cd build/Release
 ./GameExample.exe
 
 # Run integration tests
-./build.bat
+.\scripts\build_unified.bat --tests
 # Tests run automatically as part of build
 
 # Run visual debug tests
@@ -78,7 +78,7 @@ The combination of human expertise and AI assistance allows for rapid prototypin
 git clone https://github.com/yourusername/GameEngineKiro.git
 cd GameEngineKiro
 setup_dependencies.bat
-build.bat
+.\scripts\build_unified.bat --tests
 ```
 
 ## Documentation

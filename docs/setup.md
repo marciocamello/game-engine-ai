@@ -63,7 +63,7 @@ brew install cmake git
 git clone https://github.com/yourusername/GameEngineKiro.git
 cd GameEngineKiro
 setup_dependencies.bat
-build.bat
+.\scripts\build_unified.bat --tests
 ```
 
 ### Linux/macOS
@@ -72,7 +72,7 @@ build.bat
 git clone https://github.com/yourusername/GameEngineKiro.git
 cd GameEngineKiro
 setup_dependencies.bat
-build.bat
+.\scripts\build_unified.bat --tests
 ```
 
 ## Manual Setup

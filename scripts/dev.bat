@@ -92,7 +92,7 @@ goto :main_menu
 :build_release
 echo.
 echo Building Release version...
-call build.bat
+call build_unified.bat --tests
 pause
 goto :main_menu
 
@@ -124,7 +124,7 @@ echo.
 echo Rebuilding everything...
 if exist "build" rmdir /s /q build
 call setup_dependencies.bat
-call build.bat
+call build_unified.bat --tests
 pause
 goto :main_menu
 

@@ -6,7 +6,7 @@ echo.
 
 REM Build the project first
 echo Building project...
-call .\scripts\build.bat
+call .\scripts\build_unified.bat --tests
 if %ERRORLEVEL% neq 0 (
     echo Build failed! Cannot run validation tests.
     exit /b 1

@@ -258,5 +258,5 @@
 
 **Windows Development Workflow:**
 
-- Use `.\scripts\build.bat` to build project
+- Use `.\scripts\build_unified.bat --tests` to build project
 - Use `build\projects\GameExample\Release\GameExample.exe` to run GameExample

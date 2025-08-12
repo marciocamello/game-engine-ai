@@ -8,13 +8,13 @@ echo ========================================
 
 REM Check if build directory exists
 if not exist "build\Release" (
-    echo [ERROR] Build directory not found. Please run scripts\build.bat first.
+    echo [ERROR] Build directory not found. Please run scripts\build_unified.bat --tests first.
     exit /b 1
 )
 
 REM Check if enhanced test runner exists
 if not exist "build\Release\EnhancedTestRunner.exe" (
-    echo [ERROR] Enhanced test runner not found. Please run scripts\build.bat first.
+    echo [ERROR] Enhanced test runner not found. Please run scripts\build_unified.bat --tests first.
     exit /b 1
 )
 

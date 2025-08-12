@@ -89,7 +89,7 @@ This directory contains example applications that demonstrate the capabilities o
 
 ```powershell
 # Build both examples (ONLY permitted build command)
-.\scripts\build.bat
+.\scripts\build_unified.bat --tests
 
 # Run basic example
 .\build\Release\BasicExample.exe
@@ -186,7 +186,7 @@ These are primarily for development and testing purposes.
 
 ### Common Issues
 
-1. **Build Failures**: Use `.\scripts\build.bat` (never cmake directly)
+1. **Build Failures**: Use `.\scripts\build_unified.bat --tests` (never cmake directly)
 2. **Missing Assets**: Enhanced example will use fallbacks
 3. **Audio Issues**: Enhanced example continues without audio if OpenAL fails
 4. **Performance Issues**: Check F5 performance report in enhanced example
@@ -205,5 +205,5 @@ When adding new examples:
 1. Follow the established naming convention
 2. Add appropriate CMake targets
 3. Update this README with new example information
-4. Ensure examples build with `.\scripts\build.bat`
+4. Ensure examples build with `.\scripts\build_unified.bat --tests`
 5. Test examples run correctly after build

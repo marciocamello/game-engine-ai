@@ -1,0 +1,28 @@
+{
+    "projectName": "NewProject",
+    "projectVersion": "1.0.0",
+    "description": "A new game project created with Game Engine Kiro",
+    "author": "Developer",
+    "requiredModules": [
+        "Core",
+        "Graphics",
+        "Input"
+    ],
+    "optionalModules": [
+        "Physics",
+        "Audio"
+    ],
+    "assetPath": "assets/",
+    "configPath": "config/",
+    "buildPath": "build/",
+    "minEngineVersion": "1.0.0",
+    "projectSettings": {
+        "windowTitle": "Game Engine Kiro - New Project",
+        "windowWidth": "1280",
+        "windowHeight": "720",
+        "fullscreen": "false",
+        "enablePhysicsDebug": "false",
+        "mouseSensitivity": "1.0",
+        "targetFrameRate": "60"
+    }
+}

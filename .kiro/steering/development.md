@@ -33,11 +33,11 @@
 
 ```powershell
 # Windows - ONLY permitted build command
-.\scripts\build.bat
+.\scripts\build_unified.bat --tests
 
 # Clean build - ONLY permitted cleanup command
 Remove-Item -Recurse -Force build -ErrorAction SilentlyContinue
-.\scripts\build.bat
+.\scripts\build_unified.bat --tests
 
 # Development console with multiple options
 .\scripts\dev.bat
@@ -121,7 +121,7 @@ build\projects\BasicExample\Release\BasicExample.exe
 
 ### BEFORE STARTING ANY TASK
 
-1. **Verify current build**: `.\scripts\build.bat`
+1. **Verify current build**: `.\scripts\build_unified.bat --tests`
 2. **Execute all tests**: `.\scripts\run_tests.bat`
 3. **Only start if everything is green**
 
@@ -133,7 +133,7 @@ build\projects\BasicExample\Release\BasicExample.exe
 
 ### BEFORE COMPLETING TASK
 
-1. **Complete build**: `.\scripts\build.bat`
+1. **Complete build**: `.\scripts\build_unified.bat --tests`
 2. **All tests**: `.\scripts\run_tests.bat`
 3. **Check error logs**
 4. **Create commit with task information**
@@ -212,7 +212,7 @@ build\projects\BasicExample\Release\BasicExample.exe
 ### Common Issues - MANDATORY SOLUTIONS
 
 - **Include path problems**: Check TestUtils.h path
-- **Build failures**: `Remove-Item -Recurse -Force build -ErrorAction SilentlyContinue` and `.\scripts\build.bat` (ONLY permitted commands)
+- **Build failures**: `Remove-Item -Recurse -Force build -ErrorAction SilentlyContinue` and `.\scripts\build_unified.bat --tests` (ONLY permitted commands)
 - **Test failures**: Check output format and return types
 - **Missing dependencies**: `.\scripts\setup_dependencies.bat`
 - **GOLDEN RULE**: Broken build = Incomplete task until fixed

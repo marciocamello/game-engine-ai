@@ -113,7 +113,7 @@ examples/test_runner_demo.cpp  🔄 TODO - Usage example
 ```bash
 # Tests will be integrated into main build system
 # Run via main build process
-./build.bat
+.\scripts\build_unified.bat --tests
 ```
 
 ### Internal Tests (Visual)

@@ -56,7 +56,7 @@ if not exist "%OUTPUT_DIR%" (
 REM Check if build directory exists
 if not exist "build\Release" (
     echo ERROR: Build directory not found!
-    echo Please run 'scripts\build.bat' first to compile the project.
+    echo Please run 'scripts\build_unified.bat --tests' first to compile the project.
     exit /b 1
 )
 

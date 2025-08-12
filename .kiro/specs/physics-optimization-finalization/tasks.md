@@ -193,7 +193,7 @@
 
 **Windows Development Workflow:**
 
-- Use `.\scripts\build.bat` for standard builds with physics integration
+- Use `.\scripts\build_unified.bat --tests` for standard builds with physics integration
 - Use `.\scripts\run_coverage_analysis.bat` for test coverage analysis
 - Use `.\scripts\run_performance_benchmarks.bat` for performance testing
 - Use `.\scripts\run_memory_tests.bat` for memory validation

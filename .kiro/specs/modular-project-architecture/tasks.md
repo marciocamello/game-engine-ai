@@ -111,7 +111,7 @@
   - Add support for building individual projects or entire solution
   - _Requirements: 6.1, 6.2, 6.3, 6.4, 6.5_
 
-- [ ] 15. Implement asset and configuration management
+- [x] 15. Implement asset and configuration management
 
   - Create shared/assets/ directory for common engine assets
   - Implement asset path resolution for project-specific and shared assets
@@ -119,7 +119,16 @@
   - Create asset deployment system that copies only relevant assets
   - _Requirements: 7.1, 7.3, 7.4, 7.5_
 
-- [ ] 16. Update build scripts for new structure
+- [ ] 16. Fix broken tests after structural changes
+
+  - Identify and fix tests that broke due to new asset and configuration management
+  - Update test include paths and dependencies for new directory structure
+  - Fix configuration-related test failures caused by new ConfigManager implementation
+  - Ensure all unit and integration tests pass with new modular architecture
+  - Update test data paths and asset references for new shared/assets structure
+  - _Requirements: 3.1, 3.2, 3.3, 7.2_
+
+- [ ] 17. Update build scripts for new structure
 
   - Modify existing build scripts to work with new directory structure
   - Add support for building specific projects or modules
@@ -127,7 +136,7 @@
   - Ensure backward compatibility with existing development workflow
   - _Requirements: 6.5_
 
-- [ ] 17. Create module loading and runtime management
+- [ ] 18. Create module loading and runtime management
 
   - Implement dynamic module loading system for runtime module discovery
   - Add module enable/disable functionality without recompilation
@@ -135,7 +144,7 @@
   - Write integration tests for runtime module management
   - _Requirements: 2.6, 2.7_
 
-- [ ] 18. Implement comprehensive error handling and validation
+- [ ] 19. Implement comprehensive error handling and validation
 
   - Add detailed error messages for module loading failures
   - Implement graceful fallback mechanisms for missing modules
@@ -143,7 +152,7 @@
   - Write tests for error handling scenarios and edge cases
   - _Requirements: 5.3, 5.4_
 
-- [ ] 19. Create documentation and migration guide
+- [ ] 20. Create documentation and migration guide
 
   - Write documentation for new modular architecture
   - Create migration guide for existing projects and developers
@@ -151,7 +160,7 @@
   - Create examples and tutorials for new project creation
   - _Requirements: 4.1, 4.2_
 
-- [ ] 20. Final integration testing and validation
+- [ ] 21. Final integration testing and validation
   - Run comprehensive integration tests across all modules and projects
   - Validate that all existing functionality works with new architecture
   - Perform performance testing to ensure no regressions

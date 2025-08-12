@@ -11,6 +11,7 @@ set BUILD_ENGINE=OFF
 set BUILD_PROJECTS=OFF
 set BUILD_TESTS=OFF
 set SPECIFIC_PROJECT=
+set SPECIFIC_TEST=
 set BUILD_TYPE=Release
 set ENABLE_COVERAGE=OFF
 set CMAKE_ARGS=
@@ -32,6 +33,15 @@ if "%1"=="--projects" (
 )
 if "%1"=="--tests" (
     set BUILD_TESTS=ON
+    REM Check if next argument is a test name (doesn't start with --)
+    if not "%2"=="" (
+        echo %2 | findstr /r "^--" >nul
+        if errorlevel 1 (
+            set SPECIFIC_TEST=%2
+            set CMAKE_ARGS=%CMAKE_ARGS% -DBUILD_SPECIFIC_TEST=%2
+            shift
+        )
+    )
     shift
     goto :parse_args
 )
@@ -115,7 +125,11 @@ if "%BUILD_PROJECTS%"=="ON" (
 )
 if "%BUILD_TESTS%"=="ON" (
     if not "%BUILD_TYPE_DESC%"=="" set BUILD_TYPE_DESC=%BUILD_TYPE_DESC% + 
-    set BUILD_TYPE_DESC=%BUILD_TYPE_DESC%Tests
+    if not "%SPECIFIC_TEST%"=="" (
+        set BUILD_TYPE_DESC=%BUILD_TYPE_DESC%Test ^(%SPECIFIC_TEST%^)
+    ) else (
+        set BUILD_TYPE_DESC=%BUILD_TYPE_DESC%Tests
+    )
 )
 
 :setup_cmake_args
@@ -138,11 +152,15 @@ if "%BUILD_ENGINE%"=="ON" (
 if "%ENABLE_COVERAGE%"=="ON" (
     set CMAKE_ARGS=%CMAKE_ARGS% -DENABLE_COVERAGE=ON
 )
+if not "%SPECIFIC_TEST%"=="" (
+    set CMAKE_ARGS=%CMAKE_ARGS% -DBUILD_SPECIFIC_TEST=%SPECIFIC_TEST%
+)
 
 echo Build Configuration: %BUILD_TYPE_DESC%
 echo Build Type: %BUILD_TYPE%
 if "%ENABLE_COVERAGE%"=="ON" echo Coverage: Enabled
 if not "%SPECIFIC_PROJECT%"=="" echo Specific Project: %SPECIFIC_PROJECT%
+if not "%SPECIFIC_TEST%"=="" echo Specific Test: %SPECIFIC_TEST%
 
 REM Verify dependencies
 echo.
@@ -192,7 +210,13 @@ if "%BUILD_PROJECTS%"=="ON" (
         echo   - Game Projects: build\projects\[ProjectName]\%BUILD_TYPE%\[ProjectName].exe
     )
 )
-if "%BUILD_TESTS%"=="ON" echo   - Tests: build\%BUILD_TYPE%\*Test.exe
+if "%BUILD_TESTS%"=="ON" (
+    if not "%SPECIFIC_TEST%"=="" (
+        echo   - Test ^(%SPECIFIC_TEST%^): build\%BUILD_TYPE%\%SPECIFIC_TEST%.exe
+    ) else (
+        echo   - Tests: build\%BUILD_TYPE%\*Test.exe
+    )
+)
 if "%ENABLE_COVERAGE%"=="ON" echo   - Coverage: Enabled ^(use run_coverage_analysis.bat^)
 
 echo.
@@ -216,6 +240,7 @@ echo Build Components:
 echo   --engine          Build engine library and modules
 echo   --projects        Build all game projects
 echo   --tests           Build all test suites
+echo   --tests NAME      Build specific test only
 echo   --project NAME    Build specific project only
 echo   --all             Build everything ^(default if no options^)
 echo.
@@ -225,15 +250,16 @@ echo   --release         Build in Release mode ^(default^)
 echo   --coverage        Build with coverage support ^(Debug + Tests^)
 echo.
 echo Common Combinations:
-echo   build_unified.bat                        # Build everything
-echo   build_unified.bat --engine               # Engine only
-echo   build_unified.bat --projects             # Projects only
-echo   build_unified.bat --tests                # Tests only
-echo   build_unified.bat --engine --tests       # Engine + Tests
-echo   build_unified.bat --engine --projects    # Engine + Projects
-echo   build_unified.bat --project GameExample  # Specific project only
-echo   build_unified.bat --debug --tests        # Debug build with tests
-echo   build_unified.bat --coverage             # Coverage analysis build
+echo   build_unified.bat                                    # Build everything
+echo   build_unified.bat --engine                          # Engine only
+echo   build_unified.bat --projects                        # Projects only
+echo   build_unified.bat --tests                           # All tests
+echo   build_unified.bat --tests ModuleerrorhandlingintegrationIntegrationTest  # Specific test only
+echo   build_unified.bat --engine --tests                  # Engine + Tests
+echo   build_unified.bat --engine --projects               # Engine + Projects
+echo   build_unified.bat --project GameExample             # Specific project only
+echo   build_unified.bat --debug --tests                   # Debug build with tests
+echo   build_unified.bat --coverage                        # Coverage analysis build
 echo.
 echo Legacy Compatibility:
 echo   --engine-only     Same as --engine

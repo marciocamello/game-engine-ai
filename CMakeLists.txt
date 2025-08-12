@@ -16,6 +16,7 @@ option(BUILD_PROJECTS_ONLY "Build only game projects" OFF)
 option(BUILD_TESTS_ONLY "Build only test suites" OFF)
 option(BUILD_ENGINE_AND_TESTS_ONLY "Build engine and tests only" OFF)
 option(BUILD_SPECIFIC_PROJECT "Build a specific project only" "")
+option(BUILD_SPECIFIC_TEST "Build a specific test only" "")
 
 # Engine configuration
 option(ENABLE_VULKAN "Enable Vulkan renderer" OFF)
@@ -119,6 +120,9 @@ function(print_build_summary)
     message(STATUS "  - Engine + Tests Only: ${BUILD_ENGINE_AND_TESTS_ONLY}")
     if(BUILD_SPECIFIC_PROJECT)
         message(STATUS "  - Specific Project: ${BUILD_SPECIFIC_PROJECT}")
+    endif()
+    if(BUILD_SPECIFIC_TEST)
+        message(STATUS "  - Specific Test: ${BUILD_SPECIFIC_TEST}")
     endif()
     message(STATUS "===================================")
 endfunction()
@@ -505,6 +509,14 @@ function(discover_and_add_tests test_directory test_type)
             set(test_executable_name "${first_char_upper}${rest_chars_clean}IntegrationTest")
         else()
             set(test_executable_name "${first_char_upper}${rest_chars_clean}Test")
+        endif()
+        
+        # Check if building specific test
+        if(BUILD_SPECIFIC_TEST)
+            if(NOT test_executable_name STREQUAL BUILD_SPECIFIC_TEST)
+                continue()
+            endif()
+            message(STATUS "Building specific test: ${test_executable_name}")
         endif()
         
         # Add the appropriate test type

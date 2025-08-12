@@ -398,7 +398,8 @@ bool TestModuleInitialization() {
     config.modules.push_back(physicsConfig);
 
     // Initialize modules
-    EXPECT_TRUE(registry.InitializeModules(config));
+    auto result = registry.InitializeModules(config);
+    EXPECT_TRUE(result.success);
 
     // Check that enabled modules are initialized
     IEngineModule* coreModule = registry.GetModule("Core");

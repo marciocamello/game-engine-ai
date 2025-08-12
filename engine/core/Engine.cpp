@@ -154,7 +154,8 @@ namespace GameEngine {
         if (InitializeModuleSystem()) {
             if (LoadConfiguration(configPath)) {
                 if (RegisterDefaultModules()) {
-                    if (m_moduleRegistry->InitializeModules(*m_engineConfig)) {
+                    auto initResult = m_moduleRegistry->InitializeModules(*m_engineConfig);
+                    if (initResult.success) {
                         LOG_INFO("Module system initialized successfully");
                         
                         // Initialize remaining non-modular subsystems

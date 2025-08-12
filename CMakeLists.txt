@@ -499,7 +499,13 @@ function(discover_and_add_tests test_directory test_type)
         string(TOUPPER ${first_char} first_char_upper)
         string(SUBSTRING ${test_name_clean} 1 -1 rest_chars)
         string(REPLACE "_" "" rest_chars_clean ${rest_chars})
-        set(test_executable_name "${first_char_upper}${rest_chars_clean}Test")
+        
+        # Add prefix based on test type to avoid conflicts
+        if(test_type STREQUAL "integration")
+            set(test_executable_name "${first_char_upper}${rest_chars_clean}IntegrationTest")
+        else()
+            set(test_executable_name "${first_char_upper}${rest_chars_clean}Test")
+        endif()
         
         # Add the appropriate test type
         if(test_type STREQUAL "unit")
@@ -583,158 +589,10 @@ if(BUILD_TESTS)
     # Include engine tests
     include_engine_tests()
     
-    # Integration tests (moved from projects section)
-    # Integration test for Bullet Physics
-    add_executable(BulletIntegrationTest
-        tests/integration/test_bullet_integration.cpp
-    )
-    apply_coverage_settings(BulletIntegrationTest)
+    # Discover and add integration tests automatically
+    discover_and_add_tests("tests/integration" "integration")
 
-    # Integration test for Bullet conversion utilities
-    add_executable(BulletConversionTest
-        tests/integration/test_bullet_conversion.cpp
-    )
-    apply_coverage_settings(BulletConversionTest)
 
-    # Simple integration test for Bullet conversion utilities
-    add_integration_test(BulletUtilsSimpleTest tests/integration/test_bullet_utils_simple.cpp)
-
-    # Simple integration test for CollisionShapeFactory
-    add_integration_test(CollisionShapeFactorySimpleTest tests/integration/test_collision_shape_factory_simple.cpp)
-
-    # Physics queries integration test
-    add_integration_test(PhysicsQueriesTest tests/integration/test_physics_queries.cpp)
-
-    # Physics configuration integration test
-    add_integration_test(PhysicsConfigurationTest tests/integration/test_physics_configuration.cpp)
-
-    # Movement component comparison test
-    add_executable(MovementComponentComparisonTest
-        tests/integration/test_movement_component_comparison.cpp
-    )
-    apply_coverage_settings(MovementComponentComparisonTest)
-
-    # Simple physics performance test
-    add_executable(PhysicsPerformanceSimpleTest
-        tests/integration/test_physics_performance_simple.cpp
-    )
-    apply_coverage_settings(PhysicsPerformanceSimpleTest)
-
-    # Simple memory usage test
-    add_executable(MemoryUsageSimpleTest
-        tests/integration/test_memory_usage_simple.cpp
-    )
-    apply_coverage_settings(MemoryUsageSimpleTest)
-
-    # Simple character behavior test
-    add_executable(CharacterBehaviorSimpleTest
-        tests/integration/test_character_behavior_simple.cpp
-    )
-    apply_coverage_settings(CharacterBehaviorSimpleTest)
-
-    # OpenAL integration test
-    add_integration_test(OpenALIntegrationTest tests/integration/test_openal_integration.cpp)
-
-    # AudioLoader integration test
-    add_integration_test(AudioLoaderTest tests/integration/test_audio_loader.cpp)
-
-    # Audio Camera integration test
-    add_integration_test(AudioCameraIntegrationTest tests/integration/test_audio_camera_integration.cpp)
-
-    # Resource Statistics integration test
-    add_integration_test(ResourceStatisticsTest tests/integration/test_resource_statistics.cpp)
-
-    # Error Handling integration test
-    add_integration_test(ErrorHandlingTest tests/integration/test_error_handling.cpp)
-
-    # Final v1.0 Validation integration test
-    add_integration_test(FinalV1ValidationTest tests/integration/test_final_v1_validation.cpp)
-
-    # Final 3D Model Integration and Validation test
-    add_integration_test(Final3dModelIntegrationValidationTest tests/integration/test_final_3d_model_integration_validation.cpp)
-
-    # ModelLoader Assimp integration test
-    add_integration_test(ModelLoaderAssimpTest tests/integration/test_model_loader_assimp.cpp)
-
-    # MaterialImporter integration test
-    add_integration_test(MaterialImporterTest tests/integration/test_material_importer.cpp)
-
-    # GLTF Loader integration test
-    add_integration_test(GLTFLoaderTest tests/integration/test_gltf_loader.cpp)
-
-    # FBX Loader integration test
-    add_integration_test(FBXLoaderTest tests/integration/test_fbx_loader.cpp)
-
-    # Model Resource Integration test
-    add_integration_test(ModelResourceIntegrationTest tests/integration/test_model_resource_integration.cpp)
-
-    # Model Hot Reload integration test
-    add_integration_test(ModelHotReloadTest tests/integration/test_model_hot_reload.cpp)
-
-    # Resource Usage Tracking test
-    add_integration_test(ResourceUsageTrackingTest tests/integration/test_resource_usage_tracking.cpp)
-
-    # Model Debugger integration test
-    add_integration_test(ModelDebuggerTest tests/integration/test_model_debugger.cpp)
-
-    # Performance and Stability integration test
-    add_integration_test(PerformanceStabilityTest tests/integration/test_performance_stability.cpp)
-
-    # ShaderManager Integration test
-    add_integration_test(ShadermanagerintegrationTest tests/integration/test_shadermanager_integration.cpp)
-
-    # Advanced Shader System Integration test
-    add_integration_test(AdvancedshadersystemintegrationTest tests/integration/test_advanced_shader_system_integration.cpp)
-
-    # Final Shader System Validation test
-    add_integration_test(FinalShaderSystemValidationTest tests/integration/test_final_shader_system_validation.cpp)
-
-    # Bullet Physics Module integration test
-    add_integration_test(BulletPhysicsModuleTest tests/integration/test_bullet_physics_module.cpp)
-
-    # Engine Module Initialization integration test
-    add_integration_test(EngineModuleInitializationTest tests/integration/test_engine_module_initialization.cpp)
-
-    # Link integration tests with engine
-    target_link_libraries(BulletIntegrationTest PRIVATE GameEngineKiro)
-    target_link_libraries(BulletConversionTest PRIVATE GameEngineKiro)
-    target_link_libraries(MovementComponentComparisonTest PRIVATE GameEngineKiro)
-    target_link_libraries(PhysicsPerformanceSimpleTest PRIVATE GameEngineKiro)
-    target_link_libraries(MemoryUsageSimpleTest PRIVATE GameEngineKiro)
-    target_link_libraries(CharacterBehaviorSimpleTest PRIVATE GameEngineKiro)
-
-    # Link Bullet Physics libraries to integration tests
-    if(Bullet_FOUND)
-        target_link_libraries(BulletIntegrationTest PRIVATE 
-            BulletDynamics
-            BulletCollision
-            LinearMath
-        )
-        
-        target_link_libraries(BulletConversionTest PRIVATE 
-            BulletDynamics
-            BulletCollision
-            LinearMath
-        )
-        
-        target_link_libraries(MovementComponentComparisonTest PRIVATE 
-            BulletDynamics
-            BulletCollision
-            LinearMath
-        )
-        
-        target_link_libraries(PhysicsPerformanceSimpleTest PRIVATE 
-            BulletDynamics
-            BulletCollision
-            LinearMath
-        )
-        
-        target_link_libraries(MemoryUsageSimpleTest PRIVATE 
-            BulletDynamics
-            BulletCollision
-            LinearMath
-        )
-    endif()
     
 endif() # End of tests build block
 

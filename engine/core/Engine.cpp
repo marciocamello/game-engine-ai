@@ -2,6 +2,7 @@
 #include "Logger.h"
 #include "../../include/Core/ModuleRegistry.h"
 #include "../../include/Core/ModuleConfigLoader.h"
+#include "../../include/Core/RuntimeModuleManager.h"
 #include "../../include/Graphics/GraphicsRenderer.h"
 #include "../../include/Resource/ResourceManager.h"
 #include "../../include/Physics/PhysicsEngine.h"
@@ -22,8 +23,8 @@
 
 namespace GameEngine {
     Engine::Engine() 
-        : m_moduleRegistry(nullptr), m_engineConfig(nullptr), m_useModuleSystem(true),
-          m_isRunning(false), m_deltaTime(0.0f) {
+        : m_moduleRegistry(nullptr), m_runtimeModuleManager(nullptr), m_engineConfig(nullptr), 
+          m_useModuleSystem(true), m_isRunning(false), m_deltaTime(0.0f) {
     }
 
     Engine::~Engine() {
@@ -34,10 +35,17 @@ namespace GameEngine {
     bool Engine::InitializeModuleSystem() {
         try {
             m_moduleRegistry = &ModuleRegistry::GetInstance();
+            m_runtimeModuleManager = &RuntimeModuleManager::GetInstance();
+            
+            if (!m_runtimeModuleManager->Initialize()) {
+                LOG_ERROR("Failed to initialize runtime module manager");
+                return false;
+            }
+            
             return true;
         }
         catch (const std::exception& e) {
-            LOG_ERROR("Failed to initialize module registry: " + std::string(e.what()));
+            LOG_ERROR("Failed to initialize module system: " + std::string(e.what()));
             return false;
         }
     }
@@ -412,6 +420,11 @@ namespace GameEngine {
 
 
     void Engine::ShutdownModuleSystem() {
+        if (m_runtimeModuleManager) {
+            m_runtimeModuleManager->Shutdown();
+            m_runtimeModuleManager = nullptr;
+        }
+        
         if (m_moduleRegistry) {
             m_moduleRegistry->ShutdownModules();
         }
@@ -451,5 +464,146 @@ namespace GameEngine {
         m_scripting.reset();
         m_input.reset();
         m_resourceManager.reset();
+    }
+
+    // Runtime module management implementation
+    bool Engine::LoadModuleAtRuntime(const std::string& name, const std::string& configPath) {
+        if (!m_runtimeModuleManager) {
+            LOG_ERROR("Runtime module manager not initialized");
+            return false;
+        }
+
+        ModuleConfig config;
+        if (!configPath.empty()) {
+            auto configOpt = ModuleConfigLoader::LoadFromFile(configPath);
+            if (configOpt) {
+                // Find the module config in the loaded configuration
+                for (const auto& moduleConfig : configOpt->modules) {
+                    if (moduleConfig.name == name) {
+                        config = moduleConfig;
+                        break;
+                    }
+                }
+            }
+        }
+
+        return m_runtimeModuleManager->LoadModule(name, config);
+    }
+
+    bool Engine::UnloadModuleAtRuntime(const std::string& name) {
+        if (!m_runtimeModuleManager) {
+            LOG_ERROR("Runtime module manager not initialized");
+            return false;
+        }
+
+        return m_runtimeModuleManager->UnloadModule(name);
+    }
+
+    bool Engine::ReloadModuleAtRuntime(const std::string& name) {
+        if (!m_runtimeModuleManager) {
+            LOG_ERROR("Runtime module manager not initialized");
+            return false;
+        }
+
+        return m_runtimeModuleManager->ReloadModule(name);
+    }
+
+    bool Engine::EnableModuleAtRuntime(const std::string& name) {
+        if (!m_runtimeModuleManager) {
+            LOG_ERROR("Runtime module manager not initialized");
+            return false;
+        }
+
+        return m_runtimeModuleManager->EnableModule(name);
+    }
+
+    bool Engine::DisableModuleAtRuntime(const std::string& name) {
+        if (!m_runtimeModuleManager) {
+            LOG_ERROR("Runtime module manager not initialized");
+            return false;
+        }
+
+        return m_runtimeModuleManager->DisableModule(name);
+    }
+
+    bool Engine::IsModuleLoadedAtRuntime(const std::string& name) const {
+        if (!m_runtimeModuleManager) {
+            return false;
+        }
+
+        return m_runtimeModuleManager->IsModuleLoaded(name);
+    }
+
+    bool Engine::IsModuleEnabledAtRuntime(const std::string& name) const {
+        if (!m_runtimeModuleManager) {
+            return false;
+        }
+
+        return m_runtimeModuleManager->IsModuleEnabled(name);
+    }
+
+    bool Engine::EnableHotSwap(bool enabled) {
+        if (!m_runtimeModuleManager) {
+            LOG_ERROR("Runtime module manager not initialized");
+            return false;
+        }
+
+        return m_runtimeModuleManager->EnableHotSwap(enabled);
+    }
+
+    bool Engine::IsHotSwapEnabled() const {
+        if (!m_runtimeModuleManager) {
+            return false;
+        }
+
+        return m_runtimeModuleManager->IsHotSwapEnabled();
+    }
+
+    bool Engine::HotSwapModule(const std::string& name, const std::string& newPath) {
+        if (!m_runtimeModuleManager) {
+            LOG_ERROR("Runtime module manager not initialized");
+            return false;
+        }
+
+        return m_runtimeModuleManager->HotSwapModule(name, newPath);
+    }
+
+    std::vector<std::string> Engine::GetAvailableModules() const {
+        if (!m_runtimeModuleManager) {
+            return {};
+        }
+
+        std::vector<std::string> moduleNames;
+        auto modules = m_runtimeModuleManager->GetAvailableModules();
+        for (const auto& module : modules) {
+            moduleNames.push_back(module.name);
+        }
+        return moduleNames;
+    }
+
+    std::vector<std::string> Engine::GetLoadedModules() const {
+        if (!m_runtimeModuleManager) {
+            return {};
+        }
+
+        std::vector<std::string> moduleNames;
+        auto modules = m_runtimeModuleManager->GetLoadedModules();
+        for (const auto& module : modules) {
+            moduleNames.push_back(module.name);
+        }
+        return moduleNames;
+    }
+
+    std::vector<std::string> Engine::GetEnabledModules() const {
+        if (!m_runtimeModuleManager) {
+            return {};
+        }
+
+        std::vector<std::string> moduleNames;
+        auto modules = m_runtimeModuleManager->GetEnabledModules();
+        for (const auto& module : modules) {
+            moduleNames.push_back(module.name);
+        }
+        return moduleNames;
     }
 }

@@ -29,6 +29,8 @@ namespace GameEngine {
         class IAudioModule;
     }
 
+    class RuntimeModuleManager;
+
     class Engine {
     public:
         Engine();
@@ -52,6 +54,25 @@ namespace GameEngine {
         Graphics::IGraphicsModule* GetGraphicsModule() const;
         Physics::IPhysicsModule* GetPhysicsModule() const;
         Audio::IAudioModule* GetAudioModule() const;
+
+        // Runtime module management
+        bool LoadModuleAtRuntime(const std::string& name, const std::string& configPath = "");
+        bool UnloadModuleAtRuntime(const std::string& name);
+        bool ReloadModuleAtRuntime(const std::string& name);
+        bool EnableModuleAtRuntime(const std::string& name);
+        bool DisableModuleAtRuntime(const std::string& name);
+        bool IsModuleLoadedAtRuntime(const std::string& name) const;
+        bool IsModuleEnabledAtRuntime(const std::string& name) const;
+        
+        // Hot-swap functionality
+        bool EnableHotSwap(bool enabled);
+        bool IsHotSwapEnabled() const;
+        bool HotSwapModule(const std::string& name, const std::string& newPath = "");
+        
+        // Module discovery and information
+        std::vector<std::string> GetAvailableModules() const;
+        std::vector<std::string> GetLoadedModules() const;
+        std::vector<std::string> GetEnabledModules() const;
 
         float GetDeltaTime() const { return m_deltaTime; }
         bool IsRunning() const { return m_isRunning; }
@@ -80,6 +101,7 @@ namespace GameEngine {
 
         // Module system
         ModuleRegistry* m_moduleRegistry;
+        RuntimeModuleManager* m_runtimeModuleManager;
         EngineConfig* m_engineConfig;
         bool m_useModuleSystem;
 

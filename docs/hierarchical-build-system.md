@@ -1,299 +1,253 @@
-# Hierarchical CMake Build System
+# Hierarchical Build System
 
-## Overview
-
-The Game Engine Kiro now features a hierarchical CMake build system that supports modular engine architecture and flexible project management. This system allows for building individual components, entire solutions, or specific projects based on your development needs.
-
-## Build System Architecture
-
-### Root Level (CMakeLists.txt)
-
-The root CMakeLists.txt orchestrates the entire build process:
-
-- **Engine Discovery**: Automatically discovers engine modules in `engine/modules/`
-- **Project Discovery**: Automatically discovers game projects in `projects/`
-- **Conditional Building**: Supports building specific components or the entire solution
-- **Module Management**: Handles module dependencies and registration
-
-### Engine Modules
-
-Engine modules are located in `engine/modules/` and each has its own CMakeLists.txt:
-
-```
-engine/modules/
-├── audio-openal/CMakeLists.txt      # OpenAL audio module
-├── graphics-opengl/CMakeLists.txt   # OpenGL graphics module
-├── physics-bullet/CMakeLists.txt    # Bullet Physics module
-└── templates/ModuleTemplate.cmake   # Template for new modules
-```
-
-### Game Projects
-
-Game projects are located in `projects/` and each has its own CMakeLists.txt:
-
-```
-projects/
-├── GameExample/CMakeLists.txt       # Enhanced example game
-├── BasicExample/CMakeLists.txt      # Simple example game
-└── templates/ProjectTemplate.cmake  # Template for new projects
-```
+Game Engine Kiro uses a hierarchical CMake build system that supports building individual components or the entire solution. This system provides flexibility for developers to build only what they need, improving build times and development efficiency.
 
 ## Build Options
 
-### CMake Configuration Options
+### 1. Complete Build (Default)
 
-| Option                   | Description                               | Default |
-| ------------------------ | ----------------------------------------- | ------- |
-| `BUILD_ENGINE_ONLY`      | Build only the engine library and modules | OFF     |
-| `BUILD_PROJECTS_ONLY`    | Build only game projects                  | OFF     |
-| `BUILD_TESTS_ONLY`       | Build only test suites                    | OFF     |
-| `BUILD_SPECIFIC_PROJECT` | Build a specific project only             | ""      |
-| `ENABLE_GRAPHICS_MODULE` | Enable graphics module                    | ON      |
-| `ENABLE_PHYSICS_MODULE`  | Enable physics module                     | ON      |
-| `ENABLE_AUDIO_MODULE`    | Enable audio module                       | ON      |
-
-### Module Configuration Options
-
-Individual modules can be enabled or disabled:
-
-```cmake
-# Enable/disable specific modules
-cmake -DENABLE_GRAPHICS_MODULE=ON \
-      -DENABLE_PHYSICS_MODULE=OFF \
-      -DENABLE_AUDIO_MODULE=ON \
-      ..
-```
-
-## Usage Examples
-
-### Building Everything (Default)
+Builds everything: engine, modules, projects, and tests.
 
 ```bash
-# Windows
-.\scripts\build.bat
-
-# Or using the new hierarchical script
 .\scripts\build_hierarchical.bat
 ```
 
-### Building Only the Engine
+### 2. Engine Only
+
+Builds only the engine library and modules, without projects or tests.
 
 ```bash
-# Windows
 .\scripts\build_hierarchical.bat --engine-only
-
-# Or with CMake directly
-cmake -DBUILD_ENGINE_ONLY=ON ..
-cmake --build . --config Release
 ```
 
-### Building Only Projects
+### 3. Projects Only
+
+Builds only game projects (requires pre-built engine).
 
 ```bash
-# Windows (requires pre-built engine)
 .\scripts\build_hierarchical.bat --projects-only
-
-# Or with CMake directly
-cmake -DBUILD_PROJECTS_ONLY=ON ..
-cmake --build . --config Release
 ```
 
-### Building a Specific Project
+### 4. Tests Only
+
+Builds only test suites (requires pre-built engine).
 
 ```bash
-# Windows
-.\scripts\build_hierarchical.bat --project GameExample
-
-# Or with CMake directly
-cmake -DBUILD_SPECIFIC_PROJECT=GameExample ..
-cmake --build . --config Release
-```
-
-### Building Only Tests
-
-```bash
-# Windows
 .\scripts\build_hierarchical.bat --tests-only
-
-# Or with CMake directly
-cmake -DBUILD_TESTS_ONLY=ON ..
-cmake --build . --config Release
 ```
 
-## Module Development
+### 5. Specific Project
 
-### Creating a New Engine Module
+Builds only a specific project along with the required engine components.
 
-1. Create a new directory in `engine/modules/`:
+```bash
+.\scripts\build_hierarchical.bat --project GameExample
+.\scripts\build_hierarchical.bat --project BasicExample
+```
 
-   ```
-   engine/modules/your-module-name/
-   ```
+## Project Structure
 
-2. Copy the module template:
+The hierarchical build system organizes the project into distinct components:
 
-   ```bash
-   copy engine\modules\templates\ModuleTemplate.cmake engine\modules\your-module-name\CMakeLists.txt
-   ```
+```
+GameEngineKiro/
+├── engine/                    # Engine core and modules
+│   ├── core/                 # Engine foundation (always built)
+│   ├── modules/              # Optional engine modules
+│   │   ├── graphics-opengl/  # OpenGL renderer module
+│   │   ├── physics-bullet/   # Bullet Physics module
+│   │   ├── audio-openal/     # OpenAL audio module
+│   │   └── templates/        # Module templates
+│   └── interfaces/           # Module interface definitions
+├── projects/                 # Game projects and tests
+│   ├── GameExample/          # Enhanced example game
+│   ├── BasicExample/         # Simple example game
+│   ├── Tests/               # Project-specific tests
+│   └── templates/           # Project templates
+└── scripts/                 # Build scripts
+    └── build_hierarchical.bat # Hierarchical build script
+```
 
-3. Customize the CMakeLists.txt:
+## Module System
 
-   ```cmake
-   set(MODULE_NAME "your-module-name")
-   set(MODULE_VERSION "1.0.0")
-   set(MODULE_TYPE "YourModuleType")
+### Engine Modules
 
-   set(MODULE_SOURCES
-       YourModule.cpp
-   )
+Engine modules are self-contained components that can be enabled or disabled:
 
-   set(MODULE_HEADERS
-       YourModule.h
-   )
-   ```
+- **graphics-opengl**: OpenGL rendering system
+- **physics-bullet**: Bullet Physics integration
+- **audio-openal**: OpenAL 3D audio system
 
-4. The module will be automatically discovered and included in the build.
+Each module has its own CMakeLists.txt and can declare dependencies.
 
-### Module Structure
+### Module Configuration
 
-Each module CMakeLists.txt should:
+Modules can be enabled/disabled via CMake options:
 
-- Define module metadata (name, version, type)
-- List source and header files
-- Specify required and optional dependencies
-- Configure the module library
-- Register with the parent engine target
+```cmake
+option(ENABLE_GRAPHICS_MODULE "Enable graphics module" ON)
+option(ENABLE_PHYSICS_MODULE "Enable physics module" ON)
+option(ENABLE_AUDIO_MODULE "Enable audio module" ON)
+```
 
-## Project Development
+## Project System
 
-### Creating a New Game Project
+### Game Projects
 
-1. Create a new directory in `projects/`:
+Game projects are independent applications that use the engine:
 
-   ```
-   projects/YourProjectName/
-   ```
+- **GameExample**: Full-featured example with all modules
+- **BasicExample**: Minimal example with basic graphics
 
-2. Copy the project template:
-
-   ```bash
-   copy projects\templates\ProjectTemplate.cmake projects\YourProjectName\CMakeLists.txt
-   ```
-
-3. Customize the CMakeLists.txt:
-
-   ```cmake
-   set(PROJECT_NAME "YourProjectName")
-   set(PROJECT_VERSION "1.0.0")
-
-   set(REQUIRED_ENGINE_MODULES
-       graphics-opengl
-       physics-bullet
-   )
-
-   set(PROJECT_SOURCES
-       src/main.cpp
-   )
-   ```
-
-4. The project will be automatically discovered and included in the build.
-
-### Project Structure
-
-Each project CMakeLists.txt should:
-
-- Define project metadata (name, version, type)
-- Specify required and optional engine modules
-- List source and header files
-- Configure the project executable
-- Handle asset and configuration copying
-
-## Module Dependencies
-
-### Declaring Module Dependencies
+### Project Dependencies
 
 Projects declare their module dependencies:
 
 ```cmake
-# Required modules (build will fail if missing)
+# Required engine modules for this project
 set(REQUIRED_ENGINE_MODULES
     graphics-opengl
     physics-bullet
+    audio-openal
 )
 
-# Optional modules (used if available)
+# Optional engine modules for this project
 set(OPTIONAL_ENGINE_MODULES
-    audio-openal
-    scripting-lua
+    # Add optional modules here
 )
 ```
 
-### Module Validation
+## Creating New Components
 
-The build system validates that required modules are available and provides warnings for missing optional modules.
+### Creating a New Module
 
-## Build Performance
+1. Create a new directory in `engine/modules/`
+2. Copy the template from `engine/modules/templates/ModuleCMakeTemplate.cmake`
+3. Customize the module configuration
+4. Implement the module interface
 
-### Incremental Builds
+### Creating a New Project
 
-The hierarchical system supports efficient incremental builds:
+1. Create a new directory in `projects/`
+2. Copy the template from `projects/templates/ProjectCMakeTemplate.cmake`
+3. Customize the project configuration
+4. Implement your game logic
 
-- **Module Changes**: Only affected modules and dependent projects rebuild
-- **Project Changes**: Only the specific project rebuilds
-- **Engine Core Changes**: All dependent modules and projects rebuild
+## Build Targets
 
-### Parallel Builds
+The hierarchical build system creates the following targets:
 
-CMake automatically handles parallel compilation of independent modules and projects.
+### Engine Targets
 
-## Integration with Existing Workflow
+- `GameEngineKiro`: Main engine library
+- `[ModuleName]`: Individual module libraries (when built standalone)
 
-### Backward Compatibility
+### Project Targets
 
-The new system maintains backward compatibility:
+- `GameExample`: Game example executable
+- `BasicExample`: Basic example executable
+- Custom project executables
 
-- Existing `.\scripts\build.bat` continues to work
-- All existing projects build without modification
-- Test execution remains unchanged
+### Test Targets
 
-### Migration Path
+- Unit tests: `*Test.exe`
+- Integration tests: `*IntegrationTest.exe`
+- `EnhancedTestRunner`: Test execution framework
+- `TestConfigManager`: Test configuration utility
 
-Existing projects can gradually adopt the new module dependency system:
+## Build Configuration
 
-1. Update project CMakeLists.txt to declare module dependencies
-2. Move module-specific code to appropriate module directories
-3. Update build scripts to use new hierarchical options
+### CMake Options
+
+The build system supports various configuration options:
+
+```cmake
+# Build configuration options
+option(BUILD_ENGINE_ONLY "Build only the engine library" OFF)
+option(BUILD_PROJECTS_ONLY "Build only game projects" OFF)
+option(BUILD_TESTS_ONLY "Build only test suites" OFF)
+option(BUILD_SPECIFIC_PROJECT "Build a specific project only" "")
+
+# Engine configuration
+option(ENABLE_VULKAN "Enable Vulkan renderer" OFF)
+option(ENABLE_OPENGL "Enable OpenGL renderer" ON)
+option(ENABLE_DLSS "Enable NVIDIA DLSS support" OFF)
+option(ENABLE_FSR "Enable AMD FSR support" OFF)
+
+# Module configuration options
+option(ENABLE_GRAPHICS_MODULE "Enable graphics module" ON)
+option(ENABLE_PHYSICS_MODULE "Enable physics module" ON)
+option(ENABLE_AUDIO_MODULE "Enable audio module" ON)
+```
+
+### Dependency Management
+
+The system automatically handles dependencies:
+
+1. **vcpkg Integration**: Automatic dependency resolution
+2. **Module Dependencies**: Modules declare their required packages
+3. **Project Dependencies**: Projects inherit engine dependencies
+4. **Asset Management**: Automatic asset copying to build directories
+
+## Development Workflow
+
+### Typical Development Cycle
+
+1. **Engine Development**: Use `--engine-only` for engine work
+2. **Game Development**: Use `--project ProjectName` for game-specific work
+3. **Testing**: Use `--tests-only` for test development
+4. **Full Build**: Use default build for releases
+
+### Performance Benefits
+
+- **Faster Builds**: Only build what you need
+- **Parallel Development**: Multiple developers can work on different components
+- **Incremental Builds**: CMake handles dependency tracking
+- **Selective Testing**: Run only relevant tests
 
 ## Troubleshooting
 
 ### Common Issues
 
-1. **Module Not Found**: Ensure the module directory exists and has a CMakeLists.txt
-2. **Dependency Errors**: Check that required packages are installed via vcpkg
-3. **Build Order Issues**: The system automatically handles build order based on dependencies
+1. **Missing Dependencies**: Run `.\scripts\setup_dependencies.bat`
+2. **Build Conflicts**: Clean build directory: `Remove-Item -Recurse -Force build`
+3. **Module Not Found**: Check module CMakeLists.txt and registration
+4. **Project Link Errors**: Verify engine library is built first
 
 ### Debug Information
 
-Enable verbose output to see module discovery and dependency resolution:
+The build system provides detailed information:
 
-```bash
-cmake -DCMAKE_VERBOSE_MAKEFILE=ON ..
 ```
+-- === Build Configuration Summary ===
+-- Engine Modules:
+--   - audio-openal
+--   - graphics-opengl
+--   - physics-bullet
+-- Game Projects:
+--   - BasicExample
+--   - GameExample
+-- Build Options:
+--   - Engine Only: OFF
+--   - Projects Only: OFF
+--   - Tests Only: OFF
+--   - Specific Project: GameExample
+-- ===================================
+```
+
+## Best Practices
+
+1. **Use Specific Builds**: Use `--engine-only` or `--project` for faster iteration
+2. **Module Independence**: Keep modules self-contained and well-defined
+3. **Clean Dependencies**: Declare only necessary dependencies
+4. **Test Early**: Use `--tests-only` for test-driven development
+5. **Asset Organization**: Keep project assets separate from engine assets
 
 ## Future Enhancements
 
-### Planned Features
+The hierarchical build system is designed to support:
 
-- **Dynamic Module Loading**: Runtime module discovery and loading
-- **Module Marketplace**: Centralized module repository
-- **Cross-Platform Templates**: Linux and macOS support
-- **Module Versioning**: Semantic versioning and compatibility checking
-
-### Extension Points
-
-The system is designed to be extensible:
-
-- Custom module types
-- Project-specific build rules
-- Advanced dependency management
-- Plugin architecture support
+- **Runtime Module Loading**: Dynamic module loading and unloading
+- **Hot Module Swapping**: Replace modules without restarting
+- **Distributed Builds**: Build components on different machines
+- **Module Marketplace**: Share and distribute custom modules

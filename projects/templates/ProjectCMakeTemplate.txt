@@ -1,0 +1,122 @@
+cmake_minimum_required(VERSION 3.16)
+project(${PROJECT_NAME} VERSION ${PROJECT_VERSION} LANGUAGES CXX)
+
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+# Project configuration
+set(PROJECT_NAME "${PROJECT_NAME}")
+set(PROJECT_VERSION "${PROJECT_VERSION}")
+set(PROJECT_TYPE "${PROJECT_TYPE}")
+
+# Required engine modules for this project
+set(REQUIRED_ENGINE_MODULES
+    ${REQUIRED_ENGINE_MODULES}
+)
+
+# Optional engine modules for this project
+set(OPTIONAL_ENGINE_MODULES
+    ${OPTIONAL_ENGINE_MODULES}
+)
+
+# Project source files
+set(PROJECT_SOURCES
+    ${PROJECT_SOURCES}
+)
+
+# Project header files (if any)
+set(PROJECT_HEADERS
+    ${PROJECT_HEADERS}
+)
+
+# Create the project executable
+add_executable(${PROJECT_NAME} ${PROJECT_SOURCES} ${PROJECT_HEADERS})
+
+# Set target properties
+set_target_properties(${PROJECT_NAME} PROPERTIES
+    CXX_STANDARD 20
+    CXX_STANDARD_REQUIRED ON
+    VERSION ${PROJECT_VERSION}
+)
+
+# Link with the engine library (target-based linking when built as subdirectory)
+if(TARGET GameEngineKiro)
+    target_link_libraries(${PROJECT_NAME} PRIVATE GameEngineKiro)
+    message(STATUS "Linking ${PROJECT_NAME} with GameEngineKiro")
+else()
+    message(WARNING "GameEngineKiro target not found for ${PROJECT_NAME}")
+endif()
+
+# Function to validate required modules
+function(validate_required_modules)
+    foreach(module ${REQUIRED_ENGINE_MODULES})
+        string(TOUPPER ${module} module_upper)
+        string(REPLACE "-" "_" module_upper ${module_upper})
+        set(module_define "GAMEENGINE_MODULE_${module_upper}")
+        
+        # This will be checked at compile time via preprocessor definitions
+        message(STATUS "${PROJECT_NAME} requires module: ${module}")
+    endforeach()
+endfunction()
+
+# Function to check optional modules
+function(check_optional_modules)
+    foreach(module ${OPTIONAL_ENGINE_MODULES})
+        string(TOUPPER ${module} module_upper)
+        string(REPLACE "-" "_" module_upper ${module_upper})
+        set(module_define "GAMEENGINE_MODULE_${module_upper}")
+        
+        message(STATUS "${PROJECT_NAME} optionally uses module: ${module}")
+    endforeach()
+endfunction()
+
+# Validate module dependencies
+validate_required_modules()
+check_optional_modules()
+
+# Dependencies are inherited from the engine library target
+
+# Function to copy project assets
+function(copy_project_assets)
+    # Copy shared assets from engine
+    add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_directory
+        ${CMAKE_CURRENT_SOURCE_DIR}/../../assets $<TARGET_FILE_DIR:${PROJECT_NAME}>/assets
+        COMMENT "Copying shared engine assets to build directory"
+    )
+
+    # Copy project-specific assets if they exist
+    if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/assets)
+        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_directory
+            ${CMAKE_CURRENT_SOURCE_DIR}/assets $<TARGET_FILE_DIR:${PROJECT_NAME}>/assets
+            COMMENT "Copying ${PROJECT_NAME} project assets to build directory"
+        )
+    endif()
+endfunction()
+
+# Function to copy project configuration
+function(copy_project_config)
+    # Copy configuration files if they exist
+    if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/config/config.json)
+        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            ${CMAKE_CURRENT_SOURCE_DIR}/config/config.json $<TARGET_FILE_DIR:${PROJECT_NAME}>/config.json
+            COMMENT "Copying ${PROJECT_NAME} configuration"
+        )
+    endif()
+
+    if(EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/config/engine_config.json)
+        add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            ${CMAKE_CURRENT_SOURCE_DIR}/config/engine_config.json $<TARGET_FILE_DIR:${PROJECT_NAME}>/engine_config.json
+            COMMENT "Copying ${PROJECT_NAME} engine configuration"
+        )
+    endif()
+endfunction()
+
+# Copy assets and configuration
+copy_project_assets()
+copy_project_config()
+
+message(STATUS "Configured project: ${PROJECT_NAME} v${PROJECT_VERSION} (${PROJECT_TYPE})")

@@ -53,7 +53,7 @@ cd build
 REM Configure with CMake
 echo.
 echo Configuring build system...
-cmake .. %CMAKE_ARGS%
+cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=../vcpkg/scripts/buildsystems/vcpkg.cmake -A x64 %CMAKE_ARGS%
 if errorlevel 1 (
     echo ERROR: CMake configuration failed!
     cd ..

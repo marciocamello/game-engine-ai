@@ -14,6 +14,7 @@ endif()
 option(BUILD_ENGINE_ONLY "Build only the engine library" OFF)
 option(BUILD_PROJECTS_ONLY "Build only game projects" OFF)
 option(BUILD_TESTS_ONLY "Build only test suites" OFF)
+option(BUILD_ENGINE_AND_TESTS_ONLY "Build engine and tests only" OFF)
 option(BUILD_SPECIFIC_PROJECT "Build a specific project only" "")
 
 # Engine configuration
@@ -115,29 +116,33 @@ function(print_build_summary)
     message(STATUS "  - Engine Only: ${BUILD_ENGINE_ONLY}")
     message(STATUS "  - Projects Only: ${BUILD_PROJECTS_ONLY}")
     message(STATUS "  - Tests Only: ${BUILD_TESTS_ONLY}")
+    message(STATUS "  - Engine + Tests Only: ${BUILD_ENGINE_AND_TESTS_ONLY}")
     if(BUILD_SPECIFIC_PROJECT)
         message(STATUS "  - Specific Project: ${BUILD_SPECIFIC_PROJECT}")
     endif()
     message(STATUS "===================================")
 endfunction()
 
-# Find required packages
-find_package(OpenGL REQUIRED)
-find_package(glfw3 REQUIRED)
-find_package(glm REQUIRED)
-find_package(glad REQUIRED)
+# Build engine core and modules (always needed)
+if(TRUE)
+    # Find required packages for engine
+    find_package(OpenGL REQUIRED)
+    find_package(glfw3 REQUIRED)
+    find_package(glm REQUIRED)
+    find_package(glad REQUIRED)
 
-# Optional packages
-find_package(assimp QUIET)
-find_package(OpenAL QUIET)
-find_package(Bullet CONFIG REQUIRED)
-find_package(Lua QUIET)
-find_package(nlohmann_json QUIET)
-find_package(fmt QUIET)
-find_package(Stb REQUIRED)
+    # Optional packages for engine
+    find_package(assimp QUIET)
+    find_package(OpenAL QUIET)
+    find_package(Bullet CONFIG REQUIRED)
+    find_package(Lua QUIET)
+    find_package(nlohmann_json QUIET)
+    find_package(fmt QUIET)
+    find_package(Stb QUIET)
+endif()
 
-# Build engine core and modules (unless building projects only)
-if(NOT BUILD_PROJECTS_ONLY AND NOT BUILD_TESTS_ONLY)
+# Build engine core and modules (always needed)
+if(TRUE)
     # Engine core source files (always included)
     file(GLOB_RECURSE ENGINE_CORE_SOURCES
         "engine/core/*.cpp"
@@ -284,31 +289,37 @@ if(NOT BUILD_PROJECTS_ONLY AND NOT BUILD_TESTS_ONLY)
     # Discover and include engine modules
     discover_engine_modules()
     
+    # Function to include engine modules hierarchically
+    function(include_engine_modules)
+        get_property(modules GLOBAL PROPERTY ENGINE_MODULES)
+        foreach(module_name ${modules})
+            get_property(module_path GLOBAL PROPERTY "ENGINE_MODULE_${module_name}_PATH")
+            
+            # Check if module should be enabled
+            string(TOUPPER ${module_name} module_name_upper)
+            string(REPLACE "-" "_" module_name_upper ${module_name_upper})
+            set(module_option_name "ENABLE_${module_name_upper}_MODULE")
+            
+            # Default enable for known modules
+            if(module_name STREQUAL "graphics-opengl" OR 
+               module_name STREQUAL "physics-bullet" OR 
+               module_name STREQUAL "audio-openal")
+                set(${module_option_name} ON CACHE BOOL "Enable ${module_name} module" FORCE)
+            endif()
+            
+            if(${module_option_name})
+                message(STATUS "Module enabled: ${module_name}")
+                # TODO: Include module subdirectory when module system is fully implemented
+                # For now, using legacy integration to avoid compilation conflicts
+                # add_subdirectory(${module_path})
+            else()
+                message(STATUS "Module disabled: ${module_name}")
+            endif()
+        endforeach()
+    endfunction()
+    
     # Include engine modules
-    get_property(modules GLOBAL PROPERTY ENGINE_MODULES)
-    foreach(module_name ${modules})
-        get_property(module_path GLOBAL PROPERTY "ENGINE_MODULE_${module_name}_PATH")
-        
-        # Check if module should be enabled
-        string(TOUPPER ${module_name} module_name_upper)
-        string(REPLACE "-" "_" module_name_upper ${module_name_upper})
-        set(module_option_name "ENABLE_${module_name_upper}_MODULE")
-        
-        # Default enable for known modules
-        if(module_name STREQUAL "graphics-opengl" OR 
-           module_name STREQUAL "physics-bullet" OR 
-           module_name STREQUAL "audio-openal")
-            set(${module_option_name} ON CACHE BOOL "Enable ${module_name} module" FORCE)
-        endif()
-        
-        if(${module_option_name})
-            message(STATUS "Module enabled: ${module_name}")
-            # TODO: Include module subdirectory when module system is fully implemented
-            # add_subdirectory(${module_path})
-        else()
-            message(STATUS "Module disabled: ${module_name}")
-        endif()
-    endforeach()
+    include_engine_modules()
 
 endif() # End of engine build block
 
@@ -444,145 +455,57 @@ function(print_test_summary)
     endif()
 endfunction()
 
-# Build tests (unless building projects only)
-if(NOT BUILD_PROJECTS_ONLY)
-    # Enhanced Test Runner executable
-    add_executable(EnhancedTestRunner
-        engine/core/TestRunner.cpp
-        engine/core/TestFramework.cpp
-    )
-
-    target_link_libraries(EnhancedTestRunner PRIVATE GameEngineKiro)
-    target_include_directories(EnhancedTestRunner PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/engine)
-
-    # Apply coverage settings to enhanced test runner
-    apply_coverage_settings(EnhancedTestRunner)
-
-    # Test Configuration Manager executable
-    add_executable(TestConfigManager
-        engine/core/TestConfigManager.cpp
-        engine/core/TestFramework.cpp
-    )
-
-    target_link_libraries(TestConfigManager PRIVATE GameEngineKiro)
-    target_include_directories(TestConfigManager PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/engine)
-
-    # Apply coverage settings to test config manager
-    apply_coverage_settings(TestConfigManager)
-
-# Build game projects (unless building engine only or tests only)
-if(NOT BUILD_ENGINE_ONLY AND NOT BUILD_TESTS_ONLY)
-    # Discover game projects
-    discover_game_projects()
+# Build engine tests (only when --tests flag is used)
+if(BUILD_TESTS)
+    # Find packages needed for tests if not already found
+    if(BUILD_TESTS_ONLY)
+        find_package(OpenGL REQUIRED)
+        find_package(glfw3 REQUIRED)
+        find_package(glm REQUIRED)
+        find_package(glad REQUIRED)
+        find_package(assimp QUIET)
+        find_package(OpenAL QUIET)
+        find_package(Bullet CONFIG REQUIRED)
+        find_package(Lua QUIET)
+        find_package(nlohmann_json QUIET)
+        find_package(fmt QUIET)
+        find_package(Stb REQUIRED)
+    endif()
     
-    # Include game projects
-    get_property(projects GLOBAL PROPERTY ENGINE_PROJECTS)
-    foreach(project_name ${projects})
-        get_property(project_path GLOBAL PROPERTY "ENGINE_PROJECT_${project_name}_PATH")
-        
-        # Check if building specific project
-        if(BUILD_SPECIFIC_PROJECT)
-            if(project_name STREQUAL BUILD_SPECIFIC_PROJECT)
-                message(STATUS "Building specific project: ${project_name}")
-                add_subdirectory(${project_path})
-            endif()
-        else()
-            message(STATUS "Including game project: ${project_name}")
-            add_subdirectory(${project_path})
-        endif()
-    endforeach()
-endif()
+    # Function to include tests hierarchically
+    function(include_engine_tests)
+        # Enhanced Test Runner executable
+        add_executable(EnhancedTestRunner
+            engine/core/TestRunner.cpp
+            engine/core/TestFramework.cpp
+        )
 
-    # Character comparison example (temporarily disabled due to interface issues)
-    # add_executable(CharacterComparison
-    #     examples/character_comparison.cpp
-    # )
-    # 
-    # target_link_libraries(CharacterComparison PRIVATE GameEngineKiro)
+        target_link_libraries(EnhancedTestRunner PRIVATE GameEngineKiro)
+        target_include_directories(EnhancedTestRunner PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/engine)
 
-    # Character controller test
-    add_executable(CharacterControllerTest
-        examples/character_controller_test.cpp
-    )
+        # Apply coverage settings to enhanced test runner
+        apply_coverage_settings(EnhancedTestRunner)
 
-    target_link_libraries(CharacterControllerTest PRIVATE GameEngineKiro)
+        # Test Configuration Manager executable
+        add_executable(TestConfigManager
+            engine/core/TestConfigManager.cpp
+            engine/core/TestFramework.cpp
+        )
 
-    # Physics debug renderer example
-    add_executable(PhysicsDebugExample
-        examples/physics_debug_example.cpp
-    )
+        target_link_libraries(TestConfigManager PRIVATE GameEngineKiro)
+        target_include_directories(TestConfigManager PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/engine)
 
-    target_link_libraries(PhysicsDebugExample PRIVATE GameEngineKiro)
+        # Apply coverage settings to test config manager
+        apply_coverage_settings(TestConfigManager)
 
-    # FBX test example
-    add_executable(FBXTestSimple
-        examples/test_fbx_simple.cpp
-    )
-
-    target_link_libraries(FBXTestSimple PRIVATE GameEngineKiro)
-
-    # FBX minimal test
-    add_executable(FBXTestMinimal
-        examples/test_fbx_minimal.cpp
-    )
-
-    target_link_libraries(FBXTestMinimal PRIVATE GameEngineKiro)
-
-    # FBX via ModelLoader test
-    add_executable(FBXViaModelLoader
-        examples/test_fbx_via_modelloader.cpp
-    )
-
-    target_link_libraries(FBXViaModelLoader PRIVATE GameEngineKiro)
-
-    # FBX Animation test
-    add_executable(FBXAnimationTest
-        examples/test_fbx_animation.cpp
-    )
-
-    target_link_libraries(FBXAnimationTest PRIVATE GameEngineKiro)
-
-    # FBX Debug test
-    add_executable(DebugFBXLoading
-        examples/debug_fbx_loading.cpp
-    )
-
-    target_link_libraries(DebugFBXLoading PRIVATE GameEngineKiro)
-
-    # FBX Isolated Debug test
-    add_executable(DebugFBXIsolated
-        examples/debug_fbx_isolated.cpp
-    )
-
-    target_link_libraries(DebugFBXIsolated PRIVATE GameEngineKiro)
-
-    # Mesh Creation Debug test
-    add_executable(DebugMeshCreation
-        examples/debug_mesh_creation.cpp
-    )
-
-    target_link_libraries(DebugMeshCreation PRIVATE GameEngineKiro)
-
-    # VertexLayout Debug test
-    add_executable(DebugVertexLayout
-        examples/debug_vertex_layout.cpp
-    )
-
-    target_link_libraries(DebugVertexLayout PRIVATE GameEngineKiro)
-
-    # Direct Mesh Debug test
-    add_executable(DebugMeshDirect
-        examples/debug_mesh_direct.cpp
-    )
-
-    target_link_libraries(DebugMeshDirect PRIVATE GameEngineKiro)
-
-    # Model Hot Reload example
-    add_executable(ModelHotReloadExample
-        examples/model_hot_reload_example.cpp
-    )
-    target_link_libraries(ModelHotReloadExample PRIVATE GameEngineKiro)
-
+        # Discover and add unit tests automatically
+        discover_and_add_tests("tests/unit" "unit")
+    endfunction()
+    
+    # Include engine tests
+    include_engine_tests()
+    
+    # Integration tests (moved from projects section)
     # Integration test for Bullet Physics
     add_executable(BulletIntegrationTest
         tests/integration/test_bullet_integration.cpp
@@ -694,23 +617,15 @@ endif()
     # Engine Module Initialization integration test
     add_integration_test(EngineModuleInitializationTest tests/integration/test_engine_module_initialization.cpp)
 
-    # Discover and add unit tests automatically
-    discover_and_add_tests("tests/unit" "unit")
-
-
-
+    # Link integration tests with engine
     target_link_libraries(BulletIntegrationTest PRIVATE GameEngineKiro)
     target_link_libraries(BulletConversionTest PRIVATE GameEngineKiro)
-
-    target_link_libraries(CollisionShapeFactorySimpleTest PRIVATE GameEngineKiro)
-    target_link_libraries(PhysicsQueriesTest PRIVATE GameEngineKiro)
-    target_link_libraries(PhysicsConfigurationTest PRIVATE GameEngineKiro)
     target_link_libraries(MovementComponentComparisonTest PRIVATE GameEngineKiro)
     target_link_libraries(PhysicsPerformanceSimpleTest PRIVATE GameEngineKiro)
     target_link_libraries(MemoryUsageSimpleTest PRIVATE GameEngineKiro)
     target_link_libraries(CharacterBehaviorSimpleTest PRIVATE GameEngineKiro)
-    target_link_libraries(OpenALIntegrationTest PRIVATE GameEngineKiro)
 
+    # Link Bullet Physics libraries to integration tests
     if(Bullet_FOUND)
         target_link_libraries(BulletIntegrationTest PRIVATE 
             BulletDynamics
@@ -719,18 +634,6 @@ endif()
         )
         
         target_link_libraries(BulletConversionTest PRIVATE 
-            BulletDynamics
-            BulletCollision
-            LinearMath
-        )
-        
-        target_link_libraries(CollisionShapeFactorySimpleTest PRIVATE 
-            BulletDynamics
-            BulletCollision
-            LinearMath
-        )
-        
-        target_link_libraries(PhysicsQueriesTest PRIVATE 
             BulletDynamics
             BulletCollision
             LinearMath
@@ -753,16 +656,142 @@ endif()
             BulletCollision
             LinearMath
         )
-        
-        target_link_libraries(CharacterBehaviorSimpleTest PRIVATE 
-            BulletDynamics
-            BulletCollision
-            LinearMath
-        )
     endif()
+    
+endif() # End of tests build block
 
-    # Print test summary
-    print_test_summary()
+# Build game projects (when projects requested)
+if(BUILD_PROJECTS OR BUILD_SPECIFIC_PROJECT)
+    # Find packages needed for projects if not already found
+    if(BUILD_PROJECTS_ONLY)
+        find_package(OpenGL REQUIRED)
+        find_package(glfw3 REQUIRED)
+        find_package(glm REQUIRED)
+        find_package(glad REQUIRED)
+        find_package(assimp QUIET)
+        find_package(OpenAL QUIET)
+        find_package(Bullet CONFIG REQUIRED)
+        find_package(Lua QUIET)
+        find_package(nlohmann_json QUIET)
+        find_package(fmt QUIET)
+        find_package(Stb REQUIRED)
+    endif()
+    
+    # Function to include game projects hierarchically
+    function(include_game_projects)
+        # Discover game projects
+        discover_game_projects()
+        
+        # Include game projects
+        get_property(projects GLOBAL PROPERTY ENGINE_PROJECTS)
+        foreach(project_name ${projects})
+            get_property(project_path GLOBAL PROPERTY "ENGINE_PROJECT_${project_name}_PATH")
+            
+            # Check if building specific project
+            if(BUILD_SPECIFIC_PROJECT)
+                if(project_name STREQUAL BUILD_SPECIFIC_PROJECT)
+                    message(STATUS "Building specific project: ${project_name}")
+                    add_subdirectory(${project_path})
+                endif()
+            else()
+                message(STATUS "Including game project: ${project_name}")
+                add_subdirectory(${project_path})
+            endif()
+        endforeach()
+    endfunction()
+    
+    # Include game projects
+    include_game_projects()
+    
+    # Character comparison example (temporarily disabled due to interface issues)
+    # add_executable(CharacterComparison
+    #     examples/character_comparison.cpp
+    # )
+    # 
+    # target_link_libraries(CharacterComparison PRIVATE GameEngineKiro)
+
+    # Character controller test
+    add_executable(CharacterControllerTest
+        examples/character_controller_test.cpp
+    )
+
+    target_link_libraries(CharacterControllerTest PRIVATE GameEngineKiro)
+
+    # Physics debug renderer example
+    add_executable(PhysicsDebugExample
+        examples/physics_debug_example.cpp
+    )
+
+    target_link_libraries(PhysicsDebugExample PRIVATE GameEngineKiro)
+
+    # FBX test example
+    add_executable(FBXTestSimple
+        examples/test_fbx_simple.cpp
+    )
+
+    target_link_libraries(FBXTestSimple PRIVATE GameEngineKiro)
+
+    # FBX minimal test
+    add_executable(FBXTestMinimal
+        examples/test_fbx_minimal.cpp
+    )
+
+    target_link_libraries(FBXTestMinimal PRIVATE GameEngineKiro)
+
+    # FBX via ModelLoader test
+    add_executable(FBXViaModelLoader
+        examples/test_fbx_via_modelloader.cpp
+    )
+
+    target_link_libraries(FBXViaModelLoader PRIVATE GameEngineKiro)
+
+    # FBX Animation test
+    add_executable(FBXAnimationTest
+        examples/test_fbx_animation.cpp
+    )
+
+    target_link_libraries(FBXAnimationTest PRIVATE GameEngineKiro)
+
+    # FBX Debug test
+    add_executable(DebugFBXLoading
+        examples/debug_fbx_loading.cpp
+    )
+
+    target_link_libraries(DebugFBXLoading PRIVATE GameEngineKiro)
+
+    # FBX Isolated Debug test
+    add_executable(DebugFBXIsolated
+        examples/debug_fbx_isolated.cpp
+    )
+
+    target_link_libraries(DebugFBXIsolated PRIVATE GameEngineKiro)
+
+    # Mesh Creation Debug test
+    add_executable(DebugMeshCreation
+        examples/debug_mesh_creation.cpp
+    )
+
+    target_link_libraries(DebugMeshCreation PRIVATE GameEngineKiro)
+
+    # VertexLayout Debug test
+    add_executable(DebugVertexLayout
+        examples/debug_vertex_layout.cpp
+    )
+
+    target_link_libraries(DebugVertexLayout PRIVATE GameEngineKiro)
+
+    # Direct Mesh Debug test
+    add_executable(DebugMeshDirect
+        examples/debug_mesh_direct.cpp
+    )
+
+    target_link_libraries(DebugMeshDirect PRIVATE GameEngineKiro)
+
+    # Model Hot Reload example
+    add_executable(ModelHotReloadExample
+        examples/model_hot_reload_example.cpp
+    )
+    target_link_libraries(ModelHotReloadExample PRIVATE GameEngineKiro)
 
 endif() # End of test build block
 

@@ -101,12 +101,18 @@ if "%BUILD_TESTS%"=="ON" (
 REM Setup CMake arguments based on what to build
 if "%BUILD_TESTS%"=="ON" (
     set CMAKE_ARGS=%CMAKE_ARGS% -DBUILD_TESTS=ON
+) else (
+    set CMAKE_ARGS=%CMAKE_ARGS% -DBUILD_TESTS=OFF
 )
 if "%BUILD_PROJECTS%"=="ON" (
     set CMAKE_ARGS=%CMAKE_ARGS% -DBUILD_PROJECTS=ON
+) else (
+    set CMAKE_ARGS=%CMAKE_ARGS% -DBUILD_PROJECTS=OFF
 )
 if "%BUILD_ENGINE%"=="ON" (
     set CMAKE_ARGS=%CMAKE_ARGS% -DBUILD_ENGINE=ON
+) else (
+    set CMAKE_ARGS=%CMAKE_ARGS% -DBUILD_ENGINE=OFF
 )
 
 echo Build Configuration: %BUILD_TYPE_DESC%

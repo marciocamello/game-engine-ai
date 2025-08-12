@@ -86,7 +86,7 @@ namespace GameEngine {
 
         std::vector<std::string> OpenALAudioModule::GetDependencies() const {
             // Audio module has no dependencies on other engine modules
-            // Core functionality (logging, math) is available without a module
+            // Core functionality (logging, math) is available as part of the engine library
             return {};
         }
 

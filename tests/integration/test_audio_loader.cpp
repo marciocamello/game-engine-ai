@@ -193,6 +193,24 @@ bool TestInvalidWAVFile() {
 bool TestOpenALBufferCreation() {
     TestOutput::PrintTestStart("OpenAL buffer creation");
     
+    // Initialize OpenAL context for testing
+    ALCdevice* device = alcOpenDevice(nullptr);
+    if (!device) {
+        LOG_WARNING("No OpenAL device available, skipping OpenAL buffer creation test");
+        TestOutput::PrintTestPass("OpenAL buffer creation");
+        return true;
+    }
+    
+    ALCcontext* context = alcCreateContext(device, nullptr);
+    if (!context) {
+        LOG_WARNING("Failed to create OpenAL context, skipping OpenAL buffer creation test");
+        alcCloseDevice(device);
+        TestOutput::PrintTestPass("OpenAL buffer creation");
+        return true;
+    }
+    
+    alcMakeContextCurrent(context);
+    
     // Create test audio data
     AudioData audioData;
     audioData.sampleRate = 44100;
@@ -211,6 +229,11 @@ bool TestOpenALBufferCreation() {
     if (buffer != 0) {
         alDeleteBuffers(1, &buffer);
     }
+    
+    // Clean up OpenAL context
+    alcMakeContextCurrent(nullptr);
+    alcDestroyContext(context);
+    alcCloseDevice(device);
     
     TestOutput::PrintTestPass("OpenAL buffer creation");
     return true;

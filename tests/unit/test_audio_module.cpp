@@ -38,16 +38,12 @@ bool TestAudioModuleDependencies() {
     auto audioModule = std::make_unique<OpenALAudioModule>();
     auto dependencies = audioModule->GetDependencies();
     
-    // Audio module should depend on Core module
-    EXPECT_TRUE(dependencies.size() >= 1);
-    bool foundCore = false;
-    for (const auto& dep : dependencies) {
-        if (dep == "Core") {
-            foundCore = true;
-            break;
-        }
-    }
-    EXPECT_TRUE(foundCore);
+    // Audio module has no dependencies on other engine modules
+    // Core functionality (logging, math) is available as part of the engine library
+    EXPECT_TRUE(dependencies.size() == 0);
+    
+    // Verify the dependencies list is valid (empty but not null)
+    EXPECT_TRUE(dependencies.empty());
 
     TestOutput::PrintTestPass("audio module dependencies");
     return true;

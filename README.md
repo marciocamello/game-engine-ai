@@ -34,7 +34,9 @@ The combination of human expertise and AI assistance allows for rapid prototypin
 
 ### Core Architecture
 
-- **Modular Design**: Clean separation of concerns with well-defined interfaces
+- **Modular Plugin System**: Dynamic module loading with runtime management
+- **Module Registry**: Centralized module discovery and dependency resolution
+- **Hot-Swappable Modules**: Runtime module replacement without engine restart
 - **Modern C++20**: Leveraging latest language features for performance and safety
 - **Windows-Focused**: Optimized for Windows development
 - **AI-Assisted Development**: Continuous improvement through AI code analysis
@@ -130,7 +132,14 @@ setup_dependencies.bat
 
 ```
 GameEngineKiro/
-├── include/          # Public headers
+├── engine/          # Modular engine core
+│   ├── core/        # Engine foundation
+│   ├── interfaces/  # Module interfaces
+│   └── modules/     # Engine modules
+│       ├── graphics-opengl/  # OpenGL graphics module
+│       ├── physics-bullet/   # Bullet physics module
+│       └── audio-openal/     # OpenAL audio module
+├── include/         # Public headers
 │   ├── Core/        # Engine core systems
 │   ├── Graphics/    # Rendering and graphics
 │   ├── Physics/     # Physics simulation

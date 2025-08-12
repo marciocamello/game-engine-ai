@@ -4,12 +4,14 @@ Game Engine Kiro follows a modular, component-based architecture designed for fl
 
 ## 🏗️ Core Design Principles
 
-### 1. Modular Architecture
+### 1. Modular Plugin Architecture
 
-- **Separation of Concerns**: Each module has a single, well-defined responsibility
-- **Loose Coupling**: Modules communicate through well-defined interfaces
-- **High Cohesion**: Related functionality is grouped together
-- **Dependency Injection**: Dependencies are provided rather than created
+- **Dynamic Module Loading**: Modules can be loaded and unloaded at runtime
+- **Module Registry**: Centralized system for module discovery and management
+- **Interface-Based Design**: All modules implement standardized interfaces
+- **Dependency Resolution**: Automatic handling of module dependencies
+- **Hot-Swapping**: Replace modules without restarting the engine
+- **Configuration-Driven**: Module behavior controlled through JSON configuration
 
 ### 2. Modern C++ Practices
 
@@ -45,6 +47,95 @@ Game Engine Kiro follows a modular, component-based architecture designed for fl
 └─────────────────────────────────────────────────────────────┘
 │  OpenGL  │  GLFW   │ OpenAL │ Bullet │  vcpkg  │    OS      │
 └─────────────────────────────────────────────────────────────┘
+```
+
+## 🧩 Modular System Architecture
+
+### Module Registry
+
+The ModuleRegistry serves as the central hub for all module management:
+
+```cpp
+class ModuleRegistry {
+public:
+    static ModuleRegistry& GetInstance();
+
+    // Module lifecycle
+    bool RegisterModule(std::unique_ptr<IEngineModule> module);
+    bool UnregisterModule(const std::string& name);
+    ModuleInitializationResult InitializeModules(const EngineConfig& config);
+    void UpdateModules(float deltaTime);
+    void ShutdownModules();
+
+    // Module access
+    IEngineModule* GetModule(const std::string& name);
+    std::vector<IEngineModule*> GetModulesByType(ModuleType type);
+
+    // Dependency management
+    std::vector<IEngineModule*> ResolveDependencies();
+    bool ValidateDependencies();
+};
+```
+
+### Core Module Types
+
+**Graphics Modules:**
+
+- `graphics-opengl`: OpenGL 4.6+ rendering implementation
+- `graphics-vulkan`: Vulkan rendering (planned)
+
+**Physics Modules:**
+
+- `physics-bullet`: Bullet Physics integration
+- `physics-physx`: NVIDIA PhysX integration (planned)
+
+**Audio Modules:**
+
+- `audio-openal`: OpenAL 3D spatial audio
+- `audio-fmod`: FMOD audio system (planned)
+
+### Module Configuration
+
+Each module can be configured through JSON files:
+
+```json
+{
+  "modules": {
+    "graphics-opengl": {
+      "enabled": true,
+      "config": {
+        "vsync": true,
+        "msaa_samples": 4,
+        "debug_context": false
+      }
+    },
+    "physics-bullet": {
+      "enabled": true,
+      "config": {
+        "gravity": [0, -9.81, 0],
+        "max_substeps": 10,
+        "fixed_timestep": 0.016667
+      }
+    }
+  }
+}
+```
+
+### Runtime Module Management
+
+The RuntimeModuleManager handles dynamic module operations:
+
+```cpp
+class RuntimeModuleManager {
+public:
+    bool LoadModuleAtRuntime(const std::string& name, const std::string& configPath = "");
+    bool UnloadModuleAtRuntime(const std::string& name);
+    bool ReloadModuleAtRuntime(const std::string& name);
+    bool HotSwapModule(const std::string& name, const std::string& newPath = "");
+
+    std::vector<std::string> GetAvailableModules() const;
+    std::vector<std::string> GetLoadedModules() const;
+};
 ```
 
 ## 🔧 Core Systems

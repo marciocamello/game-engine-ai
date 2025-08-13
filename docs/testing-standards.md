@@ -10,8 +10,7 @@ This document establishes comprehensive coding standards for the Game Engine Kir
 
 **Foundation Documents:**
 
-- **[Testing Guide](testing-guide.md)**: Comprehensive testing instructions and examples
-- **[Testing Guidelines](testing-guidelines.md)**: High-level guidelines and best practices
+- **[Testing Complete Guide](testing-complete-guide.md)**: Comprehensive testing instructions and examples
 
 **Output and Formatting:**
 
@@ -30,9 +29,6 @@ This document establishes comprehensive coding standards for the Game Engine Kir
 - **[API Reference](api-reference.md)**: Complete API documentation with examples
 
 **Migration and Strategy:**
-
-- **[Testing Migration](testing-migration.md)**: Updating existing tests to new standards
-- **[Testing Strategy](testing-strategy.md)**: Overall testing approach and methodology
 
 ## Test File Organization
 

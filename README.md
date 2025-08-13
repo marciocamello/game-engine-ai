@@ -5,20 +5,45 @@ A modern 3D game engine built with AI assistance, designed for third-person acti
 ## Quick Start
 
 ```bash
-# Build the engine
+# Build everything (default)
+.\scripts\build_unified.bat
+
+# Build with tests
 .\scripts\build_unified.bat --tests
 
 # Run example game
-cd build/Release
-./GameExample.exe
+build\projects\GameExample\Release\GameExample.exe
 
-# Run integration tests
-.\scripts\build_unified.bat --tests
-# Tests run automatically as part of build
-
-# Run visual debug tests
-./GameExample.exe --run-tests
+# Run all tests
+.\scripts\run_tests.bat
 ```
+
+### Build System Options
+
+The unified build system supports flexible build configurations:
+
+```bash
+# Build Components
+.\scripts\build_unified.bat --engine          # Engine library only
+.\scripts\build_unified.bat --projects        # All game projects
+.\scripts\build_unified.bat --tests           # All test suites
+.\scripts\build_unified.bat --all             # Everything (default)
+
+# Specific Builds
+.\scripts\build_unified.bat --project GameExample     # Specific project
+.\scripts\build_unified.bat --tests MathTest          # Specific test
+
+# Build Types
+.\scripts\build_unified.bat --debug           # Debug build
+.\scripts\build_unified.bat --release         # Release build (default)
+.\scripts\build_unified.bat --coverage        # Coverage analysis
+
+# Common Combinations
+.\scripts\build_unified.bat --engine --tests  # Engine + Tests
+.\scripts\build_unified.bat --debug --all     # Full debug build
+```
+
+For complete build system documentation, see **[Hierarchical Build System](docs/hierarchical-build-system.md)**.
 
 ## 🤖 Built with AI
 
@@ -83,28 +108,62 @@ setup_dependencies.bat
 .\scripts\build_unified.bat --tests
 ```
 
-## Documentation
+## 📚 Documentation
 
-### Core Documentation
+> **📖 [Complete Documentation Index](docs/README.md)** - Organized access to all documentation
 
-- **[Setup Guide](docs/setup.md)** - Detailed installation instructions
-- **[Quick Start](docs/quickstart.md)** - Get up and running in minutes
-- **[Architecture](docs/architecture.md)** - Engine design and patterns
-- **[API Reference](docs/api-reference.md)** - Complete API documentation
-- **[Roadmap](docs/roadmap.md)** - Development progress and future plans
+### 🚀 Getting Started
 
-### Physics System
+- **[Setup Guide](docs/setup.md)** - Complete installation and configuration
+- **[Quick Start](docs/quickstart.md)** - Get running in under 5 minutes
 
-- **[Physics Strategy](docs/physics-strategy.md)** - Hybrid physics architecture and dual backend strategy
-- **[Deterministic Physics](docs/deterministic-physics.md)** - Revolutionary component-based movement system
+### 🏗️ Core Architecture
 
-### v1.1 Features Documentation
+- **[Architecture Overview](docs/architecture.md)** - Engine design principles and patterns
+- **[API Reference](docs/api-reference.md)** - Complete API documentation with examples
+- **[Modular Architecture](docs/modular-architecture.md)** - Plugin system and module management
+- **[Coding Standards](docs/coding-standards.md)** - Code style and best practices
 
-- **[NVIDIA PhysX Integration](docs/nvidia-physx-integration.md)** - GPU-accelerated physics with PhysX
-- **[Advanced Shader System](docs/advanced-shader-system.md)** - Hot-reloadable shaders and PBR materials
-- **[3D Model Loading](docs/3d-model-loading.md)** - FBX, GLTF, and OBJ model support
+### 🎮 Game Development
+
+- **[Physics Strategy](docs/physics-strategy.md)** - Dual physics backend architecture
+- **[Deterministic Physics](docs/deterministic-physics.md)** - Component-based movement system
+- **[Audio System](docs/audio-system.md)** - 3D spatial audio with OpenAL
+- **[Material System Guide](docs/material-system-guide.md)** - PBR materials and textures
+
+### 🎨 Graphics and Rendering
+
+- **[Advanced Shader System](docs/advanced-shader-system.md)** - Hot-reloadable shaders and PBR
+- **[Advanced Shader System API](docs/advanced-shader-system-api.md)** - Complete shader API reference
+- **[Shader Development Workflow](docs/shader-development-workflow.md)** - Best practices for shader development
+- **[3D Model Loading](docs/3d-model-loading.md)** - FBX, GLTF, and OBJ support
+
+### 🎬 Advanced Features (v1.1+)
+
 - **[Animation System](docs/animation-system.md)** - Skeletal animation and state machines
 - **[Particle Effects](docs/particle-effects.md)** - GPU-accelerated particle systems
+- **[NVIDIA PhysX Integration](docs/nvidia-physx-integration.md)** - GPU-accelerated physics
+- **[Model Hot Reloading](docs/model-hot-reloading.md)** - Real-time asset reloading
+
+### 🧪 Testing and Quality
+
+- **[Testing Complete Guide](docs/testing-complete-guide.md)** - Comprehensive testing documentation
+- **[Testing Standards](docs/testing-standards.md)** - Code quality and testing patterns
+- **[OpenGL Context Limitations](docs/testing-opengl-limitations.md)** - Handling OpenGL context in tests
+- **[Mock Resource Implementation](docs/testing-mock-resources.md)** - Mock resources for testing
+- **[Resource Testing Patterns](docs/testing-resource-patterns.md)** - Resource management testing
+- **[Coverage Setup](docs/coverage-setup.md)** - Code coverage analysis
+
+### 🔧 Development Tools
+
+- **[IDE Integration](docs/ide.md)** - Visual Studio and VS Code setup
+- **[Module Development Guide](docs/module-development-guide.md)** - Creating custom engine modules
+- **[Module Development Best Practices](docs/module-development-best-practices.md)** - Advanced module patterns
+- **[Hierarchical Build System](docs/hierarchical-build-system.md)** - Advanced build configurations
+
+### 📋 Project Management
+
+- **[Roadmap](docs/roadmap.md)** - Development progress and future plans
 
 ## Controls
 

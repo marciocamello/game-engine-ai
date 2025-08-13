@@ -1788,8 +1788,7 @@ Comprehensive testing framework with standardized output formatting, OpenGL cont
 
 **Related Documentation**:
 
-- [Testing Guide](testing-guide.md) - Complete testing instructions and examples
-- [Test Output Formatting Standards](testing-output-formatting.md) - Detailed formatting requirements
+- [Testing Complete Guide](testing-complete-guide.md) - Complete testing instructions and examples
 - [OpenGL Context Limitations](testing-opengl-limitations.md) - Context-aware testing patterns
 - [Resource Testing Patterns](testing-resource-patterns.md) - Resource management testing
 - [Mock Resource Implementation](testing-mock-resources.md) - Mock resource creation and usage
@@ -2110,8 +2109,7 @@ This API reference works in conjunction with comprehensive testing documentation
 
 ### Core Testing Documentation
 
-- **[Testing Guide](testing-guide.md)** - Complete testing instructions, examples, and best practices
-- **[Testing Guidelines](testing-guidelines.md)** - High-level guidelines for writing effective tests
+- **[Testing Complete Guide](testing-complete-guide.md)** - Complete testing instructions, examples, and best practices
 - **[Testing Standards](testing-standards.md)** - Coding standards and conventions for test code
 
 ### Specialized Testing Topics

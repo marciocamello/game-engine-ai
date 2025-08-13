@@ -17,15 +17,14 @@ This guide provides comprehensive patterns and examples for implementing mock re
 
 **Essential Context:**
 
-- **[Testing Guide](testing-guide.md)**: Comprehensive guide with mock resource usage examples
+- **[Testing Complete Guide](testing-complete-guide.md)**: Comprehensive guide with mock resource usage examples
 - **[OpenGL Context Limitations](testing-opengl-limitations.md)**: Why mock resources are essential for testing
 - **[Resource Testing Patterns](testing-resource-patterns.md)**: How to use mocks in resource testing
 
 **Implementation Standards:**
 
-- **[Testing Guidelines](testing-guidelines.md)**: Guidelines for mock resource implementation
+- **[Testing Complete Guide](testing-complete-guide.md)**: Guidelines for mock resource implementation
 - **[Testing Standards](testing-standards.md)**: Coding standards for mock resource code
-- **[Test Output Formatting](testing-output-formatting.md)**: Proper output formatting in mock tests
 
 **API and Examples:**
 
@@ -34,8 +33,7 @@ This guide provides comprehensive patterns and examples for implementing mock re
 
 **Advanced Topics:**
 
-- **[Testing Strategy](testing-strategy.md)**: Strategic use of mock resources
-- **[Testing Migration](testing-migration.md)**: Migrating to mock resource patterns
+- **[Testing Complete Guide](testing-complete-guide.md)**: Strategic use of mock resources
 
 ## Base Mock Resource Pattern
 

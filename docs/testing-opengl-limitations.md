@@ -27,8 +27,7 @@ Game Engine Kiro's testing system must handle the reality that many tests run in
 
 **Essential Testing Guides:**
 
-- **[Testing Guide](testing-guide.md)**: Comprehensive testing instructions with context-aware examples
-- **[Testing Guidelines](testing-guidelines.md)**: High-level guidelines including OpenGL context handling
+- **[Testing Complete Guide](testing-complete-guide.md)**: Comprehensive testing instructions with context-aware examples
 - **[Resource Testing Patterns](testing-resource-patterns.md)**: Resource testing with context awareness
 - **[Mock Resource Implementation](testing-mock-resources.md)**: Mock resources for context-free testing
 
@@ -44,8 +43,7 @@ Game Engine Kiro's testing system must handle the reality that many tests run in
 
 **See Also:**
 
-- **[Testing Strategy](testing-strategy.md)**: Overall approach to context-aware testing
-- **[Testing Migration](testing-migration.md)**: Migrating tests to handle context limitations
+- **[Testing Complete Guide](testing-complete-guide.md)**: Overall approach to context-aware testing
 
 ## The Problem
 

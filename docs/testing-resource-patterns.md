@@ -29,8 +29,7 @@ This guide provides comprehensive patterns and best practices for testing resour
 
 **Core Testing Framework:**
 
-- **[Testing Guide](testing-guide.md)**: Comprehensive testing instructions with resource examples
-- **[Testing Guidelines](testing-guidelines.md)**: High-level guidelines for resource testing
+- **[Testing Complete Guide](testing-complete-guide.md)**: Comprehensive testing instructions with resource examples
 - **[Testing Standards](testing-standards.md)**: Coding standards for resource test implementation
 
 **Context and Mocking:**
@@ -49,8 +48,7 @@ This guide provides comprehensive patterns and best practices for testing resour
 
 **Advanced Topics:**
 
-- **[Testing Strategy](testing-strategy.md)**: Strategic approach to resource testing
-- **[Testing Migration](testing-migration.md)**: Migrating resource tests to new patterns
+- **[Testing Complete Guide](testing-complete-guide.md)**: Strategic approach to resource testing
 
 ## ResourceManager Testing Patterns
 

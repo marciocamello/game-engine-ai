@@ -608,8 +608,8 @@ if(BUILD_TESTS)
     
 endif() # End of tests build block
 
-# Build game projects (when projects requested and not building specific test)
-if((BUILD_PROJECTS OR BUILD_SPECIFIC_PROJECT) AND NOT BUILD_SPECIFIC_TEST)
+# Build game projects (when projects requested and not building specific test only)
+if((BUILD_PROJECTS OR BUILD_SPECIFIC_PROJECT) AND (NOT BUILD_SPECIFIC_TEST OR BUILD_SPECIFIC_PROJECT))
     # Find packages needed for projects if not already found
     if(BUILD_PROJECTS_ONLY)
         find_package(OpenGL REQUIRED)
@@ -648,20 +648,21 @@ if((BUILD_PROJECTS OR BUILD_SPECIFIC_PROJECT) AND NOT BUILD_SPECIFIC_TEST)
             endif()
         endforeach()
         
-        # Add example executables (only when building projects)
-        # Character comparison example (temporarily disabled due to interface issues)
-        # add_executable(CharacterComparison
-        #     examples/character_comparison.cpp
-        # )
-        # 
-        # target_link_libraries(CharacterComparison PRIVATE GameEngineKiro)
+        # Add example executables (only when building all projects, not specific project)
+        if(NOT BUILD_SPECIFIC_PROJECT)
+            # Character comparison example (temporarily disabled due to interface issues)
+            # add_executable(CharacterComparison
+            #     examples/character_comparison.cpp
+            # )
+            # 
+            # target_link_libraries(CharacterComparison PRIVATE GameEngineKiro)
 
-        # Character controller test
-        add_executable(CharacterControllerTest
-            examples/character_controller_test.cpp
-        )
+            # Character controller test
+            add_executable(CharacterControllerTest
+                examples/character_controller_test.cpp
+            )
 
-        target_link_libraries(CharacterControllerTest PRIVATE GameEngineKiro)
+            target_link_libraries(CharacterControllerTest PRIVATE GameEngineKiro)
 
         # Physics debug renderer example
         add_executable(PhysicsDebugExample
@@ -733,11 +734,12 @@ if((BUILD_PROJECTS OR BUILD_SPECIFIC_PROJECT) AND NOT BUILD_SPECIFIC_TEST)
 
         target_link_libraries(DebugMeshDirect PRIVATE GameEngineKiro)
 
-        # Model Hot Reload example
-        add_executable(ModelHotReloadExample
-            examples/model_hot_reload_example.cpp
-        )
-        target_link_libraries(ModelHotReloadExample PRIVATE GameEngineKiro)
+            # Model Hot Reload example
+            add_executable(ModelHotReloadExample
+                examples/model_hot_reload_example.cpp
+            )
+            target_link_libraries(ModelHotReloadExample PRIVATE GameEngineKiro)
+        endif() # End of examples (only when not building specific project)
     endfunction()
     
     # Include game projects

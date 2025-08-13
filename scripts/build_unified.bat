@@ -131,14 +131,16 @@ REM When building specific test, force engine ON and projects OFF
 if not "%SPECIFIC_TEST%"=="" (
     set BUILD_ENGINE=ON
     set BUILD_PROJECTS=OFF
-    set CMAKE_ARGS=%CMAKE_ARGS% -DBUILD_SPECIFIC_TEST=%SPECIFIC_TEST%
+    set SPECIFIC_PROJECT=
+    set CMAKE_ARGS=%CMAKE_ARGS% -DBUILD_SPECIFIC_TEST=%SPECIFIC_TEST% -DBUILD_SPECIFIC_PROJECT=
 )
 
-REM When building specific project, force engine ON and tests OFF
+REM When building specific project, force engine ON and tests OFF, clear specific test
 if not "%SPECIFIC_PROJECT%"=="" (
     set BUILD_ENGINE=ON
     set BUILD_TESTS=OFF
-    set CMAKE_ARGS=%CMAKE_ARGS% -DBUILD_SPECIFIC_PROJECT=%SPECIFIC_PROJECT%
+    set SPECIFIC_TEST=
+    set CMAKE_ARGS=%CMAKE_ARGS% -DBUILD_SPECIFIC_PROJECT=%SPECIFIC_PROJECT% -DBUILD_SPECIFIC_TEST=
 )
 
 if "%BUILD_TESTS%"=="ON" (

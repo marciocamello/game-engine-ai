@@ -3,7 +3,7 @@
 #include "Graphics/Texture.h"
 #include "Graphics/Animation.h"
 #include "Graphics/Skeleton.h"
-#include "Graphics/MorphTarget.h"
+#include "Animation/MorphTarget.h"
 #include "Core/Logger.h"
 #include <filesystem>
 #include <fstream>
@@ -1381,7 +1381,7 @@ std::shared_ptr<MorphTargetSet> GLTFLoader::ParseMorphTargets(const nlohmann::js
         if (targetJson.contains("POSITION")) {
             uint32_t accessorIndex = targetJson["POSITION"];
             auto positionDeltas = GetVec3AccessorData(accessorIndex);
-            morphTarget->SetPositionDeltas(positionDeltas);
+            morphTarget->SetVertexDeltas(positionDeltas);
         }
         
         // Parse normal deltas

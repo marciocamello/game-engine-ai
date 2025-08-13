@@ -5,7 +5,7 @@
 #include "Graphics/Material.h"
 #include "Graphics/Animation.h"
 #include "Graphics/Skeleton.h"
-#include "Graphics/MorphTarget.h"
+#include "Animation/MorphTarget.h"
 #include "Core/Math.h"
 #include <nlohmann/json.hpp>
 #include <string>

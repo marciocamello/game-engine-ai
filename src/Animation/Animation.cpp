@@ -1,0 +1,396 @@
+#include "Animation/Animation.h"
+#include "Core/Logger.h"
+#include <algorithm>
+#include <cmath>
+
+namespace GameEngine {
+namespace Animation {
+
+    Animation::Animation(const std::string& name)
+        : m_name(name) {
+    }
+
+    BoneAnimation* Animation::GetBoneAnimation(const std::string& boneName) {
+        auto it = m_boneAnimations.find(boneName);
+        return (it != m_boneAnimations.end()) ? it->second.get() : nullptr;
+    }
+
+    const BoneAnimation* Animation::GetBoneAnimation(const std::string& boneName) const {
+        auto it = m_boneAnimations.find(boneName);
+        return (it != m_boneAnimations.end()) ? it->second.get() : nullptr;
+    }
+
+    BoneAnimation* Animation::CreateBoneAnimation(const std::string& boneName) {
+        if (GetBoneAnimation(boneName)) {
+            LOG_WARNING("Bone animation for '" + boneName + "' already exists");
+            return GetBoneAnimation(boneName);
+        }
+
+        auto boneAnim = std::make_unique<BoneAnimation>(boneName);
+        BoneAnimation* ptr = boneAnim.get();
+        m_boneAnimations[boneName] = std::move(boneAnim);
+        
+        LOG_INFO("Created bone animation for '" + boneName + "'");
+        return ptr;
+    }
+
+    bool Animation::RemoveBoneAnimation(const std::string& boneName) {
+        auto it = m_boneAnimations.find(boneName);
+        if (it != m_boneAnimations.end()) {
+            m_boneAnimations.erase(it);
+            return true;
+        }
+        return false;
+    }
+
+    PositionTrack* Animation::GetPositionTrack(const std::string& boneName) {
+        auto* boneAnim = GetBoneAnimation(boneName);
+        return boneAnim ? boneAnim->positionTrack.get() : nullptr;
+    }
+
+    RotationTrack* Animation::GetRotationTrack(const std::string& boneName) {
+        auto* boneAnim = GetBoneAnimation(boneName);
+        return boneAnim ? boneAnim->rotationTrack.get() : nullptr;
+    }
+
+    ScaleTrack* Animation::GetScaleTrack(const std::string& boneName) {
+        auto* boneAnim = GetBoneAnimation(boneName);
+        return boneAnim ? boneAnim->scaleTrack.get() : nullptr;
+    }
+
+    PositionTrack* Animation::CreatePositionTrack(const std::string& boneName) {
+        auto* boneAnim = GetOrCreateBoneAnimation(boneName);
+        if (!boneAnim->positionTrack) {
+            boneAnim->positionTrack = std::make_unique<PositionTrack>(boneName, "position");
+        }
+        return boneAnim->positionTrack.get();
+    }
+
+    RotationTrack* Animation::CreateRotationTrack(const std::string& boneName) {
+        auto* boneAnim = GetOrCreateBoneAnimation(boneName);
+        if (!boneAnim->rotationTrack) {
+            boneAnim->rotationTrack = std::make_unique<RotationTrack>(boneName, "rotation");
+        }
+        return boneAnim->rotationTrack.get();
+    }
+
+    ScaleTrack* Animation::CreateScaleTrack(const std::string& boneName) {
+        auto* boneAnim = GetOrCreateBoneAnimation(boneName);
+        if (!boneAnim->scaleTrack) {
+            boneAnim->scaleTrack = std::make_unique<ScaleTrack>(boneName, "scale");
+        }
+        return boneAnim->scaleTrack.get();
+    }
+
+    void Animation::AddPositionKeyframe(const std::string& boneName, float time, const Math::Vec3& position) {
+        auto* track = CreatePositionTrack(boneName);
+        track->AddKeyframe(time, position);
+        
+        // Update duration if necessary
+        if (time > m_duration) {
+            m_duration = time;
+        }
+    }
+
+    void Animation::AddRotationKeyframe(const std::string& boneName, float time, const Math::Quat& rotation) {
+        auto* track = CreateRotationTrack(boneName);
+        track->AddKeyframe(time, rotation);
+        
+        // Update duration if necessary
+        if (time > m_duration) {
+            m_duration = time;
+        }
+    }
+
+    void Animation::AddScaleKeyframe(const std::string& boneName, float time, const Math::Vec3& scale) {
+        auto* track = CreateScaleTrack(boneName);
+        track->AddKeyframe(time, scale);
+        
+        // Update duration if necessary
+        if (time > m_duration) {
+            m_duration = time;
+        }
+    }
+
+    Animation::BonePose Animation::SampleBone(const std::string& boneName, float time) const {
+        BonePose pose;
+        
+        auto* boneAnim = GetBoneAnimation(boneName);
+        if (!boneAnim) {
+            return pose;
+        }
+
+        // Wrap time according to loop mode
+        float wrappedTime = WrapTime(time);
+
+        // Sample position
+        if (boneAnim->HasPositionTrack()) {
+            pose.position = boneAnim->positionTrack->SampleAt(wrappedTime);
+            pose.hasPosition = true;
+        }
+
+        // Sample rotation
+        if (boneAnim->HasRotationTrack()) {
+            pose.rotation = boneAnim->rotationTrack->SampleAt(wrappedTime);
+            pose.hasRotation = true;
+        }
+
+        // Sample scale
+        if (boneAnim->HasScaleTrack()) {
+            pose.scale = boneAnim->scaleTrack->SampleAt(wrappedTime);
+            pose.hasScale = true;
+        }
+
+        return pose;
+    }
+
+    std::unordered_map<std::string, Animation::BonePose> Animation::SampleAllBones(float time) const {
+        std::unordered_map<std::string, BonePose> poses;
+        SampleAllBones(time, poses);
+        return poses;
+    }
+
+    void Animation::SampleAllBones(float time, std::unordered_map<std::string, BonePose>& outPoses) const {
+        outPoses.clear();
+        
+        for (const auto& [boneName, boneAnim] : m_boneAnimations) {
+            if (boneAnim->HasAnyTracks()) {
+                outPoses[boneName] = SampleBone(boneName, time);
+            }
+        }
+    }
+
+    float Animation::NormalizeTime(float time) const {
+        if (m_duration <= 0.0f) {
+            return 0.0f;
+        }
+        return time / m_duration;
+    }
+
+    float Animation::WrapTime(float time) const {
+        if (m_duration <= 0.0f) {
+            return 0.0f;
+        }
+
+        switch (m_loopMode) {
+            case LoopMode::Once:
+            case LoopMode::Clamp:
+                return std::clamp(time, 0.0f, m_duration);
+
+            case LoopMode::Loop:
+                if (time < 0.0f) {
+                    return m_duration + std::fmod(time, m_duration);
+                }
+                return std::fmod(time, m_duration);
+
+            case LoopMode::PingPong: {
+                float cycleDuration = m_duration * 2.0f;
+                float wrappedTime = std::fmod(std::abs(time), cycleDuration);
+                
+                if (wrappedTime <= m_duration) {
+                    return wrappedTime;
+                } else {
+                    return cycleDuration - wrappedTime;
+                }
+            }
+
+            default:
+                return std::clamp(time, 0.0f, m_duration);
+        }
+    }
+
+    std::vector<std::string> Animation::GetAnimatedBoneNames() const {
+        std::vector<std::string> names;
+        names.reserve(m_boneAnimations.size());
+        
+        for (const auto& [boneName, boneAnim] : m_boneAnimations) {
+            if (boneAnim->HasAnyTracks()) {
+                names.push_back(boneName);
+            }
+        }
+        
+        return names;
+    }
+
+    bool Animation::HasBone(const std::string& boneName) const {
+        auto it = m_boneAnimations.find(boneName);
+        return it != m_boneAnimations.end() && it->second->HasAnyTracks();
+    }
+
+    void Animation::OptimizeKeyframes(float tolerance) {
+        for (auto& [boneName, boneAnim] : m_boneAnimations) {
+            if (boneAnim->positionTrack) {
+                boneAnim->positionTrack->OptimizeKeyframes(tolerance);
+            }
+            if (boneAnim->rotationTrack) {
+                boneAnim->rotationTrack->OptimizeKeyframes(tolerance);
+            }
+            if (boneAnim->scaleTrack) {
+                boneAnim->scaleTrack->OptimizeKeyframes(tolerance);
+            }
+        }
+        
+        LOG_INFO("Optimized keyframes for animation '" + m_name + "'");
+    }
+
+    void Animation::RecalculateDuration() {
+        m_duration = CalculateDurationFromTracks();
+        LOG_INFO("Recalculated duration for animation '" + m_name + "': " + std::to_string(m_duration) + "s");
+    }
+
+    bool Animation::ValidateAnimation() const {
+        if (m_boneAnimations.empty()) {
+            LOG_WARNING("Animation '" + m_name + "' has no bone animations");
+            return false;
+        }
+
+        bool hasValidTracks = false;
+        for (const auto& [boneName, boneAnim] : m_boneAnimations) {
+            if (boneAnim->HasAnyTracks()) {
+                hasValidTracks = true;
+                break;
+            }
+        }
+
+        if (!hasValidTracks) {
+            LOG_WARNING("Animation '" + m_name + "' has no valid tracks");
+            return false;
+        }
+
+        if (m_duration <= 0.0f) {
+            LOG_WARNING("Animation '" + m_name + "' has invalid duration: " + std::to_string(m_duration));
+            return false;
+        }
+
+        return true;
+    }
+
+    Animation::AnimationData Animation::Serialize() const {
+        AnimationData data;
+        data.name = m_name;
+        data.duration = m_duration;
+        data.frameRate = m_frameRate;
+        data.loopMode = m_loopMode;
+
+        for (const auto& [boneName, boneAnim] : m_boneAnimations) {
+            if (!boneAnim->HasAnyTracks()) {
+                continue;
+            }
+
+            AnimationData::BoneData boneData;
+            boneData.boneName = boneName;
+
+            // Serialize position keyframes
+            if (boneAnim->HasPositionTrack()) {
+                const auto& keyframes = boneAnim->positionTrack->GetKeyframes();
+                boneData.positionKeyframes.assign(keyframes.begin(), keyframes.end());
+            }
+
+            // Serialize rotation keyframes
+            if (boneAnim->HasRotationTrack()) {
+                const auto& keyframes = boneAnim->rotationTrack->GetKeyframes();
+                boneData.rotationKeyframes.assign(keyframes.begin(), keyframes.end());
+            }
+
+            // Serialize scale keyframes
+            if (boneAnim->HasScaleTrack()) {
+                const auto& keyframes = boneAnim->scaleTrack->GetKeyframes();
+                boneData.scaleKeyframes.assign(keyframes.begin(), keyframes.end());
+            }
+
+            data.bones.push_back(std::move(boneData));
+        }
+
+        return data;
+    }
+
+    bool Animation::Deserialize(const AnimationData& data) {
+        // Clear existing data
+        m_boneAnimations.clear();
+
+        // Set basic properties
+        m_name = data.name;
+        m_duration = data.duration;
+        m_frameRate = data.frameRate;
+        m_loopMode = data.loopMode;
+
+        // Deserialize bone animations
+        for (const auto& boneData : data.bones) {
+            auto* boneAnim = CreateBoneAnimation(boneData.boneName);
+
+            // Deserialize position keyframes
+            if (!boneData.positionKeyframes.empty()) {
+                auto* posTrack = CreatePositionTrack(boneData.boneName);
+                for (const auto& keyframe : boneData.positionKeyframes) {
+                    posTrack->AddKeyframe(keyframe);
+                }
+            }
+
+            // Deserialize rotation keyframes
+            if (!boneData.rotationKeyframes.empty()) {
+                auto* rotTrack = CreateRotationTrack(boneData.boneName);
+                for (const auto& keyframe : boneData.rotationKeyframes) {
+                    rotTrack->AddKeyframe(keyframe);
+                }
+            }
+
+            // Deserialize scale keyframes
+            if (!boneData.scaleKeyframes.empty()) {
+                auto* scaleTrack = CreateScaleTrack(boneData.boneName);
+                for (const auto& keyframe : boneData.scaleKeyframes) {
+                    scaleTrack->AddKeyframe(keyframe);
+                }
+            }
+        }
+
+        return ValidateAnimation();
+    }
+
+    void Animation::PrintAnimationInfo() const {
+        LOG_INFO("Animation '" + m_name + "':");
+        LOG_INFO("  Duration: " + std::to_string(m_duration) + "s");
+        LOG_INFO("  Frame Rate: " + std::to_string(m_frameRate) + " fps");
+        LOG_INFO("  Loop Mode: " + std::to_string(static_cast<int>(m_loopMode)));
+        LOG_INFO("  Bone Count: " + std::to_string(GetBoneCount()));
+        
+        for (const auto& [boneName, boneAnim] : m_boneAnimations) {
+            if (boneAnim->HasAnyTracks()) {
+                LOG_INFO("  Bone '" + boneName + "':");
+                if (boneAnim->HasPositionTrack()) {
+                    LOG_INFO("    Position keyframes: " + std::to_string(boneAnim->positionTrack->GetKeyframeCount()));
+                }
+                if (boneAnim->HasRotationTrack()) {
+                    LOG_INFO("    Rotation keyframes: " + std::to_string(boneAnim->rotationTrack->GetKeyframeCount()));
+                }
+                if (boneAnim->HasScaleTrack()) {
+                    LOG_INFO("    Scale keyframes: " + std::to_string(boneAnim->scaleTrack->GetKeyframeCount()));
+                }
+            }
+        }
+    }
+
+    BoneAnimation* Animation::GetOrCreateBoneAnimation(const std::string& boneName) {
+        auto* existing = GetBoneAnimation(boneName);
+        return existing ? existing : CreateBoneAnimation(boneName);
+    }
+
+    float Animation::CalculateDurationFromTracks() const {
+        float maxDuration = 0.0f;
+        
+        for (const auto& [boneName, boneAnim] : m_boneAnimations) {
+            if (boneAnim->HasPositionTrack()) {
+                maxDuration = std::max(maxDuration, boneAnim->positionTrack->GetEndTime());
+            }
+            if (boneAnim->HasRotationTrack()) {
+                maxDuration = std::max(maxDuration, boneAnim->rotationTrack->GetEndTime());
+            }
+            if (boneAnim->HasScaleTrack()) {
+                maxDuration = std::max(maxDuration, boneAnim->scaleTrack->GetEndTime());
+            }
+        }
+        
+        return maxDuration;
+    }
+
+} // namespace Animation
+} // namespace GameEngine

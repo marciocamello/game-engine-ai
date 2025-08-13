@@ -1,30 +1,32 @@
 # Implementation Plan - Animation System
 
-- [ ] 1. Implement core Skeleton system with bone hierarchy
+- [x] 1. Implement core Skeleton system with bone hierarchy
 
-  - [ ] 1.1 Create Skeleton class with bone management
+  - [x] 1.1 Create Skeleton class with bone management
 
     - Implement Skeleton class with hierarchical bone structure support
     - Add bone creation with parent-child relationships and bind poses
     - Create bone indexing system with name-based and index-based lookup
     - _Requirements: 1.1, 1.4, 8.2_
 
-  - [ ] 1.2 Add bone transform calculation and skinning matrix generation
+  - [x] 1.2 Add bone transform calculation and skinning matrix generation
+
     - Implement world transform calculation for bone hierarchy
     - Add skinning matrix computation with inverse bind pose multiplication
     - Create efficient bone transform update algorithms
     - _Requirements: 1.4, 1.5, 9.2_
 
-- [ ] 2. Create Animation class with keyframe data management
+- [-] 2. Create Animation class with keyframe data management
 
-  - [ ] 2.1 Implement Animation class with track-based keyframe storage
+  - [x] 2.1 Implement Animation class with track-based keyframe storage
 
     - Create Animation class with bone track management
     - Add keyframe structures for position, rotation, and scale
     - Implement keyframe interpolation with multiple interpolation types
     - _Requirements: 1.2, 1.3, 7.1_
 
-  - [ ] 2.2 Add animation sampling and pose evaluation
+  - [-] 2.2 Add animation sampling and pose evaluation
+
     - Implement bone transform sampling at specific time points
     - Add pose evaluation with complete skeleton pose generation
     - Create animation looping and end behavior handling

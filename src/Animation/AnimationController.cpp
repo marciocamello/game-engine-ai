@@ -424,7 +424,15 @@ namespace Animation {
     }
 
     void AnimationController::TriggerEvent(const AnimationEvent& event) {
-        if (m_eventCallback && event.IsValid()) {
+        if (!event.IsValid() || !m_eventProcessingEnabled) {
+            return;
+        }
+
+        // Add to event history
+        m_eventHistory.AddTriggeredEvent(event, 0.0f, 0.0f, "Manual Trigger");
+
+        // Call user callback
+        if (m_eventCallback) {
             m_eventCallback(event);
         }
     }
@@ -507,11 +515,27 @@ namespace Animation {
     }
 
     void AnimationController::ProcessAnimationEvents(const AnimationLayer& layer, float previousTime, float currentTime) {
-        // Animation events will be processed when Animation class supports events
-        // For now, this is a placeholder
-        (void)layer;
-        (void)previousTime;
-        (void)currentTime;
+        if (!m_eventProcessingEnabled || !m_eventCallback || !layer.animation) {
+            return;
+        }
+
+        // Determine if animation is looping
+        bool isLooping = layer.animation->GetLoopMode() == LoopMode::Loop || 
+                        layer.animation->GetLoopMode() == LoopMode::PingPong;
+
+        // Create event callback that adds to history and calls user callback
+        auto eventCallbackWithHistory = [this, &layer](const AnimationEvent& event) {
+            // Add to event history
+            m_eventHistory.AddTriggeredEvent(event, layer.time, layer.time, layer.animation->GetName());
+            
+            // Call user callback
+            if (m_eventCallback) {
+                m_eventCallback(event);
+            }
+        };
+
+        // Process events from the animation
+        layer.animation->ProcessEvents(previousTime, currentTime, eventCallbackWithHistory, isLooping);
     }
 
     void AnimationController::BlendAnimationLayers(Pose& outPose) {

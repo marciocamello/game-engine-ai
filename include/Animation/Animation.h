@@ -2,6 +2,7 @@
 
 #include "Animation/Keyframe.h"
 #include "Animation/Skeleton.h"
+#include "Animation/AnimationEvent.h"
 #include "Core/Math.h"
 #include <string>
 #include <vector>
@@ -108,6 +109,25 @@ namespace Animation {
         bool IsEmpty() const { return m_boneAnimations.empty(); }
         bool HasBone(const std::string& boneName) const;
 
+        // Event system
+        void AddEvent(const AnimationEvent& event);
+        void RemoveEvent(const std::string& eventName, float time);
+        void RemoveAllEvents(const std::string& eventName);
+        void ClearAllEvents();
+        
+        std::vector<AnimationEvent> GetEvents() const;
+        std::vector<AnimationEvent> GetEventsInTimeRange(float startTime, float endTime) const;
+        std::vector<AnimationEvent> GetEventsByName(const std::string& eventName) const;
+        std::vector<AnimationEvent> GetEventsByType(AnimationEventType type) const;
+        
+        bool HasEvent(const std::string& eventName, float time) const;
+        bool HasEventsInRange(float startTime, float endTime) const;
+        size_t GetEventCount() const;
+        
+        // Event processing during animation playback
+        std::vector<AnimationEvent> GetTriggeredEvents(float previousTime, float currentTime, bool looping = false) const;
+        void ProcessEvents(float previousTime, float currentTime, const AnimationEventCallback& callback, bool looping = false) const;
+
         // Optimization and validation
         void OptimizeKeyframes(float tolerance = 0.001f);
         void RecalculateDuration();
@@ -143,6 +163,9 @@ namespace Animation {
         LoopMode m_loopMode = LoopMode::Loop;
 
         std::unordered_map<std::string, std::unique_ptr<BoneAnimation>> m_boneAnimations;
+        
+        // Event management
+        std::unique_ptr<AnimationEventManager> m_eventManager;
 
         // Helper methods
         BoneAnimation* GetOrCreateBoneAnimation(const std::string& boneName);

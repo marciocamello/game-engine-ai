@@ -4,6 +4,7 @@
 #include "Animation/Animation.h"
 #include "Animation/Pose.h"
 #include "Animation/BlendTree.h"
+#include "Animation/AnimationEvent.h"
 #include "Core/Math.h"
 #include <string>
 #include <unordered_map>
@@ -50,22 +51,7 @@ namespace Animation {
         bool m_triggerState = false;
     };
 
-    /**
-     * Animation event structure for triggering game logic during animations
-     */
-    struct AnimationEvent {
-        std::string name;
-        float time;  // Normalized time (0-1)
-        std::string stringParameter;
-        float floatParameter = 0.0f;
-        int intParameter = 0;
-        bool boolParameter = false;
 
-        enum class Type { Generic, Sound, Effect, Footstep, Custom };
-        Type type = Type::Generic;
-
-        bool IsValid() const;
-    };
 
     /**
      * Debug information for animation controller
@@ -136,6 +122,15 @@ namespace Animation {
         // Events
         void SetEventCallback(std::function<void(const AnimationEvent&)> callback);
         void TriggerEvent(const AnimationEvent& event);
+        
+        // Event history and debugging
+        const AnimationEventHistory& GetEventHistory() const { return m_eventHistory; }
+        void ClearEventHistory() { m_eventHistory.ClearHistory(); }
+        void SetEventHistorySize(size_t maxSize) { m_eventHistory.maxHistorySize = maxSize; }
+        
+        // Event processing control
+        void SetEventProcessingEnabled(bool enabled) { m_eventProcessingEnabled = enabled; }
+        bool IsEventProcessingEnabled() const { return m_eventProcessingEnabled; }
 
         // Skeleton access
         std::shared_ptr<Skeleton> GetSkeleton() const { return m_skeleton; }
@@ -177,6 +172,8 @@ namespace Animation {
 
         // Event system
         std::function<void(const AnimationEvent&)> m_eventCallback;
+        AnimationEventHistory m_eventHistory;
+        bool m_eventProcessingEnabled = true;
 
         // Playback state
         bool m_initialized = false;

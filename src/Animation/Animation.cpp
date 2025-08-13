@@ -7,7 +7,7 @@ namespace GameEngine {
 namespace Animation {
 
     Animation::Animation(const std::string& name)
-        : m_name(name) {
+        : m_name(name), m_eventManager(std::make_unique<AnimationEventManager>()) {
     }
 
     BoneAnimation* Animation::GetBoneAnimation(const std::string& boneName) {
@@ -390,6 +390,105 @@ namespace Animation {
         }
         
         return maxDuration;
+    }
+
+    // Event system implementation
+    void Animation::AddEvent(const AnimationEvent& event) {
+        if (m_eventManager) {
+            m_eventManager->AddEvent(event);
+        }
+    }
+
+    void Animation::RemoveEvent(const std::string& eventName, float time) {
+        if (m_eventManager) {
+            // Convert absolute time to normalized time
+            float normalizedTime = NormalizeTime(time);
+            m_eventManager->RemoveEvent(eventName, normalizedTime);
+        }
+    }
+
+    void Animation::RemoveAllEvents(const std::string& eventName) {
+        if (m_eventManager) {
+            m_eventManager->RemoveAllEvents(eventName);
+        }
+    }
+
+    void Animation::ClearAllEvents() {
+        if (m_eventManager) {
+            m_eventManager->ClearAllEvents();
+        }
+    }
+
+    std::vector<AnimationEvent> Animation::GetEvents() const {
+        if (m_eventManager) {
+            return m_eventManager->GetEvents();
+        }
+        return {};
+    }
+
+    std::vector<AnimationEvent> Animation::GetEventsInTimeRange(float startTime, float endTime) const {
+        if (m_eventManager) {
+            // Convert absolute times to normalized times
+            float normalizedStart = NormalizeTime(startTime);
+            float normalizedEnd = NormalizeTime(endTime);
+            return m_eventManager->GetEventsInTimeRange(normalizedStart, normalizedEnd);
+        }
+        return {};
+    }
+
+    std::vector<AnimationEvent> Animation::GetEventsByName(const std::string& eventName) const {
+        if (m_eventManager) {
+            return m_eventManager->GetEventsByName(eventName);
+        }
+        return {};
+    }
+
+    std::vector<AnimationEvent> Animation::GetEventsByType(AnimationEventType type) const {
+        if (m_eventManager) {
+            return m_eventManager->GetEventsByType(type);
+        }
+        return {};
+    }
+
+    bool Animation::HasEvent(const std::string& eventName, float time) const {
+        if (m_eventManager) {
+            float normalizedTime = NormalizeTime(time);
+            return m_eventManager->HasEvent(eventName, normalizedTime);
+        }
+        return false;
+    }
+
+    bool Animation::HasEventsInRange(float startTime, float endTime) const {
+        if (m_eventManager) {
+            float normalizedStart = NormalizeTime(startTime);
+            float normalizedEnd = NormalizeTime(endTime);
+            return m_eventManager->HasEventsInRange(normalizedStart, normalizedEnd);
+        }
+        return false;
+    }
+
+    size_t Animation::GetEventCount() const {
+        if (m_eventManager) {
+            return m_eventManager->GetEventCount();
+        }
+        return 0;
+    }
+
+    std::vector<AnimationEvent> Animation::GetTriggeredEvents(float previousTime, float currentTime, bool looping) const {
+        if (m_eventManager) {
+            float normalizedPrevious = NormalizeTime(previousTime);
+            float normalizedCurrent = NormalizeTime(currentTime);
+            return m_eventManager->GetTriggeredEvents(normalizedPrevious, normalizedCurrent, looping);
+        }
+        return {};
+    }
+
+    void Animation::ProcessEvents(float previousTime, float currentTime, const AnimationEventCallback& callback, bool looping) const {
+        if (m_eventManager && callback) {
+            float normalizedPrevious = NormalizeTime(previousTime);
+            float normalizedCurrent = NormalizeTime(currentTime);
+            m_eventManager->ProcessEvents(normalizedPrevious, normalizedCurrent, callback, looping);
+        }
     }
 
 } // namespace Animation

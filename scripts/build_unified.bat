@@ -127,6 +127,20 @@ if not "%SPECIFIC_TEST%"=="" set BUILD_TYPE_DESC=Test ^(%SPECIFIC_TEST%^)
 
 :setup_cmake_args
 REM Setup CMake arguments based on what to build
+REM When building specific test, force engine ON and projects OFF
+if not "%SPECIFIC_TEST%"=="" (
+    set BUILD_ENGINE=ON
+    set BUILD_PROJECTS=OFF
+    set CMAKE_ARGS=%CMAKE_ARGS% -DBUILD_SPECIFIC_TEST=%SPECIFIC_TEST%
+)
+
+REM When building specific project, force engine ON and tests OFF
+if not "%SPECIFIC_PROJECT%"=="" (
+    set BUILD_ENGINE=ON
+    set BUILD_TESTS=OFF
+    set CMAKE_ARGS=%CMAKE_ARGS% -DBUILD_SPECIFIC_PROJECT=%SPECIFIC_PROJECT%
+)
+
 if "%BUILD_TESTS%"=="ON" (
     set CMAKE_ARGS=%CMAKE_ARGS% -DBUILD_TESTS=ON
 ) else (
@@ -144,9 +158,6 @@ if "%BUILD_ENGINE%"=="ON" (
 )
 if "%ENABLE_COVERAGE%"=="ON" (
     set CMAKE_ARGS=%CMAKE_ARGS% -DENABLE_COVERAGE=ON
-)
-if not "%SPECIFIC_TEST%"=="" (
-    set CMAKE_ARGS=%CMAKE_ARGS% -DBUILD_SPECIFIC_TEST=%SPECIFIC_TEST%
 )
 
 echo Build Configuration: %BUILD_TYPE_DESC%

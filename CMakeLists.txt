@@ -608,8 +608,8 @@ if(BUILD_TESTS)
     
 endif() # End of tests build block
 
-# Build game projects (when projects requested)
-if(BUILD_PROJECTS OR BUILD_SPECIFIC_PROJECT)
+# Build game projects (when projects requested and not building specific test)
+if((BUILD_PROJECTS OR BUILD_SPECIFIC_PROJECT) AND NOT BUILD_SPECIFIC_TEST)
     # Find packages needed for projects if not already found
     if(BUILD_PROJECTS_ONLY)
         find_package(OpenGL REQUIRED)
@@ -625,6 +625,7 @@ if(BUILD_PROJECTS OR BUILD_SPECIFIC_PROJECT)
         find_package(Stb REQUIRED)
     endif()
     
+
     # Function to include game projects hierarchically
     function(include_game_projects)
         # Discover game projects
@@ -646,100 +647,101 @@ if(BUILD_PROJECTS OR BUILD_SPECIFIC_PROJECT)
                 add_subdirectory(${project_path})
             endif()
         endforeach()
+        
+        # Add example executables (only when building projects)
+        # Character comparison example (temporarily disabled due to interface issues)
+        # add_executable(CharacterComparison
+        #     examples/character_comparison.cpp
+        # )
+        # 
+        # target_link_libraries(CharacterComparison PRIVATE GameEngineKiro)
+
+        # Character controller test
+        add_executable(CharacterControllerTest
+            examples/character_controller_test.cpp
+        )
+
+        target_link_libraries(CharacterControllerTest PRIVATE GameEngineKiro)
+
+        # Physics debug renderer example
+        add_executable(PhysicsDebugExample
+            examples/physics_debug_example.cpp
+        )
+
+        target_link_libraries(PhysicsDebugExample PRIVATE GameEngineKiro)
+
+        # FBX test example
+        add_executable(FBXTestSimple
+            examples/test_fbx_simple.cpp
+        )
+
+        target_link_libraries(FBXTestSimple PRIVATE GameEngineKiro)
+
+        # FBX minimal test
+        add_executable(FBXTestMinimal
+            examples/test_fbx_minimal.cpp
+        )
+
+        target_link_libraries(FBXTestMinimal PRIVATE GameEngineKiro)
+
+        # FBX via ModelLoader test
+        add_executable(FBXViaModelLoader
+            examples/test_fbx_via_modelloader.cpp
+        )
+
+        target_link_libraries(FBXViaModelLoader PRIVATE GameEngineKiro)
+
+        # FBX Animation test
+        add_executable(FBXAnimationTest
+            examples/test_fbx_animation.cpp
+        )
+
+        target_link_libraries(FBXAnimationTest PRIVATE GameEngineKiro)
+
+        # FBX Debug test
+        add_executable(DebugFBXLoading
+            examples/debug_fbx_loading.cpp
+        )
+
+        target_link_libraries(DebugFBXLoading PRIVATE GameEngineKiro)
+
+        # FBX Isolated Debug test
+        add_executable(DebugFBXIsolated
+            examples/debug_fbx_isolated.cpp
+        )
+
+        target_link_libraries(DebugFBXIsolated PRIVATE GameEngineKiro)
+
+        # Mesh Creation Debug test
+        add_executable(DebugMeshCreation
+            examples/debug_mesh_creation.cpp
+        )
+
+        target_link_libraries(DebugMeshCreation PRIVATE GameEngineKiro)
+
+        # VertexLayout Debug test
+        add_executable(DebugVertexLayout
+            examples/debug_vertex_layout.cpp
+        )
+
+        target_link_libraries(DebugVertexLayout PRIVATE GameEngineKiro)
+
+        # Direct Mesh Debug test
+        add_executable(DebugMeshDirect
+            examples/debug_mesh_direct.cpp
+        )
+
+        target_link_libraries(DebugMeshDirect PRIVATE GameEngineKiro)
+
+        # Model Hot Reload example
+        add_executable(ModelHotReloadExample
+            examples/model_hot_reload_example.cpp
+        )
+        target_link_libraries(ModelHotReloadExample PRIVATE GameEngineKiro)
     endfunction()
     
     # Include game projects
     include_game_projects()
-    
-    # Character comparison example (temporarily disabled due to interface issues)
-    # add_executable(CharacterComparison
-    #     examples/character_comparison.cpp
-    # )
-    # 
-    # target_link_libraries(CharacterComparison PRIVATE GameEngineKiro)
-
-    # Character controller test
-    add_executable(CharacterControllerTest
-        examples/character_controller_test.cpp
-    )
-
-    target_link_libraries(CharacterControllerTest PRIVATE GameEngineKiro)
-
-    # Physics debug renderer example
-    add_executable(PhysicsDebugExample
-        examples/physics_debug_example.cpp
-    )
-
-    target_link_libraries(PhysicsDebugExample PRIVATE GameEngineKiro)
-
-    # FBX test example
-    add_executable(FBXTestSimple
-        examples/test_fbx_simple.cpp
-    )
-
-    target_link_libraries(FBXTestSimple PRIVATE GameEngineKiro)
-
-    # FBX minimal test
-    add_executable(FBXTestMinimal
-        examples/test_fbx_minimal.cpp
-    )
-
-    target_link_libraries(FBXTestMinimal PRIVATE GameEngineKiro)
-
-    # FBX via ModelLoader test
-    add_executable(FBXViaModelLoader
-        examples/test_fbx_via_modelloader.cpp
-    )
-
-    target_link_libraries(FBXViaModelLoader PRIVATE GameEngineKiro)
-
-    # FBX Animation test
-    add_executable(FBXAnimationTest
-        examples/test_fbx_animation.cpp
-    )
-
-    target_link_libraries(FBXAnimationTest PRIVATE GameEngineKiro)
-
-    # FBX Debug test
-    add_executable(DebugFBXLoading
-        examples/debug_fbx_loading.cpp
-    )
-
-    target_link_libraries(DebugFBXLoading PRIVATE GameEngineKiro)
-
-    # FBX Isolated Debug test
-    add_executable(DebugFBXIsolated
-        examples/debug_fbx_isolated.cpp
-    )
-
-    target_link_libraries(DebugFBXIsolated PRIVATE GameEngineKiro)
-
-    # Mesh Creation Debug test
-    add_executable(DebugMeshCreation
-        examples/debug_mesh_creation.cpp
-    )
-
-    target_link_libraries(DebugMeshCreation PRIVATE GameEngineKiro)
-
-    # VertexLayout Debug test
-    add_executable(DebugVertexLayout
-        examples/debug_vertex_layout.cpp
-    )
-
-    target_link_libraries(DebugVertexLayout PRIVATE GameEngineKiro)
-
-    # Direct Mesh Debug test
-    add_executable(DebugMeshDirect
-        examples/debug_mesh_direct.cpp
-    )
-
-    target_link_libraries(DebugMeshDirect PRIVATE GameEngineKiro)
-
-    # Model Hot Reload example
-    add_executable(ModelHotReloadExample
-        examples/model_hot_reload_example.cpp
-    )
-    target_link_libraries(ModelHotReloadExample PRIVATE GameEngineKiro)
 
 endif() # End of test build block
 

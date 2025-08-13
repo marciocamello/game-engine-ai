@@ -346,12 +346,167 @@ namespace Animation {
         return ValidateAnimation();
     }
 
+    void Animation::CompressAnimation(float tolerance) {
+        LOG_INFO("Compressing animation '" + m_name + "' with tolerance: " + std::to_string(tolerance));
+        
+        size_t originalKeyframes = GetKeyframeCount();
+        
+        for (auto& [boneName, boneAnim] : m_boneAnimations) {
+            if (boneAnim->positionTrack) {
+                boneAnim->positionTrack->OptimizeKeyframes(tolerance);
+            }
+            if (boneAnim->rotationTrack) {
+                boneAnim->rotationTrack->OptimizeKeyframes(tolerance);
+            }
+            if (boneAnim->scaleTrack) {
+                boneAnim->scaleTrack->OptimizeKeyframes(tolerance);
+            }
+        }
+        
+        size_t compressedKeyframes = GetKeyframeCount();
+        float compressionRatio = originalKeyframes > 0 ? 
+            static_cast<float>(compressedKeyframes) / static_cast<float>(originalKeyframes) : 1.0f;
+        
+        LOG_INFO("Animation compression completed:");
+        LOG_INFO("  Original keyframes: " + std::to_string(originalKeyframes));
+        LOG_INFO("  Compressed keyframes: " + std::to_string(compressedKeyframes));
+        LOG_INFO("  Compression ratio: " + std::to_string(compressionRatio));
+    }
+
+    void Animation::RemoveRedundantKeyframes(float tolerance) {
+        LOG_INFO("Removing redundant keyframes from animation '" + m_name + "'");
+        
+        size_t originalKeyframes = GetKeyframeCount();
+        
+        for (auto& [boneName, boneAnim] : m_boneAnimations) {
+            if (boneAnim->positionTrack) {
+                boneAnim->positionTrack->OptimizeKeyframes(tolerance);
+            }
+            if (boneAnim->rotationTrack) {
+                boneAnim->rotationTrack->OptimizeKeyframes(tolerance);
+            }
+            if (boneAnim->scaleTrack) {
+                boneAnim->scaleTrack->OptimizeKeyframes(tolerance);
+            }
+        }
+        
+        size_t optimizedKeyframes = GetKeyframeCount();
+        LOG_INFO("Removed " + std::to_string(originalKeyframes - optimizedKeyframes) + " redundant keyframes");
+    }
+
+    std::shared_ptr<Animation> Animation::CreateCompressedCopy(float tolerance) const {
+        auto compressed = std::make_shared<Animation>(m_name + "_compressed");
+        compressed->SetDuration(m_duration);
+        compressed->SetFrameRate(m_frameRate);
+        compressed->SetLoopMode(m_loopMode);
+        
+        // Copy and compress all bone animations
+        for (const auto& [boneName, boneAnim] : m_boneAnimations) {
+            if (!boneAnim->HasAnyTracks()) {
+                continue;
+            }
+            
+            auto* compressedBoneAnim = compressed->CreateBoneAnimation(boneName);
+            
+            // Copy and optimize position track
+            if (boneAnim->HasPositionTrack()) {
+                auto* posTrack = compressed->CreatePositionTrack(boneName);
+                const auto& keyframes = boneAnim->positionTrack->GetKeyframes();
+                for (const auto& keyframe : keyframes) {
+                    posTrack->AddKeyframe(keyframe);
+                }
+                posTrack->OptimizeKeyframes(tolerance);
+            }
+            
+            // Copy and optimize rotation track
+            if (boneAnim->HasRotationTrack()) {
+                auto* rotTrack = compressed->CreateRotationTrack(boneName);
+                const auto& keyframes = boneAnim->rotationTrack->GetKeyframes();
+                for (const auto& keyframe : keyframes) {
+                    rotTrack->AddKeyframe(keyframe);
+                }
+                rotTrack->OptimizeKeyframes(tolerance);
+            }
+            
+            // Copy and optimize scale track
+            if (boneAnim->HasScaleTrack()) {
+                auto* scaleTrack = compressed->CreateScaleTrack(boneName);
+                const auto& keyframes = boneAnim->scaleTrack->GetKeyframes();
+                for (const auto& keyframe : keyframes) {
+                    scaleTrack->AddKeyframe(keyframe);
+                }
+                scaleTrack->OptimizeKeyframes(tolerance);
+            }
+        }
+        
+        // Copy events
+        if (m_eventManager) {
+            auto events = m_eventManager->GetEvents();
+            for (const auto& event : events) {
+                compressed->AddEvent(event);
+            }
+        }
+        
+        return compressed;
+    }
+
+    size_t Animation::GetMemoryUsage() const {
+        size_t totalSize = sizeof(Animation);
+        totalSize += m_name.size();
+        
+        for (const auto& [boneName, boneAnim] : m_boneAnimations) {
+            totalSize += sizeof(BoneAnimation);
+            totalSize += boneName.size();
+            
+            if (boneAnim->HasPositionTrack()) {
+                totalSize += sizeof(PositionTrack);
+                totalSize += sizeof(PositionKeyframe) * boneAnim->positionTrack->GetKeyframeCount();
+            }
+            if (boneAnim->HasRotationTrack()) {
+                totalSize += sizeof(RotationTrack);
+                totalSize += sizeof(RotationKeyframe) * boneAnim->rotationTrack->GetKeyframeCount();
+            }
+            if (boneAnim->HasScaleTrack()) {
+                totalSize += sizeof(ScaleTrack);
+                totalSize += sizeof(ScaleKeyframe) * boneAnim->scaleTrack->GetKeyframeCount();
+            }
+        }
+        
+        // Add event manager memory usage
+        if (m_eventManager) {
+            totalSize += sizeof(AnimationEventManager);
+            totalSize += sizeof(AnimationEvent) * GetEventCount();
+        }
+        
+        return totalSize;
+    }
+
+    size_t Animation::GetKeyframeCount() const {
+        size_t totalKeyframes = 0;
+        
+        for (const auto& [boneName, boneAnim] : m_boneAnimations) {
+            if (boneAnim->HasPositionTrack()) {
+                totalKeyframes += boneAnim->positionTrack->GetKeyframeCount();
+            }
+            if (boneAnim->HasRotationTrack()) {
+                totalKeyframes += boneAnim->rotationTrack->GetKeyframeCount();
+            }
+            if (boneAnim->HasScaleTrack()) {
+                totalKeyframes += boneAnim->scaleTrack->GetKeyframeCount();
+            }
+        }
+        
+        return totalKeyframes;
+    }
+
     void Animation::PrintAnimationInfo() const {
         LOG_INFO("Animation '" + m_name + "':");
         LOG_INFO("  Duration: " + std::to_string(m_duration) + "s");
         LOG_INFO("  Frame Rate: " + std::to_string(m_frameRate) + " fps");
         LOG_INFO("  Loop Mode: " + std::to_string(static_cast<int>(m_loopMode)));
         LOG_INFO("  Bone Count: " + std::to_string(GetBoneCount()));
+        LOG_INFO("  Total Keyframes: " + std::to_string(GetKeyframeCount()));
+        LOG_INFO("  Memory Usage: " + std::to_string(GetMemoryUsage()) + " bytes");
         
         for (const auto& [boneName, boneAnim] : m_boneAnimations) {
             if (boneAnim->HasAnyTracks()) {

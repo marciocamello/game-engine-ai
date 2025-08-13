@@ -133,6 +133,15 @@ namespace Animation {
         void RecalculateDuration();
         bool ValidateAnimation() const;
 
+        // Compression and optimization
+        void CompressAnimation(float tolerance = 0.001f);
+        void RemoveRedundantKeyframes(float tolerance = 0.001f);
+        std::shared_ptr<Animation> CreateCompressedCopy(float tolerance = 0.001f) const;
+        
+        // Memory usage analysis
+        size_t GetMemoryUsage() const;
+        size_t GetKeyframeCount() const;
+
         // Serialization support
         struct AnimationData {
             std::string name;

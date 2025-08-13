@@ -770,8 +770,7 @@ namespace Animation {
 
             case Type::BlendTree:
                 if (m_blendTree) {
-                    // This would need to be implemented when BlendTree is available
-                    LOG_WARNING("AnimationState: BlendTree evaluation not yet implemented");
+                    m_blendTree->Evaluate(controller, pose, time);
                 }
                 break;
 
@@ -789,7 +788,7 @@ namespace Animation {
                 return m_animation ? m_animation->GetDuration() : 0.0f;
 
             case Type::BlendTree:
-                // This would need to be implemented when BlendTree is available
+                // BlendTree duration depends on controller parameters, return 0 for now
                 return 0.0f;
 
             case Type::SubStateMachine:

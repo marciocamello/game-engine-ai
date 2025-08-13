@@ -3,6 +3,7 @@
 #include "Animation/Animation.h"
 #include "Animation/Pose.h"
 #include "Animation/AnimationTransition.h"
+#include "Animation/BlendTree.h"
 #include "Core/Math.h"
 #include <string>
 #include <unordered_map>

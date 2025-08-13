@@ -250,10 +250,67 @@ bool TestBasicWorldInitialization() {
 - **Wrong return types**: Test framework errors
 - **Missing exception handling**: Crashes on errors
 
+## INDIVIDUAL TEST DEVELOPMENT - RECOMMENDED WORKFLOW
+
+### For Spec Development and Task Implementation
+
+**RECOMMENDED**: Develop and test one component at a time for faster iteration:
+
+```powershell
+# 1. Compile only the specific test you're working on
+.\scripts\build_unified.bat --tests [TestName]
+
+# Example: Working on AnimationStateMachine
+.\scripts\build_unified.bat --tests AnimationstatemachineTest
+
+# 2. Run only that specific test
+.\build\Release\AnimationstatemachineTest.exe
+
+# 3. Debug and fix until it passes
+# 4. Move to next test
+# 5. When all individual tests pass, run full suite
+.\scripts\run_tests.bat
+```
+
+### Benefits of Individual Test Development
+
+- **Faster compilation**: Only builds what you need (seconds vs minutes)
+- **Focused debugging**: Isolate issues to specific components
+- **Quicker iteration**: Immediate feedback on changes
+- **Better workflow**: Complete one feature at a time
+- **Easier troubleshooting**: Clear error isolation
+
+### Test Name Conversion Rules
+
+File name `tests/unit/test_animation_state_machine.cpp` becomes test name `AnimationstatemachineTest`:
+
+- Remove `test_` prefix
+- Remove `.cpp` extension
+- Convert to PascalCase
+- Add `Test` suffix
+
+Examples:
+
+- `test_physics_engine.cpp` → `PhysicsengineTest`
+- `test_resource_manager.cpp` → `ResourcemanagerTest`
+- `test_shader_compiler.cpp` → `ShadercompilerTest`
+
+### Individual Test Workflow for Specs
+
+1. **Implement feature code** (headers and source)
+2. **Create test file** following naming convention
+3. **Write test functions** using templates above
+4. **Compile individual test**: `.\scripts\build_unified.bat --tests [TestName]`
+5. **Run and debug**: `.\build\Release\[TestName].exe`
+6. **Fix issues** and repeat steps 4-5 until test passes
+7. **Move to next feature/test**
+8. **Final validation**: `.\scripts\run_tests.bat` (all tests)
+
 ## BEFORE COMPLETING ANY TASK WITH TESTS
 
-1. **Build successfully**: `.\scripts\build_unified.bat --tests`
-2. **All tests pass**: `.\scripts\run_tests.bat`
-3. **New tests follow template exactly**
-4. **Output format matches existing tests**
-5. **No compilation warnings for test files**
+1. **Individual tests pass**: Each test compiled and run individually
+2. **Build successfully**: `.\scripts\build_unified.bat --tests`
+3. **All tests pass**: `.\scripts\run_tests.bat`
+4. **New tests follow template exactly**
+5. **Output format matches existing tests**
+6. **No compilation warnings for test files**

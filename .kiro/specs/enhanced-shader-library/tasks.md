@@ -305,7 +305,8 @@
 
 **Windows Development Workflow:**
 
-- Use `.\scripts\build_unified.bat --tests` to build project with enhanced shader library
+- Use `.\scripts\build_unified.bat --tests` to build project
+- Use `.\scripts\build_unified.bat --tests TestName` to build single test
 - Use `build\projects\GameExample\Release\GameExample.exe` to run enhanced GameExample
 - Enhanced shader library will be integrated as optional module in existing architecture
 

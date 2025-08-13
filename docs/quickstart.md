@@ -101,6 +101,17 @@ Math::Vec4 m_color{1.0f, 0.2f, 0.2f, 1.0f}; // Red character
 build_unified.bat --tests
 ```
 
+**💡 Pro Tip**: For faster development when working on specific features, you can compile individual tests:
+
+```cmd
+# Compile only a specific test (much faster)
+.\scripts\build_unified.bat --tests [TestName]
+
+# Example: Test only physics changes
+.\scripts\build_unified.bat --tests PhysicsengineTest
+.\build\Release\PhysicsengineTest.exe
+```
+
 Your character is now red! 🔴
 
 ## 🎮 Try Different Movement Types

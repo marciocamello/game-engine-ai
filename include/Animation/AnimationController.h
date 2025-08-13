@@ -3,6 +3,7 @@
 #include "Animation/Skeleton.h"
 #include "Animation/Animation.h"
 #include "Animation/Pose.h"
+#include "Animation/BlendTree.h"
 #include "Core/Math.h"
 #include <string>
 #include <unordered_map>
@@ -64,17 +65,6 @@ namespace Animation {
         Type type = Type::Generic;
 
         bool IsValid() const;
-    };
-
-    /**
-     * Animation sample for blending multiple animations
-     */
-    struct AnimationSample {
-        std::shared_ptr<Animation> animation;
-        float weight;
-        float time;
-
-        bool IsValid() const { return animation != nullptr && weight > 0.0f; }
     };
 
     /**

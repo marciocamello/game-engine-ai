@@ -64,16 +64,17 @@
     - Create smooth state transitions with configurable blend times
     - _Requirements: 2.2, 2.3, 2.5_
 
-- [ ] 5. Create BlendTree system for animation blending
+- [x] 5. Create BlendTree system for animation blending
 
-  - [ ] 5.1 Implement BlendTree class with 1D and 2D blending
+  - [x] 5.1 Implement BlendTree class with 1D and 2D blending
 
     - Create BlendTree class with multiple blend tree types
     - Add 1D blend tree for simple parameter-based blending
     - Implement 2D blend trees for directional and cartesian blending
     - _Requirements: 3.2, 3.3, 3.6_
 
-  - [ ] 5.2 Add blend tree evaluation and weight calculation
+  - [x] 5.2 Add blend tree evaluation and weight calculation
+
     - Implement blend weight calculation algorithms for different blend tree types
     - Add animation sampling and blending from multiple input animations
     - Create blend tree validation and error checking
@@ -226,3 +227,4 @@
 **Windows Development Workflow:**
 
 - Use `.\scripts\build_unified.bat --tests` to build project
+- Use `.\scripts\build_unified.bat --tests TestName` to build single test

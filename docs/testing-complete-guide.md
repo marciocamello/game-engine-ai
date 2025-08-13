@@ -339,6 +339,37 @@ bool TestPerformance() {
 .\build\Release\ComponentNameTest.exe
 ```
 
+### Individual Test Development (Recommended for Specs)
+
+For faster development and debugging, compile and test one component at a time:
+
+```bash
+# Compile only a specific test (much faster)
+.\scripts\build_unified.bat --tests [TestName]
+
+# Example: Compile only AnimationStateMachine test
+.\scripts\build_unified.bat --tests AnimationstatemachineTest
+
+# Run the specific test
+.\build\Release\AnimationstatemachineTest.exe
+
+# After all individual tests work, run full suite
+.\scripts\run_tests.bat
+```
+
+**Benefits:**
+
+- **Faster compilation**: Seconds instead of minutes
+- **Focused debugging**: Isolate issues to specific components
+- **Quicker iteration**: Immediate feedback on changes
+- **Better workflow**: Complete one feature at a time
+
+**Test Name Conversion:**
+
+- `test_animation_state_machine.cpp` → `AnimationstatemachineTest`
+- `test_physics_engine.cpp` → `PhysicsengineTest`
+- `test_resource_manager.cpp` → `ResourcemanagerTest`
+
 ### Test Discovery
 
 Tests are automatically discovered by CMake from:

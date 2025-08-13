@@ -69,6 +69,41 @@ build\projects\BasicExample\Release\BasicExample.exe
 # - tests/integration/test_*.cpp -> Integration tests
 ```
 
+### Individual Test Development - RECOMMENDED FOR SPECS
+
+**For spec development and individual task testing, compile and test one at a time:**
+
+```powershell
+# Compile only a specific test (much faster during development)
+.\scripts\build_unified.bat --tests [TestName]
+
+# Example: Compile only the AnimationStateMachine test
+.\scripts\build_unified.bat --tests AnimationstatemachineTest
+
+# Then run the specific test
+.\build\Release\AnimationstatemachineTest.exe
+
+# After all individual tests are working, run full test suite
+.\scripts\run_tests.bat
+```
+
+**Benefits of Individual Test Development:**
+
+- **Faster compilation**: Only builds what you need
+- **Focused testing**: Test specific functionality in isolation
+- **Quicker iteration**: Faster feedback loop during development
+- **Easier debugging**: Isolate issues to specific components
+- **Better workflow**: Complete one test at a time before moving to next
+
+**Recommended Workflow for Specs:**
+
+1. Implement feature code
+2. Create test for that specific feature
+3. Compile only that test: `.\scripts\build_unified.bat --tests [TestName]`
+4. Run and debug that specific test until it passes
+5. Move to next feature/test
+6. When all individual tests pass, run full suite: `.\scripts\run_tests.bat`
+
 ## Test Standards - MANDATORY TO FOLLOW
 
 **FOR COMPLETE TEST STANDARDS AND TEMPLATES**: See testing-standards.md

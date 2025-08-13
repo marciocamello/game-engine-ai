@@ -25,7 +25,7 @@
     - Implement keyframe interpolation with multiple interpolation types
     - _Requirements: 1.2, 1.3, 7.1_
 
-  - [-] 2.2 Add animation sampling and pose evaluation
+  - [x] 2.2 Add animation sampling and pose evaluation
 
     - Implement bone transform sampling at specific time points
     - Add pose evaluation with complete skeleton pose generation

@@ -80,16 +80,17 @@
     - Create blend tree validation and error checking
     - _Requirements: 3.4, 3.5, 3.7_
 
-- [ ] 6. Implement Inverse Kinematics (IK) system
+- [x] 6. Implement Inverse Kinematics (IK) system
 
-  - [ ] 6.1 Create IKSolver base class and TwoBoneIK implementation
+  - [x] 6.1 Create IKSolver base class and TwoBoneIK implementation
 
     - Implement IKSolver base class with common IK functionality
     - Add TwoBoneIK solver for arm and leg IK chains
     - Create IK target setting and constraint management
     - _Requirements: 4.1, 4.2, 4.4_
 
-  - [ ] 6.2 Add FABRIK IK solver and constraint system
+  - [x] 6.2 Add FABRIK IK solver and constraint system
+
     - Implement FABRIK (Forward and Backward Reaching IK) solver
     - Add joint angle constraints and bone length validation
     - Create IK/FK blending for smooth transitions

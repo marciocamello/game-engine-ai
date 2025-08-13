@@ -193,13 +193,13 @@ bool TestAnimationEventIntegration() {
 bool TestAnimationEventHistory() {
     TestOutput::PrintTestStart("animation event history");
 
-    AnimationEventHistory history;
+    GameEngine::Animation::AnimationEventHistory history;
     history.maxHistorySize = 5;
 
     // Add some triggered events
-    AnimationEvent event1("Event1", 0.2f);
-    AnimationEvent event2("Event2", 0.5f);
-    AnimationEvent event3("Event3", 0.8f);
+    GameEngine::Animation::AnimationEvent event1("Event1", 0.2f);
+    GameEngine::Animation::AnimationEvent event2("Event2", 0.5f);
+    GameEngine::Animation::AnimationEvent event3("Event3", 0.8f);
 
     history.AddTriggeredEvent(event1, 0.2f, 0.2f, "TestAnimation");
     history.AddTriggeredEvent(event2, 0.5f, 0.5f, "TestAnimation");
@@ -220,7 +220,7 @@ bool TestAnimationEventHistory() {
 
     // Test history size limit
     for (int i = 0; i < 10; ++i) {
-        AnimationEvent extraEvent("Extra" + std::to_string(i), 0.1f);
+        GameEngine::Animation::AnimationEvent extraEvent("Extra" + std::to_string(i), 0.1f);
         history.AddTriggeredEvent(extraEvent, 0.1f, 0.1f, "TestAnimation");
     }
 
@@ -289,7 +289,7 @@ bool TestEventUtils() {
 bool TestNonLinearEventHandling() {
     TestOutput::PrintTestStart("non-linear event handling");
 
-    AnimationEventManager manager;
+    GameEngine::Animation::AnimationEventManager manager;
 
     // Add events throughout the timeline
     for (int i = 0; i < 10; ++i) {

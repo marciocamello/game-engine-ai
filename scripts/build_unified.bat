@@ -113,24 +113,17 @@ if "%BUILD_ENGINE%"=="OFF" if "%BUILD_PROJECTS%"=="OFF" if "%BUILD_TESTS%"=="OFF
 )
 
 REM Determine build type description
-set BUILD_TYPE_DESC=
-if "%BUILD_ENGINE%"=="ON" set BUILD_TYPE_DESC=%BUILD_TYPE_DESC%Engine
-if "%BUILD_PROJECTS%"=="ON" (
-    if not "%BUILD_TYPE_DESC%"=="" set BUILD_TYPE_DESC=%BUILD_TYPE_DESC% + 
-    if not "%SPECIFIC_PROJECT%"=="" (
-        set BUILD_TYPE_DESC=%BUILD_TYPE_DESC%Project ^(%SPECIFIC_PROJECT%^)
-    ) else (
-        set BUILD_TYPE_DESC=%BUILD_TYPE_DESC%Projects
-    )
-)
-if "%BUILD_TESTS%"=="ON" (
-    if not "%BUILD_TYPE_DESC%"=="" set BUILD_TYPE_DESC=%BUILD_TYPE_DESC% + 
-    if not "%SPECIFIC_TEST%"=="" (
-        set BUILD_TYPE_DESC=%BUILD_TYPE_DESC%Test ^(%SPECIFIC_TEST%^)
-    ) else (
-        set BUILD_TYPE_DESC=%BUILD_TYPE_DESC%Tests
-    )
-)
+set BUILD_TYPE_DESC=Custom Build
+if "%BUILD_ENGINE%"=="ON" if "%BUILD_PROJECTS%"=="ON" if "%BUILD_TESTS%"=="ON" set BUILD_TYPE_DESC=All Components
+if "%BUILD_ENGINE%"=="ON" if "%BUILD_PROJECTS%"=="OFF" if "%BUILD_TESTS%"=="OFF" set BUILD_TYPE_DESC=Engine Only
+if "%BUILD_ENGINE%"=="OFF" if "%BUILD_PROJECTS%"=="ON" if "%BUILD_TESTS%"=="OFF" set BUILD_TYPE_DESC=Projects Only
+if "%BUILD_ENGINE%"=="OFF" if "%BUILD_PROJECTS%"=="OFF" if "%BUILD_TESTS%"=="ON" set BUILD_TYPE_DESC=Tests Only
+if "%BUILD_ENGINE%"=="ON" if "%BUILD_PROJECTS%"=="ON" if "%BUILD_TESTS%"=="OFF" set BUILD_TYPE_DESC=Engine and Projects
+if "%BUILD_ENGINE%"=="ON" if "%BUILD_PROJECTS%"=="OFF" if "%BUILD_TESTS%"=="ON" set BUILD_TYPE_DESC=Engine and Tests
+if "%BUILD_ENGINE%"=="OFF" if "%BUILD_PROJECTS%"=="ON" if "%BUILD_TESTS%"=="ON" set BUILD_TYPE_DESC=Projects and Tests
+
+if not "%SPECIFIC_PROJECT%"=="" set BUILD_TYPE_DESC=Project ^(%SPECIFIC_PROJECT%^)
+if not "%SPECIFIC_TEST%"=="" set BUILD_TYPE_DESC=Test ^(%SPECIFIC_TEST%^)
 
 :setup_cmake_args
 REM Setup CMake arguments based on what to build
@@ -188,12 +181,41 @@ echo.
 echo Building...
 cmake --build . --config %BUILD_TYPE%
 if errorlevel 1 (
-    echo ERROR: Build failed!
+    echo.
+    echo ========================================
+    echo BUILD FAILED!
+    echo ========================================
+    echo.
+    echo The build encountered compilation errors.
+    echo Check the output above for specific error details.
+    echo.
+    if not "%SPECIFIC_TEST%"=="" (
+        echo Failed to build test: %SPECIFIC_TEST%
+        echo This usually means:
+        echo   - Missing implementation files
+        echo   - Compilation errors in test code
+        echo   - Missing dependencies or headers
+    )
     cd ..
     exit /b 1
 )
 
 cd ..
+
+REM Verify build results
+if "%BUILD_TESTS%"=="ON" if not "%SPECIFIC_TEST%"=="" (
+    if not exist "build\%BUILD_TYPE%\%SPECIFIC_TEST%.exe" (
+        echo.
+        echo ========================================
+        echo BUILD VERIFICATION FAILED!
+        echo ========================================
+        echo.
+        echo Expected executable not found: build\%BUILD_TYPE%\%SPECIFIC_TEST%.exe
+        echo The build may have completed with errors.
+        echo.
+        exit /b 1
+    )
+)
 
 REM Success message with file locations
 echo.
@@ -254,7 +276,9 @@ echo   build_unified.bat                                    # Build everything
 echo   build_unified.bat --engine                          # Engine only
 echo   build_unified.bat --projects                        # Projects only
 echo   build_unified.bat --tests                           # All tests
-echo   build_unified.bat --tests ModuleerrorhandlingintegrationIntegrationTest  # Specific test only
+echo   build_unified.bat --tests MathTest                  # Specific test only
+echo   build_unified.bat --tests QuaternionTest            # Another specific test
+echo   build_unified.bat --tests AnimationstatemachineTest # Complex test name example
 echo   build_unified.bat --engine --tests                  # Engine + Tests
 echo   build_unified.bat --engine --projects               # Engine + Projects
 echo   build_unified.bat --project GameExample             # Specific project only
@@ -276,6 +300,11 @@ echo   build_unified.bat --project GameExample  # Test specific project
 echo   build_unified.bat --debug --all          # Full debug build
 echo   build_unified.bat --coverage             # Coverage analysis
 echo   build_unified.bat --all                  # Full build for release
+echo.
+echo   # Individual test development (RECOMMENDED for specs)
+echo   build_unified.bat --tests MathTest       # Build only MathTest (fast)
+echo   build_unified.bat --tests QuaternionTest # Build only QuaternionTest
+echo   build_unified.bat --tests AnimationstatemachineTest # Complex test name
 echo.
 echo   # CI/CD scenarios
 echo   build_unified.bat --engine               # Build engine artifact

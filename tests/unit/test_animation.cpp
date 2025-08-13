@@ -15,7 +15,7 @@ using namespace GameEngine::Testing;
 bool TestAnimationCreation() {
     TestOutput::PrintTestStart("animation creation and keyframe management");
 
-    SkeletalAnimation animation("TestAnimation");
+    GameEngine::Animation::SkeletalAnimation animation("TestAnimation");
     EXPECT_EQUAL(animation.GetName(), "TestAnimation");
     EXPECT_EQUAL(animation.GetDuration(), 0.0f);
     EXPECT_TRUE(animation.IsEmpty());
@@ -47,7 +47,7 @@ bool TestAnimationCreation() {
 bool TestKeyframeInterpolation() {
     TestOutput::PrintTestStart("keyframe interpolation and sampling");
 
-    SkeletalAnimation animation("InterpolationTest");
+    GameEngine::Animation::SkeletalAnimation animation("InterpolationTest");
 
     // Create simple position animation
     Math::Vec3 startPos(0.0f, 0.0f, 0.0f);
@@ -83,7 +83,7 @@ bool TestKeyframeInterpolation() {
 bool TestAnimationLoopModes() {
     TestOutput::PrintTestStart("animation loop modes");
 
-    SkeletalAnimation animation("LoopTest");
+    GameEngine::Animation::SkeletalAnimation animation("LoopTest");
     animation.SetDuration(2.0f);
 
     // Test different loop modes
@@ -211,7 +211,7 @@ bool TestAnimationSerialization() {
     TestOutput::PrintTestStart("animation serialization");
 
     // Create original animation
-    SkeletalAnimation originalAnimation("SerializationTest");
+    GameEngine::Animation::SkeletalAnimation originalAnimation("SerializationTest");
     originalAnimation.SetDuration(2.0f);
     originalAnimation.SetFrameRate(60.0f);
     originalAnimation.SetLoopMode(LoopMode::Loop);
@@ -227,7 +227,7 @@ bool TestAnimationSerialization() {
     EXPECT_EQUAL(data.bones.size(), static_cast<size_t>(1));
 
     // Deserialize
-    SkeletalAnimation newAnimation;
+    GameEngine::Animation::SkeletalAnimation newAnimation;
     EXPECT_TRUE(newAnimation.Deserialize(data));
 
     // Verify deserialized animation

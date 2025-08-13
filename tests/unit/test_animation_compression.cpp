@@ -14,7 +14,7 @@ bool TestAnimationKeyframeOptimization() {
     TestOutput::PrintTestStart("animation keyframe optimization");
 
     // Create test animation with redundant keyframes
-    SkeletalAnimation animation("test_animation");
+    GameEngine::Animation::SkeletalAnimation animation("test_animation");
     animation.SetDuration(3.0f);
     animation.SetFrameRate(30.0f);
 
@@ -49,7 +49,7 @@ bool TestAnimationCompression() {
     TestOutput::PrintTestStart("animation compression");
 
     // Create test animation
-    SkeletalAnimation original("original_animation");
+    GameEngine::Animation::SkeletalAnimation original("original_animation");
     original.SetDuration(2.0f);
     original.SetFrameRate(30.0f);
 
@@ -95,15 +95,15 @@ bool TestAnimationCompressor() {
     TestOutput::PrintTestStart("animation compressor");
 
     // Create test animation
-    SkeletalAnimation original("test_animation");
+    GameEngine::Animation::SkeletalAnimation original("test_animation");
     original.SetDuration(2.0f);
     original.AddPositionKeyframe("bone1", 0.0f, Math::Vec3(0.0f, 0.0f, 0.0f));
     original.AddPositionKeyframe("bone1", 1.0f, Math::Vec3(1.0f, 0.0f, 0.0f));
     original.AddPositionKeyframe("bone1", 2.0f, Math::Vec3(2.0f, 0.0f, 0.0f));
 
     // Create compressor
-    AnimationCompressor compressor;
-    CompressionSettings settings;
+    GameEngine::Animation::AnimationCompressor compressor;
+    GameEngine::Animation::CompressionSettings settings;
     settings.positionTolerance = 0.01f;
     settings.enableKeyframeReduction = true;
 
@@ -128,8 +128,8 @@ bool TestAnimationStreamingManager() {
     TestOutput::PrintTestStart("animation streaming manager");
 
     // Create streaming manager
-    AnimationStreamingManager streamingManager;
-    StreamingConfig config;
+    GameEngine::Animation::AnimationStreamingManager streamingManager;
+    GameEngine::Animation::StreamingConfig config;
     config.memoryLimitBytes = 10 * 1024 * 1024; // 10MB
     config.maxConcurrentLoads = 2;
 
@@ -168,10 +168,10 @@ bool TestAnimationStreamingManager() {
 bool TestAnimationDataCache() {
     TestOutput::PrintTestStart("animation data cache");
 
-    Animation::AnimationDataCache cache;
+    GameEngine::Animation::AnimationDataCache cache;
 
     // Create test animation
-    auto animation = std::make_shared<SkeletalAnimation>("cached_animation");
+    auto animation = std::make_shared<GameEngine::Animation::SkeletalAnimation>("cached_animation");
     animation->SetDuration(1.0f);
 
     // Cache animation
@@ -208,12 +208,12 @@ bool TestAnimationPreloader() {
     TestOutput::PrintTestStart("animation preloader");
 
     // Create streaming manager
-    AnimationStreamingManager streamingManager;
-    StreamingConfig config;
+    GameEngine::Animation::AnimationStreamingManager streamingManager;
+    GameEngine::Animation::StreamingConfig config;
     EXPECT_TRUE(streamingManager.Initialize(config));
 
     // Create preloader
-    AnimationPreloader preloader(&streamingManager);
+    GameEngine::Animation::AnimationPreloader preloader(&streamingManager);
 
     // Record some transitions
     preloader.RecordAnimationTransition("idle", "walk");

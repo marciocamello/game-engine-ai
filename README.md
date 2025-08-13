@@ -43,8 +43,6 @@ The unified build system supports flexible build configurations:
 .\scripts\build_unified.bat --debug --all     # Full debug build
 ```
 
-For complete build system documentation, see **[Hierarchical Build System](docs/hierarchical-build-system.md)**.
-
 ## 🤖 Built with AI
 
 This game engine is being developed using cutting-edge AI development tools and methodologies:
@@ -159,7 +157,6 @@ setup_dependencies.bat
 - **[IDE Integration](docs/ide.md)** - Visual Studio and VS Code setup
 - **[Module Development Guide](docs/module-development-guide.md)** - Creating custom engine modules
 - **[Module Development Best Practices](docs/module-development-best-practices.md)** - Advanced module patterns
-- **[Hierarchical Build System](docs/hierarchical-build-system.md)** - Advanced build configurations
 
 ### 📋 Project Management
 

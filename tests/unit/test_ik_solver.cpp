@@ -7,9 +7,9 @@ using namespace GameEngine::Testing;
 using namespace GameEngine::Animation;
 
 // Simple test skeleton for IK testing
-class TestSkeleton : public Skeleton {
+class TestSkeleton : public AnimationSkeleton {
 public:
-    TestSkeleton() : Skeleton("TestSkeleton") {
+    TestSkeleton() : AnimationSkeleton("TestSkeleton") {
         // Create simple bone hierarchy for testing
         for (int i = 0; i < 4; ++i) {
             std::string boneName = "bone" + std::to_string(i);

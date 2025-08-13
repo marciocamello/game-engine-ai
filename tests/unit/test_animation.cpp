@@ -15,7 +15,7 @@ using namespace GameEngine::Testing;
 bool TestAnimationCreation() {
     TestOutput::PrintTestStart("animation creation and keyframe management");
 
-    Animation animation("TestAnimation");
+    SkeletalAnimation animation("TestAnimation");
     EXPECT_EQUAL(animation.GetName(), "TestAnimation");
     EXPECT_EQUAL(animation.GetDuration(), 0.0f);
     EXPECT_TRUE(animation.IsEmpty());
@@ -47,7 +47,7 @@ bool TestAnimationCreation() {
 bool TestKeyframeInterpolation() {
     TestOutput::PrintTestStart("keyframe interpolation and sampling");
 
-    Animation animation("InterpolationTest");
+    SkeletalAnimation animation("InterpolationTest");
 
     // Create simple position animation
     Math::Vec3 startPos(0.0f, 0.0f, 0.0f);
@@ -83,7 +83,7 @@ bool TestKeyframeInterpolation() {
 bool TestAnimationLoopModes() {
     TestOutput::PrintTestStart("animation loop modes");
 
-    Animation animation("LoopTest");
+    SkeletalAnimation animation("LoopTest");
     animation.SetDuration(2.0f);
 
     // Test different loop modes
@@ -111,7 +111,7 @@ bool TestPoseCreation() {
     TestOutput::PrintTestStart("pose creation and bone transforms");
 
     // Create skeleton
-    auto skeleton = std::make_shared<Skeleton>("TestSkeleton");
+    auto skeleton = std::make_shared<AnimationSkeleton>("TestSkeleton");
     auto rootBone = skeleton->CreateBone("Root");
     auto childBone = skeleton->CreateBone("Child");
     skeleton->SetBoneParent("Child", "Root");
@@ -145,7 +145,7 @@ bool TestPoseBlending() {
     TestOutput::PrintTestStart("pose blending");
 
     // Create skeleton
-    auto skeleton = std::make_shared<Skeleton>("BlendSkeleton");
+    auto skeleton = std::make_shared<AnimationSkeleton>("BlendSkeleton");
     auto bone = skeleton->CreateBone("TestBone");
 
     // Create two poses
@@ -183,11 +183,11 @@ bool TestPoseEvaluation() {
     TestOutput::PrintTestStart("pose evaluation from animation");
 
     // Create skeleton
-    auto skeleton = std::make_shared<Skeleton>("EvalSkeleton");
+    auto skeleton = std::make_shared<AnimationSkeleton>("EvalSkeleton");
     auto bone = skeleton->CreateBone("TestBone");
 
     // Create animation
-    Animation animation("EvalAnimation");
+    SkeletalAnimation animation("EvalAnimation");
     animation.AddPositionKeyframe("TestBone", 0.0f, Math::Vec3(0.0f, 0.0f, 0.0f));
     animation.AddPositionKeyframe("TestBone", 1.0f, Math::Vec3(5.0f, 0.0f, 0.0f));
 
@@ -211,7 +211,7 @@ bool TestAnimationSerialization() {
     TestOutput::PrintTestStart("animation serialization");
 
     // Create original animation
-    Animation originalAnimation("SerializationTest");
+    SkeletalAnimation originalAnimation("SerializationTest");
     originalAnimation.SetDuration(2.0f);
     originalAnimation.SetFrameRate(60.0f);
     originalAnimation.SetLoopMode(LoopMode::Loop);
@@ -227,14 +227,14 @@ bool TestAnimationSerialization() {
     EXPECT_EQUAL(data.bones.size(), static_cast<size_t>(1));
 
     // Deserialize
-    Animation newAnimation;
+    SkeletalAnimation newAnimation;
     EXPECT_TRUE(newAnimation.Deserialize(data));
 
     // Verify deserialized animation
     EXPECT_EQUAL(newAnimation.GetName(), "SerializationTest");
     EXPECT_NEARLY_EQUAL(newAnimation.GetDuration(), 2.0f);
     EXPECT_NEARLY_EQUAL(newAnimation.GetFrameRate(), 60.0f);
-    EXPECT_EQUAL(newAnimation.GetLoopMode(), LoopMode::Loop);
+    EXPECT_EQUAL(static_cast<int>(newAnimation.GetLoopMode()), static_cast<int>(LoopMode::Loop));
     EXPECT_TRUE(newAnimation.HasBone("Bone1"));
 
     TestOutput::PrintTestPass("animation serialization");

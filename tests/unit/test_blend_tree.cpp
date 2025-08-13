@@ -51,13 +51,13 @@ bool TestBlendTree1DMotions() {
     blendTree.SetParameter("Speed");
 
     // Create test animations
-    auto idleAnim = std::make_shared<GameEngine::Animation::Animation>("Idle");
+    auto idleAnim = std::make_shared<GameEngine::Animation::SkeletalAnimation>("Idle");
     idleAnim->SetDuration(2.0f);
     
-    auto walkAnim = std::make_shared<GameEngine::Animation::Animation>("Walk");
+    auto walkAnim = std::make_shared<GameEngine::Animation::SkeletalAnimation>("Walk");
     walkAnim->SetDuration(1.5f);
     
-    auto runAnim = std::make_shared<GameEngine::Animation::Animation>("Run");
+    auto runAnim = std::make_shared<GameEngine::Animation::SkeletalAnimation>("Run");
     runAnim->SetDuration(1.0f);
 
     // Add motions with thresholds
@@ -92,11 +92,11 @@ bool TestBlendTree2DMotions() {
     blendTree.SetParameters("VelocityX", "VelocityY");
 
     // Create test animations
-    auto idleAnim = std::make_shared<GameEngine::Animation::Animation>("Idle");
-    auto walkForwardAnim = std::make_shared<GameEngine::Animation::Animation>("WalkForward");
-    auto walkBackwardAnim = std::make_shared<GameEngine::Animation::Animation>("WalkBackward");
-    auto strafeLeftAnim = std::make_shared<GameEngine::Animation::Animation>("StrafeLeft");
-    auto strafeRightAnim = std::make_shared<GameEngine::Animation::Animation>("StrafeRight");
+    auto idleAnim = std::make_shared<GameEngine::Animation::SkeletalAnimation>("Idle");
+    auto walkForwardAnim = std::make_shared<GameEngine::Animation::SkeletalAnimation>("WalkForward");
+    auto walkBackwardAnim = std::make_shared<GameEngine::Animation::SkeletalAnimation>("WalkBackward");
+    auto strafeLeftAnim = std::make_shared<GameEngine::Animation::SkeletalAnimation>("StrafeLeft");
+    auto strafeRightAnim = std::make_shared<GameEngine::Animation::SkeletalAnimation>("StrafeRight");
 
     // Add motions with 2D positions
     blendTree.AddMotion(idleAnim, Math::Vec2(0.0f, 0.0f));
@@ -130,7 +130,7 @@ bool TestBlendTreeValidation() {
 
     // Test blend tree without parameters
     BlendTree noParamTree(BlendTree::Type::Simple1D);
-    auto testAnim = std::make_shared<GameEngine::Animation::Animation>("Test");
+    auto testAnim = std::make_shared<GameEngine::Animation::SkeletalAnimation>("Test");
     noParamTree.AddMotion(testAnim, 0.0f);
     EXPECT_FALSE(noParamTree.Validate());
 
@@ -158,7 +158,7 @@ bool TestBlendTreeWeightCalculation() {
     TestOutput::PrintTestStart("blend tree weight calculation");
 
     // Create a simple animation controller for testing
-    auto skeleton = std::make_shared<Skeleton>();
+    auto skeleton = std::make_shared<AnimationSkeleton>();
     auto rootBone = std::make_shared<Bone>("Root", 0);
     skeleton->AddBone(rootBone);
     
@@ -169,9 +169,9 @@ bool TestBlendTreeWeightCalculation() {
     BlendTree blendTree1D(BlendTree::Type::Simple1D);
     blendTree1D.SetParameter("Speed");
 
-    auto idleAnim = std::make_shared<GameEngine::Animation::Animation>("Idle");
-    auto walkAnim = std::make_shared<GameEngine::Animation::Animation>("Walk");
-    auto runAnim = std::make_shared<GameEngine::Animation::Animation>("Run");
+    auto idleAnim = std::make_shared<GameEngine::Animation::SkeletalAnimation>("Idle");
+    auto walkAnim = std::make_shared<GameEngine::Animation::SkeletalAnimation>("Walk");
+    auto runAnim = std::make_shared<GameEngine::Animation::SkeletalAnimation>("Run");
 
     blendTree1D.AddMotion(idleAnim, 0.0f);
     blendTree1D.AddMotion(walkAnim, 2.0f);
@@ -207,7 +207,7 @@ bool TestBlendTreeWeightCalculation() {
 bool TestBlendTreeDuration() {
     TestOutput::PrintTestStart("blend tree duration");
 
-    auto skeleton = std::make_shared<Skeleton>();
+    auto skeleton = std::make_shared<AnimationSkeleton>();
     auto rootBone = std::make_shared<Bone>("Root", 0);
     skeleton->AddBone(rootBone);
     
@@ -218,13 +218,13 @@ bool TestBlendTreeDuration() {
     blendTree.SetParameter("Speed");
 
     // Create animations with different durations
-    auto shortAnim = std::make_shared<GameEngine::Animation::Animation>("Short");
+    auto shortAnim = std::make_shared<GameEngine::Animation::SkeletalAnimation>("Short");
     shortAnim->SetDuration(1.0f);
     
-    auto mediumAnim = std::make_shared<GameEngine::Animation::Animation>("Medium");
+    auto mediumAnim = std::make_shared<GameEngine::Animation::SkeletalAnimation>("Medium");
     mediumAnim->SetDuration(2.5f);
     
-    auto longAnim = std::make_shared<GameEngine::Animation::Animation>("Long");
+    auto longAnim = std::make_shared<GameEngine::Animation::SkeletalAnimation>("Long");
     longAnim->SetDuration(4.0f);
 
     blendTree.AddMotion(shortAnim, 0.0f);
@@ -254,7 +254,7 @@ bool TestChildBlendTrees() {
     auto childTree = std::make_shared<BlendTree>(BlendTree::Type::Simple1D);
     childTree->SetParameter("SubSpeed");
 
-    auto testAnim = std::make_shared<GameEngine::Animation::Animation>("Test");
+    auto testAnim = std::make_shared<GameEngine::Animation::SkeletalAnimation>("Test");
     childTree->AddMotion(testAnim, 0.0f);
 
     // Add child tree to parent

@@ -87,7 +87,7 @@ bool TestAnimationTransitionConditions() {
     TestOutput::PrintTestStart("animation transition conditions");
 
     // Create skeleton and controller for testing
-    auto skeleton = std::make_shared<Skeleton>();
+    auto skeleton = std::make_shared<AnimationSkeleton>();
     auto rootBone = skeleton->CreateBone("root", Math::Mat4(1.0f));
     skeleton->AddBone(rootBone);
 
@@ -189,7 +189,7 @@ bool TestStateMachineExecution() {
     TestOutput::PrintTestStart("state machine execution");
 
     // Create skeleton and controller
-    auto skeleton = std::make_shared<Skeleton>();
+    auto skeleton = std::make_shared<AnimationSkeleton>();
     auto rootBone = skeleton->CreateBone("root", Math::Mat4(1.0f));
     skeleton->AddBone(rootBone);
 
@@ -243,7 +243,7 @@ bool TestStateMachineValidation() {
     auto idleState = std::make_shared<AnimationState>("Idle", AnimationState::Type::Single);
     
     // Create a dummy animation for the state to make it valid
-    auto animation = std::make_shared<GameEngine::Animation::Animation>("IdleAnimation");
+    auto animation = std::make_shared<GameEngine::Animation::SkeletalAnimation>("IdleAnimation");
     idleState->SetAnimation(animation);
     
     stateMachine->AddState(idleState);

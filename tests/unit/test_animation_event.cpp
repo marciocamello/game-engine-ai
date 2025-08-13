@@ -148,7 +148,7 @@ bool TestEventTriggering() {
 bool TestAnimationEventIntegration() {
     TestOutput::PrintTestStart("animation event integration");
 
-    GameEngine::Animation::Animation animation("TestAnimation");
+    GameEngine::Animation::SkeletalAnimation animation("TestAnimation");
     animation.SetDuration(2.0f);
 
     // Add events to animation (using normalized time 0-1)

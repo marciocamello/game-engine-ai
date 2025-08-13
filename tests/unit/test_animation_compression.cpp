@@ -14,7 +14,7 @@ bool TestAnimationKeyframeOptimization() {
     TestOutput::PrintTestStart("animation keyframe optimization");
 
     // Create test animation with redundant keyframes
-    Animation::Animation animation("test_animation");
+    SkeletalAnimation animation("test_animation");
     animation.SetDuration(3.0f);
     animation.SetFrameRate(30.0f);
 
@@ -49,7 +49,7 @@ bool TestAnimationCompression() {
     TestOutput::PrintTestStart("animation compression");
 
     // Create test animation
-    Animation::Animation original("original_animation");
+    SkeletalAnimation original("original_animation");
     original.SetDuration(2.0f);
     original.SetFrameRate(30.0f);
 
@@ -95,15 +95,15 @@ bool TestAnimationCompressor() {
     TestOutput::PrintTestStart("animation compressor");
 
     // Create test animation
-    Animation::Animation original("test_animation");
+    SkeletalAnimation original("test_animation");
     original.SetDuration(2.0f);
     original.AddPositionKeyframe("bone1", 0.0f, Math::Vec3(0.0f, 0.0f, 0.0f));
     original.AddPositionKeyframe("bone1", 1.0f, Math::Vec3(1.0f, 0.0f, 0.0f));
     original.AddPositionKeyframe("bone1", 2.0f, Math::Vec3(2.0f, 0.0f, 0.0f));
 
     // Create compressor
-    Animation::AnimationCompressor compressor;
-    Animation::CompressionSettings settings;
+    AnimationCompressor compressor;
+    CompressionSettings settings;
     settings.positionTolerance = 0.01f;
     settings.enableKeyframeReduction = true;
 
@@ -128,8 +128,8 @@ bool TestAnimationStreamingManager() {
     TestOutput::PrintTestStart("animation streaming manager");
 
     // Create streaming manager
-    Animation::AnimationStreamingManager streamingManager;
-    Animation::StreamingConfig config;
+    AnimationStreamingManager streamingManager;
+    StreamingConfig config;
     config.memoryLimitBytes = 10 * 1024 * 1024; // 10MB
     config.maxConcurrentLoads = 2;
 
@@ -171,7 +171,7 @@ bool TestAnimationDataCache() {
     Animation::AnimationDataCache cache;
 
     // Create test animation
-    auto animation = std::make_shared<Animation::Animation>("cached_animation");
+    auto animation = std::make_shared<SkeletalAnimation>("cached_animation");
     animation->SetDuration(1.0f);
 
     // Cache animation
@@ -208,12 +208,12 @@ bool TestAnimationPreloader() {
     TestOutput::PrintTestStart("animation preloader");
 
     // Create streaming manager
-    Animation::AnimationStreamingManager streamingManager;
-    Animation::StreamingConfig config;
+    AnimationStreamingManager streamingManager;
+    StreamingConfig config;
     EXPECT_TRUE(streamingManager.Initialize(config));
 
     // Create preloader
-    Animation::AnimationPreloader preloader(&streamingManager);
+    AnimationPreloader preloader(&streamingManager);
 
     // Record some transitions
     preloader.RecordAnimationTransition("idle", "walk");

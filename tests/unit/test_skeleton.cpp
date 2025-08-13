@@ -14,7 +14,7 @@ using namespace GameEngine::Testing;
 bool TestSkeletonCreation() {
     TestOutput::PrintTestStart("skeleton creation and bone management");
 
-    Skeleton skeleton("TestSkeleton");
+    AnimationSkeleton skeleton("TestSkeleton");
     EXPECT_EQUAL(skeleton.GetName(), "TestSkeleton");
     EXPECT_EQUAL(skeleton.GetBoneCount(), static_cast<size_t>(0));
 
@@ -50,7 +50,7 @@ bool TestSkeletonCreation() {
 bool TestBoneTransformCalculations() {
     TestOutput::PrintTestStart("bone transform calculations");
 
-    Skeleton skeleton("TransformTest");
+    AnimationSkeleton skeleton("TransformTest");
 
     // Create simple hierarchy: Root -> Child -> Grandchild
     auto root = skeleton.CreateBone("Root");
@@ -92,7 +92,7 @@ bool TestBoneTransformCalculations() {
 bool TestSkinningMatrixGeneration() {
     TestOutput::PrintTestStart("skinning matrix generation");
 
-    Skeleton skeleton("SkinningTest");
+    AnimationSkeleton skeleton("SkinningTest");
 
     // Create bones
     auto bone1 = skeleton.CreateBone("Bone1");
@@ -139,7 +139,7 @@ bool TestSkinningMatrixGeneration() {
 bool TestSkeletonValidation() {
     TestOutput::PrintTestStart("skeleton hierarchy validation");
 
-    Skeleton skeleton("ValidationTest");
+    AnimationSkeleton skeleton("ValidationTest");
 
     // Create valid hierarchy
     auto root = skeleton.CreateBone("Root");
@@ -172,7 +172,7 @@ bool TestSkeletonSerialization() {
     TestOutput::PrintTestStart("skeleton serialization");
 
     // Create original skeleton
-    Skeleton originalSkeleton("SerializationTest");
+    AnimationSkeleton originalSkeleton("SerializationTest");
     auto root = originalSkeleton.CreateBone("Root");
     auto child = originalSkeleton.CreateBone("Child");
     originalSkeleton.SetBoneParent("Child", "Root");
@@ -186,7 +186,7 @@ bool TestSkeletonSerialization() {
     EXPECT_EQUAL(data.boneNames.size(), static_cast<size_t>(2));
 
     // Create new skeleton and deserialize
-    Skeleton newSkeleton;
+    AnimationSkeleton newSkeleton;
     EXPECT_TRUE(newSkeleton.Deserialize(data));
 
     // Verify deserialized skeleton

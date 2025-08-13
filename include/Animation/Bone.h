@@ -12,7 +12,7 @@ namespace Animation {
      * Represents a single bone in a skeletal hierarchy
      * Each bone has a transform, parent-child relationships, and bind pose information
      */
-    class Bone {
+    class Bone : public std::enable_shared_from_this<Bone> {
     public:
         Bone(const std::string& name, int32_t id);
         ~Bone() = default;

@@ -9,6 +9,9 @@
 namespace GameEngine {
 namespace Animation {
 
+    // Forward declarations
+    class Animation;
+
     /**
      * Represents a single bone's transform at a specific time
      */

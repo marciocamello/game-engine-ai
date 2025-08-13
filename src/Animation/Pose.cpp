@@ -2,6 +2,7 @@
 #include "Animation/Animation.h"
 #include "Core/Logger.h"
 #include <algorithm>
+#include <functional>
 
 namespace GameEngine {
 namespace Animation {

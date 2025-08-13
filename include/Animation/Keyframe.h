@@ -2,6 +2,7 @@
 
 #include "Core/Math.h"
 #include <vector>
+#include <string>
 
 namespace GameEngine {
 namespace Animation {

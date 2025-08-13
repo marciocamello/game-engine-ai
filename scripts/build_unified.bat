@@ -28,11 +28,13 @@ if "%1"=="--engine" (
 )
 if "%1"=="--projects" (
     set BUILD_PROJECTS=ON
+    set SPECIFIC_PROJECT=
     shift
     goto :parse_args
 )
 if "%1"=="--tests" (
     set BUILD_TESTS=ON
+    set SPECIFIC_TEST=
     REM Check if next argument is a test name (doesn't start with --)
     if not "%2"=="" (
         echo %2 | findstr /r "^--" >nul

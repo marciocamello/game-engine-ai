@@ -15,10 +15,10 @@ namespace Animation {
      * Represents a complete skeletal hierarchy for character animation
      * Manages bones, their relationships, and provides utilities for animation
      */
-    class Skeleton {
+    class AnimationSkeleton {
     public:
-        Skeleton(const std::string& name = "Skeleton");
-        ~Skeleton() = default;
+        AnimationSkeleton(const std::string& name = "AnimationSkeleton");
+        ~AnimationSkeleton() = default;
 
         // Basic properties
         const std::string& GetName() const { return m_name; }

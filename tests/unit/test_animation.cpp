@@ -1,7 +1,7 @@
 #include "TestUtils.h"
-#include "Animation/Animation.h"
+#include "Animation/SkeletalAnimation.h"
 #include "Animation/Pose.h"
-#include "Animation/Skeleton.h"
+#include "Animation/AnimationSkeleton.h"
 #include "Core/Logger.h"
 
 using namespace GameEngine;

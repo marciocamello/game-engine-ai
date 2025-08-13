@@ -33,7 +33,7 @@ bool TwoBoneIK::IsValidConfiguration() const {
     return m_upperBone >= 0 && m_lowerBone >= 0 && m_endEffector >= 0;
 }
 
-bool TwoBoneIK::Solve(Skeleton& skeleton) {
+bool TwoBoneIK::Solve(AnimationSkeleton& skeleton) {
     if (!IsValidConfiguration()) {
         LOG_ERROR("TwoBoneIK: Invalid configuration - all bones must be set");
         return false;
@@ -60,7 +60,7 @@ bool TwoBoneIK::Solve(Skeleton& skeleton) {
     return true;
 }
 
-void TwoBoneIK::SolveTwoBoneIK(Skeleton& skeleton) {
+void TwoBoneIK::SolveTwoBoneIK(AnimationSkeleton& skeleton) {
     // Get current bone positions
     Math::Vec3 shoulderPos = GetBonePosition(skeleton, m_upperBone);
     Math::Vec3 elbowPos = GetBonePosition(skeleton, m_lowerBone);

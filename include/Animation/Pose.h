@@ -1,6 +1,7 @@
 #pragma once
 
-#include "Animation/Skeleton.h"
+#include "Animation/AnimationSkeleton.h"
+#include "Animation/SkeletalAnimation.h"
 #include "Core/Math.h"
 #include <string>
 #include <unordered_map>
@@ -10,7 +11,7 @@ namespace GameEngine {
 namespace Animation {
 
     // Forward declarations
-    class Animation;
+    class SkeletalAnimation;
 
     /**
      * Represents a single bone's transform at a specific time
@@ -44,11 +45,11 @@ namespace Animation {
     class Pose {
     public:
         Pose() = default;
-        explicit Pose(std::shared_ptr<Skeleton> skeleton);
+        explicit Pose(std::shared_ptr<AnimationSkeleton> skeleton);
 
         // Skeleton association
-        void SetSkeleton(std::shared_ptr<Skeleton> skeleton);
-        std::shared_ptr<Skeleton> GetSkeleton() const { return m_skeleton.lock(); }
+        void SetSkeleton(std::shared_ptr<AnimationSkeleton> skeleton);
+        std::shared_ptr<AnimationSkeleton> GetSkeleton() const { return m_skeleton.lock(); }
         bool HasValidSkeleton() const { return !m_skeleton.expired(); }
 
         // Bone transform access
@@ -100,7 +101,7 @@ namespace Animation {
         void PrintPoseInfo() const;
 
     private:
-        std::weak_ptr<Skeleton> m_skeleton;
+        std::weak_ptr<AnimationSkeleton> m_skeleton;
         std::unordered_map<std::string, BoneTransform> m_boneTransforms;
         std::unordered_map<int32_t, BoneTransform> m_boneTransformsById;
 
@@ -115,29 +116,29 @@ namespace Animation {
     class PoseEvaluator {
     public:
         // Evaluate animation at specific time
-        static Pose EvaluateAnimation(const Animation& animation, float time);
-        static Pose EvaluateAnimation(const Animation& animation, float time, std::shared_ptr<Skeleton> skeleton);
+        static Pose EvaluateAnimation(const SkeletalAnimation& animation, float time);
+        static Pose EvaluateAnimation(const SkeletalAnimation& animation, float time, std::shared_ptr<AnimationSkeleton> skeleton);
 
         // Evaluate multiple animations with blending
         struct AnimationLayer {
-            const Animation* animation;
+            const SkeletalAnimation* animation;
             float time;
             float weight;
             bool additive = false;
         };
 
-        static Pose EvaluateAnimationLayers(const std::vector<AnimationLayer>& layers, std::shared_ptr<Skeleton> skeleton);
+        static Pose EvaluateAnimationLayers(const std::vector<AnimationLayer>& layers, std::shared_ptr<AnimationSkeleton> skeleton);
 
         // Pose utilities
-        static void ApplyPoseToSkeleton(const Pose& pose, std::shared_ptr<Skeleton> skeleton);
-        static Pose ExtractPoseFromSkeleton(std::shared_ptr<Skeleton> skeleton);
+        static void ApplyPoseToSkeleton(const Pose& pose, std::shared_ptr<AnimationSkeleton> skeleton);
+        static Pose ExtractPoseFromSkeleton(std::shared_ptr<AnimationSkeleton> skeleton);
 
         // Transform space conversion
         static void ConvertLocalToWorld(Pose& pose);
         static void ConvertWorldToLocal(Pose& pose);
 
     private:
-        static BoneTransform EvaluateBoneAnimation(const Animation& animation, const std::string& boneName, float time);
+        static BoneTransform EvaluateBoneAnimation(const SkeletalAnimation& animation, const std::string& boneName, float time);
     };
 
 } // namespace Animation

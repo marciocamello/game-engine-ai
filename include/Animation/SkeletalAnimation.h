@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Animation/Keyframe.h"
-#include "Animation/Skeleton.h"
+#include "Animation/AnimationSkeleton.h"
 #include "Animation/AnimationEvent.h"
 #include "Core/Math.h"
 #include <string>
@@ -40,12 +40,12 @@ namespace Animation {
     };
 
     /**
-     * Complete animation containing all bone tracks and metadata
+     * Complete skeletal animation containing all bone tracks and metadata
      */
-    class Animation {
+    class SkeletalAnimation {
     public:
-        Animation(const std::string& name = "Animation");
-        ~Animation() = default;
+        SkeletalAnimation(const std::string& name = "SkeletalAnimation");
+        ~SkeletalAnimation() = default;
 
         // Basic properties
         const std::string& GetName() const { return m_name; }
@@ -136,7 +136,7 @@ namespace Animation {
         // Compression and optimization
         void CompressAnimation(float tolerance = 0.001f);
         void RemoveRedundantKeyframes(float tolerance = 0.001f);
-        std::shared_ptr<Animation> CreateCompressedCopy(float tolerance = 0.001f) const;
+        std::shared_ptr<SkeletalAnimation> CreateCompressedCopy(float tolerance = 0.001f) const;
         
         // Memory usage analysis
         size_t GetMemoryUsage() const;

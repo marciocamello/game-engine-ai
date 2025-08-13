@@ -1,4 +1,4 @@
-#include "Animation/Animation.h"
+#include "Animation/SkeletalAnimation.h"
 #include "Core/Logger.h"
 #include <algorithm>
 #include <cmath>
@@ -6,21 +6,21 @@
 namespace GameEngine {
 namespace Animation {
 
-    Animation::Animation(const std::string& name)
+    SkeletalAnimation::SkeletalAnimation(const std::string& name)
         : m_name(name), m_eventManager(std::make_unique<AnimationEventManager>()) {
     }
 
-    BoneAnimation* Animation::GetBoneAnimation(const std::string& boneName) {
+    BoneAnimation* SkeletalAnimation::GetBoneAnimation(const std::string& boneName) {
         auto it = m_boneAnimations.find(boneName);
         return (it != m_boneAnimations.end()) ? it->second.get() : nullptr;
     }
 
-    const BoneAnimation* Animation::GetBoneAnimation(const std::string& boneName) const {
+    const BoneAnimation* SkeletalAnimation::GetBoneAnimation(const std::string& boneName) const {
         auto it = m_boneAnimations.find(boneName);
         return (it != m_boneAnimations.end()) ? it->second.get() : nullptr;
     }
 
-    BoneAnimation* Animation::CreateBoneAnimation(const std::string& boneName) {
+    BoneAnimation* SkeletalAnimation::CreateBoneAnimation(const std::string& boneName) {
         if (GetBoneAnimation(boneName)) {
             LOG_WARNING("Bone animation for '" + boneName + "' already exists");
             return GetBoneAnimation(boneName);
@@ -34,7 +34,7 @@ namespace Animation {
         return ptr;
     }
 
-    bool Animation::RemoveBoneAnimation(const std::string& boneName) {
+    bool SkeletalAnimation::RemoveBoneAnimation(const std::string& boneName) {
         auto it = m_boneAnimations.find(boneName);
         if (it != m_boneAnimations.end()) {
             m_boneAnimations.erase(it);
@@ -43,22 +43,22 @@ namespace Animation {
         return false;
     }
 
-    PositionTrack* Animation::GetPositionTrack(const std::string& boneName) {
+    PositionTrack* SkeletalAnimation::GetPositionTrack(const std::string& boneName) {
         auto* boneAnim = GetBoneAnimation(boneName);
         return boneAnim ? boneAnim->positionTrack.get() : nullptr;
     }
 
-    RotationTrack* Animation::GetRotationTrack(const std::string& boneName) {
+    RotationTrack* SkeletalAnimation::GetRotationTrack(const std::string& boneName) {
         auto* boneAnim = GetBoneAnimation(boneName);
         return boneAnim ? boneAnim->rotationTrack.get() : nullptr;
     }
 
-    ScaleTrack* Animation::GetScaleTrack(const std::string& boneName) {
+    ScaleTrack* SkeletalAnimation::GetScaleTrack(const std::string& boneName) {
         auto* boneAnim = GetBoneAnimation(boneName);
         return boneAnim ? boneAnim->scaleTrack.get() : nullptr;
     }
 
-    PositionTrack* Animation::CreatePositionTrack(const std::string& boneName) {
+    PositionTrack* SkeletalAnimation::CreatePositionTrack(const std::string& boneName) {
         auto* boneAnim = GetOrCreateBoneAnimation(boneName);
         if (!boneAnim->positionTrack) {
             boneAnim->positionTrack = std::make_unique<PositionTrack>(boneName, "position");
@@ -66,7 +66,7 @@ namespace Animation {
         return boneAnim->positionTrack.get();
     }
 
-    RotationTrack* Animation::CreateRotationTrack(const std::string& boneName) {
+    RotationTrack* SkeletalAnimation::CreateRotationTrack(const std::string& boneName) {
         auto* boneAnim = GetOrCreateBoneAnimation(boneName);
         if (!boneAnim->rotationTrack) {
             boneAnim->rotationTrack = std::make_unique<RotationTrack>(boneName, "rotation");
@@ -74,7 +74,7 @@ namespace Animation {
         return boneAnim->rotationTrack.get();
     }
 
-    ScaleTrack* Animation::CreateScaleTrack(const std::string& boneName) {
+    ScaleTrack* SkeletalAnimation::CreateScaleTrack(const std::string& boneName) {
         auto* boneAnim = GetOrCreateBoneAnimation(boneName);
         if (!boneAnim->scaleTrack) {
             boneAnim->scaleTrack = std::make_unique<ScaleTrack>(boneName, "scale");
@@ -82,7 +82,7 @@ namespace Animation {
         return boneAnim->scaleTrack.get();
     }
 
-    void Animation::AddPositionKeyframe(const std::string& boneName, float time, const Math::Vec3& position) {
+    void SkeletalAnimation::AddPositionKeyframe(const std::string& boneName, float time, const Math::Vec3& position) {
         auto* track = CreatePositionTrack(boneName);
         track->AddKeyframe(time, position);
         
@@ -92,7 +92,7 @@ namespace Animation {
         }
     }
 
-    void Animation::AddRotationKeyframe(const std::string& boneName, float time, const Math::Quat& rotation) {
+    void SkeletalAnimation::AddRotationKeyframe(const std::string& boneName, float time, const Math::Quat& rotation) {
         auto* track = CreateRotationTrack(boneName);
         track->AddKeyframe(time, rotation);
         
@@ -102,7 +102,7 @@ namespace Animation {
         }
     }
 
-    void Animation::AddScaleKeyframe(const std::string& boneName, float time, const Math::Vec3& scale) {
+    void SkeletalAnimation::AddScaleKeyframe(const std::string& boneName, float time, const Math::Vec3& scale) {
         auto* track = CreateScaleTrack(boneName);
         track->AddKeyframe(time, scale);
         
@@ -112,7 +112,7 @@ namespace Animation {
         }
     }
 
-    Animation::BonePose Animation::SampleBone(const std::string& boneName, float time) const {
+    SkeletalAnimation::BonePose SkeletalAnimation::SampleBone(const std::string& boneName, float time) const {
         BonePose pose;
         
         auto* boneAnim = GetBoneAnimation(boneName);
@@ -144,13 +144,13 @@ namespace Animation {
         return pose;
     }
 
-    std::unordered_map<std::string, Animation::BonePose> Animation::SampleAllBones(float time) const {
+    std::unordered_map<std::string, SkeletalAnimation::BonePose> SkeletalAnimation::SampleAllBones(float time) const {
         std::unordered_map<std::string, BonePose> poses;
         SampleAllBones(time, poses);
         return poses;
     }
 
-    void Animation::SampleAllBones(float time, std::unordered_map<std::string, BonePose>& outPoses) const {
+    void SkeletalAnimation::SampleAllBones(float time, std::unordered_map<std::string, BonePose>& outPoses) const {
         outPoses.clear();
         
         for (const auto& [boneName, boneAnim] : m_boneAnimations) {
@@ -160,14 +160,14 @@ namespace Animation {
         }
     }
 
-    float Animation::NormalizeTime(float time) const {
+    float SkeletalAnimation::NormalizeTime(float time) const {
         if (m_duration <= 0.0f) {
             return 0.0f;
         }
         return time / m_duration;
     }
 
-    float Animation::WrapTime(float time) const {
+    float SkeletalAnimation::WrapTime(float time) const {
         if (m_duration <= 0.0f) {
             return 0.0f;
         }
@@ -199,7 +199,7 @@ namespace Animation {
         }
     }
 
-    std::vector<std::string> Animation::GetAnimatedBoneNames() const {
+    std::vector<std::string> SkeletalAnimation::GetAnimatedBoneNames() const {
         std::vector<std::string> names;
         names.reserve(m_boneAnimations.size());
         
@@ -212,12 +212,12 @@ namespace Animation {
         return names;
     }
 
-    bool Animation::HasBone(const std::string& boneName) const {
+    bool SkeletalAnimation::HasBone(const std::string& boneName) const {
         auto it = m_boneAnimations.find(boneName);
         return it != m_boneAnimations.end() && it->second->HasAnyTracks();
     }
 
-    void Animation::OptimizeKeyframes(float tolerance) {
+    void SkeletalAnimation::OptimizeKeyframes(float tolerance) {
         for (auto& [boneName, boneAnim] : m_boneAnimations) {
             if (boneAnim->positionTrack) {
                 boneAnim->positionTrack->OptimizeKeyframes(tolerance);
@@ -230,17 +230,17 @@ namespace Animation {
             }
         }
         
-        LOG_INFO("Optimized keyframes for animation '" + m_name + "'");
+        LOG_INFO("Optimized keyframes for skeletal animation '" + m_name + "'");
     }
 
-    void Animation::RecalculateDuration() {
+    void SkeletalAnimation::RecalculateDuration() {
         m_duration = CalculateDurationFromTracks();
-        LOG_INFO("Recalculated duration for animation '" + m_name + "': " + std::to_string(m_duration) + "s");
+        LOG_INFO("Recalculated duration for skeletal animation '" + m_name + "': " + std::to_string(m_duration) + "s");
     }
 
-    bool Animation::ValidateAnimation() const {
+    bool SkeletalAnimation::ValidateAnimation() const {
         if (m_boneAnimations.empty()) {
-            LOG_WARNING("Animation '" + m_name + "' has no bone animations");
+            LOG_WARNING("Skeletal animation '" + m_name + "' has no bone animations");
             return false;
         }
 
@@ -253,19 +253,19 @@ namespace Animation {
         }
 
         if (!hasValidTracks) {
-            LOG_WARNING("Animation '" + m_name + "' has no valid tracks");
+            LOG_WARNING("Skeletal animation '" + m_name + "' has no valid tracks");
             return false;
         }
 
         if (m_duration <= 0.0f) {
-            LOG_WARNING("Animation '" + m_name + "' has invalid duration: " + std::to_string(m_duration));
+            LOG_WARNING("Skeletal animation '" + m_name + "' has invalid duration: " + std::to_string(m_duration));
             return false;
         }
 
         return true;
     }
 
-    Animation::AnimationData Animation::Serialize() const {
+    SkeletalAnimation::AnimationData SkeletalAnimation::Serialize() const {
         AnimationData data;
         data.name = m_name;
         data.duration = m_duration;
@@ -304,7 +304,7 @@ namespace Animation {
         return data;
     }
 
-    bool Animation::Deserialize(const AnimationData& data) {
+    bool SkeletalAnimation::Deserialize(const AnimationData& data) {
         // Clear existing data
         m_boneAnimations.clear();
 
@@ -346,8 +346,8 @@ namespace Animation {
         return ValidateAnimation();
     }
 
-    void Animation::CompressAnimation(float tolerance) {
-        LOG_INFO("Compressing animation '" + m_name + "' with tolerance: " + std::to_string(tolerance));
+    void SkeletalAnimation::CompressAnimation(float tolerance) {
+        LOG_INFO("Compressing skeletal animation '" + m_name + "' with tolerance: " + std::to_string(tolerance));
         
         size_t originalKeyframes = GetKeyframeCount();
         
@@ -367,14 +367,14 @@ namespace Animation {
         float compressionRatio = originalKeyframes > 0 ? 
             static_cast<float>(compressedKeyframes) / static_cast<float>(originalKeyframes) : 1.0f;
         
-        LOG_INFO("Animation compression completed:");
+        LOG_INFO("Skeletal animation compression completed:");
         LOG_INFO("  Original keyframes: " + std::to_string(originalKeyframes));
         LOG_INFO("  Compressed keyframes: " + std::to_string(compressedKeyframes));
         LOG_INFO("  Compression ratio: " + std::to_string(compressionRatio));
     }
 
-    void Animation::RemoveRedundantKeyframes(float tolerance) {
-        LOG_INFO("Removing redundant keyframes from animation '" + m_name + "'");
+    void SkeletalAnimation::RemoveRedundantKeyframes(float tolerance) {
+        LOG_INFO("Removing redundant keyframes from skeletal animation '" + m_name + "'");
         
         size_t originalKeyframes = GetKeyframeCount();
         
@@ -394,8 +394,8 @@ namespace Animation {
         LOG_INFO("Removed " + std::to_string(originalKeyframes - optimizedKeyframes) + " redundant keyframes");
     }
 
-    std::shared_ptr<Animation> Animation::CreateCompressedCopy(float tolerance) const {
-        auto compressed = std::make_shared<Animation>(m_name + "_compressed");
+    std::shared_ptr<SkeletalAnimation> SkeletalAnimation::CreateCompressedCopy(float tolerance) const {
+        auto compressed = std::make_shared<SkeletalAnimation>(m_name + "_compressed");
         compressed->SetDuration(m_duration);
         compressed->SetFrameRate(m_frameRate);
         compressed->SetLoopMode(m_loopMode);
@@ -450,8 +450,8 @@ namespace Animation {
         return compressed;
     }
 
-    size_t Animation::GetMemoryUsage() const {
-        size_t totalSize = sizeof(Animation);
+    size_t SkeletalAnimation::GetMemoryUsage() const {
+        size_t totalSize = sizeof(SkeletalAnimation);
         totalSize += m_name.size();
         
         for (const auto& [boneName, boneAnim] : m_boneAnimations) {
@@ -481,7 +481,7 @@ namespace Animation {
         return totalSize;
     }
 
-    size_t Animation::GetKeyframeCount() const {
+    size_t SkeletalAnimation::GetKeyframeCount() const {
         size_t totalKeyframes = 0;
         
         for (const auto& [boneName, boneAnim] : m_boneAnimations) {
@@ -499,8 +499,8 @@ namespace Animation {
         return totalKeyframes;
     }
 
-    void Animation::PrintAnimationInfo() const {
-        LOG_INFO("Animation '" + m_name + "':");
+    void SkeletalAnimation::PrintAnimationInfo() const {
+        LOG_INFO("Skeletal Animation '" + m_name + "':");
         LOG_INFO("  Duration: " + std::to_string(m_duration) + "s");
         LOG_INFO("  Frame Rate: " + std::to_string(m_frameRate) + " fps");
         LOG_INFO("  Loop Mode: " + std::to_string(static_cast<int>(m_loopMode)));
@@ -524,12 +524,12 @@ namespace Animation {
         }
     }
 
-    BoneAnimation* Animation::GetOrCreateBoneAnimation(const std::string& boneName) {
+    BoneAnimation* SkeletalAnimation::GetOrCreateBoneAnimation(const std::string& boneName) {
         auto* existing = GetBoneAnimation(boneName);
         return existing ? existing : CreateBoneAnimation(boneName);
     }
 
-    float Animation::CalculateDurationFromTracks() const {
+    float SkeletalAnimation::CalculateDurationFromTracks() const {
         float maxDuration = 0.0f;
         
         for (const auto& [boneName, boneAnim] : m_boneAnimations) {
@@ -548,13 +548,13 @@ namespace Animation {
     }
 
     // Event system implementation
-    void Animation::AddEvent(const AnimationEvent& event) {
+    void SkeletalAnimation::AddEvent(const AnimationEvent& event) {
         if (m_eventManager) {
             m_eventManager->AddEvent(event);
         }
     }
 
-    void Animation::RemoveEvent(const std::string& eventName, float time) {
+    void SkeletalAnimation::RemoveEvent(const std::string& eventName, float time) {
         if (m_eventManager) {
             // Convert absolute time to normalized time
             float normalizedTime = NormalizeTime(time);
@@ -562,26 +562,26 @@ namespace Animation {
         }
     }
 
-    void Animation::RemoveAllEvents(const std::string& eventName) {
+    void SkeletalAnimation::RemoveAllEvents(const std::string& eventName) {
         if (m_eventManager) {
             m_eventManager->RemoveAllEvents(eventName);
         }
     }
 
-    void Animation::ClearAllEvents() {
+    void SkeletalAnimation::ClearAllEvents() {
         if (m_eventManager) {
             m_eventManager->ClearAllEvents();
         }
     }
 
-    std::vector<AnimationEvent> Animation::GetEvents() const {
+    std::vector<AnimationEvent> SkeletalAnimation::GetEvents() const {
         if (m_eventManager) {
             return m_eventManager->GetEvents();
         }
         return {};
     }
 
-    std::vector<AnimationEvent> Animation::GetEventsInTimeRange(float startTime, float endTime) const {
+    std::vector<AnimationEvent> SkeletalAnimation::GetEventsInTimeRange(float startTime, float endTime) const {
         if (m_eventManager) {
             // Convert absolute times to normalized times
             float normalizedStart = NormalizeTime(startTime);
@@ -591,21 +591,21 @@ namespace Animation {
         return {};
     }
 
-    std::vector<AnimationEvent> Animation::GetEventsByName(const std::string& eventName) const {
+    std::vector<AnimationEvent> SkeletalAnimation::GetEventsByName(const std::string& eventName) const {
         if (m_eventManager) {
             return m_eventManager->GetEventsByName(eventName);
         }
         return {};
     }
 
-    std::vector<AnimationEvent> Animation::GetEventsByType(AnimationEventType type) const {
+    std::vector<AnimationEvent> SkeletalAnimation::GetEventsByType(AnimationEventType type) const {
         if (m_eventManager) {
             return m_eventManager->GetEventsByType(type);
         }
         return {};
     }
 
-    bool Animation::HasEvent(const std::string& eventName, float time) const {
+    bool SkeletalAnimation::HasEvent(const std::string& eventName, float time) const {
         if (m_eventManager) {
             float normalizedTime = NormalizeTime(time);
             return m_eventManager->HasEvent(eventName, normalizedTime);
@@ -613,7 +613,7 @@ namespace Animation {
         return false;
     }
 
-    bool Animation::HasEventsInRange(float startTime, float endTime) const {
+    bool SkeletalAnimation::HasEventsInRange(float startTime, float endTime) const {
         if (m_eventManager) {
             float normalizedStart = NormalizeTime(startTime);
             float normalizedEnd = NormalizeTime(endTime);
@@ -622,14 +622,14 @@ namespace Animation {
         return false;
     }
 
-    size_t Animation::GetEventCount() const {
+    size_t SkeletalAnimation::GetEventCount() const {
         if (m_eventManager) {
             return m_eventManager->GetEventCount();
         }
         return 0;
     }
 
-    std::vector<AnimationEvent> Animation::GetTriggeredEvents(float previousTime, float currentTime, bool looping) const {
+    std::vector<AnimationEvent> SkeletalAnimation::GetTriggeredEvents(float previousTime, float currentTime, bool looping) const {
         if (m_eventManager) {
             float normalizedPrevious = NormalizeTime(previousTime);
             float normalizedCurrent = NormalizeTime(currentTime);
@@ -638,7 +638,7 @@ namespace Animation {
         return {};
     }
 
-    void Animation::ProcessEvents(float previousTime, float currentTime, const AnimationEventCallback& callback, bool looping) const {
+    void SkeletalAnimation::ProcessEvents(float previousTime, float currentTime, const AnimationEventCallback& callback, bool looping) const {
         if (m_eventManager && callback) {
             float normalizedPrevious = NormalizeTime(previousTime);
             float normalizedCurrent = NormalizeTime(currentTime);

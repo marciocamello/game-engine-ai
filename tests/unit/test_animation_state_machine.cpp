@@ -2,8 +2,8 @@
 #include "Animation/AnimationStateMachine.h"
 #include "Animation/AnimationController.h"
 #include "Animation/AnimationTransition.h"
-#include "Animation/Skeleton.h"
-#include "Animation/Animation.h"
+#include "Animation/AnimationSkeleton.h"
+#include "Animation/SkeletalAnimation.h"
 
 using namespace GameEngine;
 using namespace GameEngine::Testing;

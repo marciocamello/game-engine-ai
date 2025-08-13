@@ -1,6 +1,6 @@
 #include "TestUtils.h"
 #include "Animation/IKSolver.h"
-#include "Animation/Skeleton.h"
+#include "Animation/AnimationSkeleton.h"
 
 using namespace GameEngine;
 using namespace GameEngine::Testing;

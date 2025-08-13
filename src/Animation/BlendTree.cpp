@@ -41,11 +41,11 @@ namespace Animation {
         LOG_INFO("BlendTree: Set parameters to '" + paramX + "' and '" + paramY + "'");
     }
 
-    void BlendTree::AddMotion(std::shared_ptr<Animation> animation, float threshold) {
+    void BlendTree::AddMotion(std::shared_ptr<SkeletalAnimation> animation, float threshold) {
         AddMotion(animation, threshold, animation ? animation->GetName() : "Unknown");
     }
 
-    void BlendTree::AddMotion(std::shared_ptr<Animation> animation, float threshold, const std::string& name) {
+    void BlendTree::AddMotion(std::shared_ptr<SkeletalAnimation> animation, float threshold, const std::string& name) {
         if (!animation) {
             LOG_ERROR("BlendTree: Cannot add null animation");
             return;
@@ -67,11 +67,11 @@ namespace Animation {
         LOG_INFO("BlendTree: Added 1D motion '" + name + "' at threshold " + std::to_string(threshold));
     }
 
-    void BlendTree::AddMotion(std::shared_ptr<Animation> animation, const Math::Vec2& position) {
+    void BlendTree::AddMotion(std::shared_ptr<SkeletalAnimation> animation, const Math::Vec2& position) {
         AddMotion(animation, position, animation ? animation->GetName() : "Unknown");
     }
 
-    void BlendTree::AddMotion(std::shared_ptr<Animation> animation, const Math::Vec2& position, const std::string& name) {
+    void BlendTree::AddMotion(std::shared_ptr<SkeletalAnimation> animation, const Math::Vec2& position, const std::string& name) {
         if (!animation) {
             LOG_ERROR("BlendTree: Cannot add null animation");
             return;
@@ -145,7 +145,7 @@ namespace Animation {
                 std::to_string(position.x) + ", " + std::to_string(position.y) + ")");
     }
 
-    void BlendTree::RemoveMotion(std::shared_ptr<Animation> animation) {
+    void BlendTree::RemoveMotion(std::shared_ptr<SkeletalAnimation> animation) {
         if (!animation) {
             return;
         }

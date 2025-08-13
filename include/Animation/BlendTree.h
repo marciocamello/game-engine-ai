@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Animation/Animation.h"
+#include "Animation/SkeletalAnimation.h"
 #include "Animation/Pose.h"
 #include "Core/Math.h"
 #include <string>
@@ -18,7 +18,7 @@ namespace Animation {
      * Animation sample for blend tree evaluation
      */
     struct AnimationSample {
-        std::shared_ptr<Animation> animation;
+        std::shared_ptr<SkeletalAnimation> animation;
         float weight;
         float time;
 
@@ -51,12 +51,12 @@ namespace Animation {
         const std::string& GetParameterY() const { return m_parameterY; }
 
         // Motion management for 1D blend trees
-        void AddMotion(std::shared_ptr<Animation> animation, float threshold);
-        void AddMotion(std::shared_ptr<Animation> animation, float threshold, const std::string& name);
+        void AddMotion(std::shared_ptr<SkeletalAnimation> animation, float threshold);
+        void AddMotion(std::shared_ptr<SkeletalAnimation> animation, float threshold, const std::string& name);
         
         // Motion management for 2D blend trees
-        void AddMotion(std::shared_ptr<Animation> animation, const Math::Vec2& position);
-        void AddMotion(std::shared_ptr<Animation> animation, const Math::Vec2& position, const std::string& name);
+        void AddMotion(std::shared_ptr<SkeletalAnimation> animation, const Math::Vec2& position);
+        void AddMotion(std::shared_ptr<SkeletalAnimation> animation, const Math::Vec2& position, const std::string& name);
         
         // Child blend tree support
         void AddChildBlendTree(std::shared_ptr<BlendTree> childTree, float threshold);
@@ -65,7 +65,7 @@ namespace Animation {
         void AddChildBlendTree(std::shared_ptr<BlendTree> childTree, const Math::Vec2& position, const std::string& name);
         
         // Motion removal
-        void RemoveMotion(std::shared_ptr<Animation> animation);
+        void RemoveMotion(std::shared_ptr<SkeletalAnimation> animation);
         void RemoveMotion(const std::string& name);
         void RemoveChildBlendTree(std::shared_ptr<BlendTree> childTree);
         void RemoveChildBlendTree(const std::string& name);
@@ -90,7 +90,7 @@ namespace Animation {
 
     private:
         struct BlendTreeNode {
-            std::shared_ptr<Animation> animation;
+            std::shared_ptr<SkeletalAnimation> animation;
             std::shared_ptr<BlendTree> childTree;
             float threshold = 0.0f;
             Math::Vec2 position = Math::Vec2(0.0f);

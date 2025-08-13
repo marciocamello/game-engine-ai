@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Animation/Animation.h"
+#include "Animation/SkeletalAnimation.h"
 #include "Animation/Pose.h"
 #include "Animation/AnimationTransition.h"
 #include "Animation/BlendTree.h"
@@ -174,8 +174,8 @@ namespace Animation {
         bool IsLooping() const { return m_looping; }
 
         // Single animation state
-        void SetAnimation(std::shared_ptr<Animation> animation);
-        std::shared_ptr<Animation> GetAnimation() const { return m_animation; }
+        void SetAnimation(std::shared_ptr<SkeletalAnimation> animation);
+        std::shared_ptr<SkeletalAnimation> GetAnimation() const { return m_animation; }
 
         // Blend tree state
         void SetBlendTree(std::shared_ptr<BlendTree> blendTree);
@@ -215,7 +215,7 @@ namespace Animation {
         bool m_looping = true;
 
         // State content (only one should be set based on type)
-        std::shared_ptr<Animation> m_animation;
+        std::shared_ptr<SkeletalAnimation> m_animation;
         std::shared_ptr<BlendTree> m_blendTree;
         std::shared_ptr<AnimationStateMachine> m_subStateMachine;
 

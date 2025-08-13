@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Animation/Animation.h"
+#include "Animation/SkeletalAnimation.h"
 #include "Animation/Keyframe.h"
 #include "Core/Math.h"
 #include <vector>
@@ -78,7 +78,7 @@ namespace Animation {
         ~AnimationCompressor() = default;
 
         // Main compression interface
-        std::shared_ptr<Animation> CompressAnimation(const Animation& original, 
+        std::shared_ptr<SkeletalAnimation> CompressAnimation(const SkeletalAnimation& original, 
                                                    const CompressionSettings& settings = CompressionSettings{});
         
         // Individual track compression
@@ -128,7 +128,7 @@ namespace Animation {
         template<typename T>
         size_t CalculateTrackMemoryUsage(const AnimationTrack<T>& track) const;
         
-        size_t CalculateAnimationMemoryUsage(const Animation& animation) const;
+        size_t CalculateAnimationMemoryUsage(const SkeletalAnimation& animation) const;
     };
 
     /**
@@ -170,7 +170,7 @@ namespace Animation {
         ~AnimationDataSharer() = default;
 
         // Share similar animation data between animations
-        void OptimizeAnimationSet(std::vector<std::shared_ptr<Animation>>& animations,
+        void OptimizeAnimationSet(std::vector<std::shared_ptr<SkeletalAnimation>>& animations,
                                  float similarityThreshold = 0.95f);
 
         // Find similar tracks between animations

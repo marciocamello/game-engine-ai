@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Animation/Animation.h"
+#include "Animation/SkeletalAnimation.h"
 #include "Core/Math.h"
 #include <memory>
 #include <unordered_map>
@@ -44,7 +44,7 @@ namespace Animation {
     struct StreamingRequest {
         std::string animationId;
         StreamingPriority priority;
-        std::function<void(std::shared_ptr<Animation>)> onLoaded;
+        std::function<void(std::shared_ptr<SkeletalAnimation>)> onLoaded;
         std::function<void(const std::string&)> onError;
         
         StreamingRequest() = default;
@@ -101,8 +101,8 @@ namespace Animation {
         void SetState(StreamingState state) { m_state = state; }
 
         // Animation access
-        std::shared_ptr<Animation> GetAnimation() const { return m_animation; }
-        void SetAnimation(std::shared_ptr<Animation> animation) { m_animation = animation; }
+        std::shared_ptr<SkeletalAnimation> GetAnimation() const { return m_animation; }
+        void SetAnimation(std::shared_ptr<SkeletalAnimation> animation) { m_animation = animation; }
         
         // Usage tracking
         void MarkUsed() { m_lastUsedTime = GetCurrentTime(); }
@@ -116,7 +116,7 @@ namespace Animation {
     private:
         std::string m_id;
         std::string m_filePath;
-        std::shared_ptr<Animation> m_animation;
+        std::shared_ptr<SkeletalAnimation> m_animation;
         StreamingState m_state = StreamingState::Unloaded;
         StreamingPriority m_priority = StreamingPriority::Normal;
         float m_lastUsedTime = 0.0f;
@@ -150,7 +150,7 @@ namespace Animation {
         void UnloadAllAnimations();
 
         // Animation access
-        std::shared_ptr<Animation> GetAnimation(const std::string& id);
+        std::shared_ptr<SkeletalAnimation> GetAnimation(const std::string& id);
         bool IsAnimationLoaded(const std::string& id) const;
         StreamingState GetAnimationState(const std::string& id) const;
 
@@ -165,7 +165,7 @@ namespace Animation {
         const StreamingConfig& GetConfig() const { return m_config; }
 
         // Callbacks
-        void SetLoadCallback(std::function<void(const std::string&, std::shared_ptr<Animation>)> callback) {
+        void SetLoadCallback(std::function<void(const std::string&, std::shared_ptr<SkeletalAnimation>)> callback) {
             m_onAnimationLoaded = callback;
         }
         void SetUnloadCallback(std::function<void(const std::string&)> callback) {
@@ -185,7 +185,7 @@ namespace Animation {
         std::queue<std::string> m_unloadRequests;
         
         // Callbacks
-        std::function<void(const std::string&, std::shared_ptr<Animation>)> m_onAnimationLoaded;
+        std::function<void(const std::string&, std::shared_ptr<SkeletalAnimation>)> m_onAnimationLoaded;
         std::function<void(const std::string&)> m_onAnimationUnloaded;
         
         // Statistics
@@ -199,7 +199,7 @@ namespace Animation {
         void UpdateMemoryStats();
         void CheckMemoryPressure();
         
-        std::shared_ptr<Animation> LoadAnimationFromFile(const std::string& filePath);
+        std::shared_ptr<SkeletalAnimation> LoadAnimationFromFile(const std::string& filePath);
         void UnloadAnimationData(const std::string& id);
         
         std::vector<std::string> GetUnusedAnimations() const;
@@ -215,8 +215,8 @@ namespace Animation {
         ~AnimationDataCache() = default;
 
         // Cache management
-        void CacheAnimation(const std::string& id, std::shared_ptr<Animation> animation);
-        std::shared_ptr<Animation> GetCachedAnimation(const std::string& id);
+        void CacheAnimation(const std::string& id, std::shared_ptr<SkeletalAnimation> animation);
+        std::shared_ptr<SkeletalAnimation> GetCachedAnimation(const std::string& id);
         void RemoveFromCache(const std::string& id);
         void ClearCache();
 
@@ -242,7 +242,7 @@ namespace Animation {
         void ResetStats() { m_stats = CacheStats{}; }
 
     private:
-        std::unordered_map<std::string, std::shared_ptr<Animation>> m_cache;
+        std::unordered_map<std::string, std::shared_ptr<SkeletalAnimation>> m_cache;
         mutable std::mutex m_cacheMutex;
         CacheStats m_stats;
         

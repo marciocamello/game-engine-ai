@@ -1,5 +1,5 @@
 #include "TestUtils.h"
-#include "Animation/Animation.h"
+#include "Animation/SkeletalAnimation.h"
 #include "Animation/AnimationCompression.h"
 #include "Animation/AnimationStreaming.h"
 

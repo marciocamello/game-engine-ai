@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Animation/Skeleton.h"
-#include "Animation/Animation.h"
+#include "Animation/AnimationSkeleton.h"
+#include "Animation/SkeletalAnimation.h"
 #include "Animation/Pose.h"
 #include "Animation/BlendTree.h"
 #include "Animation/AnimationEvent.h"
@@ -75,7 +75,7 @@ namespace Animation {
         // Lifecycle
         AnimationController();
         ~AnimationController();
-        bool Initialize(std::shared_ptr<Skeleton> skeleton);
+        bool Initialize(std::shared_ptr<AnimationSkeleton> skeleton);
         void Shutdown();
 
         // State machine management
@@ -102,9 +102,9 @@ namespace Animation {
         float GetPlaybackSpeed() const { return m_playbackSpeed; }
 
         // Animation management
-        void AddAnimation(const std::string& name, std::shared_ptr<Animation> animation);
+        void AddAnimation(const std::string& name, std::shared_ptr<SkeletalAnimation> animation);
         void RemoveAnimation(const std::string& name);
-        std::shared_ptr<Animation> GetAnimation(const std::string& name) const;
+        std::shared_ptr<SkeletalAnimation> GetAnimation(const std::string& name) const;
         std::vector<std::string> GetAnimationNames() const;
 
         // Update and evaluation
@@ -133,7 +133,7 @@ namespace Animation {
         bool IsEventProcessingEnabled() const { return m_eventProcessingEnabled; }
 
         // Skeleton access
-        std::shared_ptr<Skeleton> GetSkeleton() const { return m_skeleton; }
+        std::shared_ptr<AnimationSkeleton> GetSkeleton() const { return m_skeleton; }
         bool HasValidSkeleton() const { return m_skeleton != nullptr; }
 
         // State queries
@@ -148,18 +148,18 @@ namespace Animation {
 
     private:
         // Core components
-        std::shared_ptr<Skeleton> m_skeleton;
+        std::shared_ptr<AnimationSkeleton> m_skeleton;
         std::shared_ptr<AnimationStateMachine> m_stateMachine;
 
         // Animation storage
-        std::unordered_map<std::string, std::shared_ptr<Animation>> m_animations;
+        std::unordered_map<std::string, std::shared_ptr<SkeletalAnimation>> m_animations;
 
         // Parameter system
         std::unordered_map<std::string, AnimationParameter> m_parameters;
 
         // Animation layers for blending
         struct AnimationLayer {
-            std::shared_ptr<Animation> animation;
+            std::shared_ptr<SkeletalAnimation> animation;
             float weight = 1.0f;
             float time = 0.0f;
             bool additive = false;

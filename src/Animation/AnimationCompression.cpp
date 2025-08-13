@@ -7,7 +7,7 @@
 namespace GameEngine {
 namespace Animation {
 
-    std::shared_ptr<Animation> AnimationCompressor::CompressAnimation(const Animation& original, 
+    std::shared_ptr<SkeletalAnimation> AnimationCompressor::CompressAnimation(const SkeletalAnimation& original, 
                                                                      const CompressionSettings& settings) {
         LOG_INFO("Starting compression of animation '" + original.GetName() + "'");
         
@@ -16,7 +16,7 @@ namespace Animation {
         m_lastStats.originalMemoryBytes = CalculateAnimationMemoryUsage(original);
         
         // Create compressed animation
-        auto compressed = std::make_shared<Animation>(original.GetName() + "_compressed");
+        auto compressed = std::make_shared<SkeletalAnimation>(original.GetName() + "_compressed");
         compressed->SetDuration(original.GetDuration());
         compressed->SetFrameRate(original.GetFrameRate());
         compressed->SetLoopMode(original.GetLoopMode());
@@ -269,8 +269,8 @@ namespace Animation {
         return baseSize + keyframeSize + stringSize;
     }
 
-    size_t AnimationCompressor::CalculateAnimationMemoryUsage(const Animation& animation) const {
-        size_t totalSize = sizeof(Animation);
+    size_t AnimationCompressor::CalculateAnimationMemoryUsage(const SkeletalAnimation& animation) const {
+        size_t totalSize = sizeof(SkeletalAnimation);
         totalSize += animation.GetName().size();
         
         const auto& boneAnimations = animation.GetBoneAnimations();
@@ -462,7 +462,7 @@ namespace Animation {
         const std::vector<Keyframe<float>>& keyframes, float tolerance);
 
     // AnimationDataSharer implementation
-    void AnimationDataSharer::OptimizeAnimationSet(std::vector<std::shared_ptr<Animation>>& animations,
+    void AnimationDataSharer::OptimizeAnimationSet(std::vector<std::shared_ptr<SkeletalAnimation>>& animations,
                                                    float similarityThreshold) {
         if (animations.size() < 2) {
             return;

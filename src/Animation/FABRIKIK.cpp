@@ -15,7 +15,7 @@ void FABRIKIK::SetSubBasePosition(const Math::Vec3& position) {
     m_subBasePosition = position;
 }
 
-bool FABRIKIK::Solve(Skeleton& skeleton) {
+bool FABRIKIK::Solve(AnimationSkeleton& skeleton) {
     if (m_boneChain.empty()) {
         LOG_ERROR("FABRIK: No bones in chain");
         return false;
@@ -109,7 +109,7 @@ void FABRIKIK::BackwardReach(std::vector<Math::Vec3>& positions) {
     }
 }
 
-void FABRIKIK::ApplyPositionsToSkeleton(Skeleton& skeleton, const std::vector<Math::Vec3>& positions) {
+void FABRIKIK::ApplyPositionsToSkeleton(AnimationSkeleton& skeleton, const std::vector<Math::Vec3>& positions) {
     // Apply rotations to bones based on the new positions
     for (size_t i = 0; i < m_boneChain.size() - 1; ++i) {
         int boneIndex = m_boneChain[i];
@@ -135,7 +135,7 @@ void FABRIKIK::ApplyPositionsToSkeleton(Skeleton& skeleton, const std::vector<Ma
     // skeleton.UpdateBoneTransforms(); // Commented out for testing
 }
 
-void FABRIKIK::InitializePositions(const Skeleton& skeleton) {
+void FABRIKIK::InitializePositions(const AnimationSkeleton& skeleton) {
     m_positions.clear();
     m_positions.reserve(m_boneChain.size());
 
@@ -145,7 +145,7 @@ void FABRIKIK::InitializePositions(const Skeleton& skeleton) {
     }
 }
 
-void FABRIKIK::CalculateBoneLengths(const Skeleton& skeleton) {
+void FABRIKIK::CalculateBoneLengths(const AnimationSkeleton& skeleton) {
     m_boneLengths.clear();
     
     if (m_positions.size() < 2) {

@@ -1,5 +1,5 @@
 #include "TestUtils.h"
-#include "Animation/Skeleton.h"
+#include "Animation/AnimationSkeleton.h"
 #include "Animation/Bone.h"
 #include "Core/Logger.h"
 

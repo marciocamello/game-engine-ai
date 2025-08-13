@@ -165,7 +165,7 @@ namespace Animation {
         LOG_INFO("Unloaded all animations");
     }
 
-    std::shared_ptr<Animation> AnimationStreamingManager::GetAnimation(const std::string& id) {
+    std::shared_ptr<SkeletalAnimation> AnimationStreamingManager::GetAnimation(const std::string& id) {
         auto it = m_animations.find(id);
         if (it != m_animations.end()) {
             it->second->MarkUsed();
@@ -335,13 +335,13 @@ namespace Animation {
         }
     }
 
-    std::shared_ptr<Animation> AnimationStreamingManager::LoadAnimationFromFile(const std::string& filePath) {
+    std::shared_ptr<SkeletalAnimation> AnimationStreamingManager::LoadAnimationFromFile(const std::string& filePath) {
         // This is a placeholder implementation
         // In a real implementation, this would use the actual animation file loading system
         LOG_INFO("Loading animation from file: " + filePath);
         
         // For now, create a dummy animation
-        auto animation = std::make_shared<Animation>("loaded_animation");
+        auto animation = std::make_shared<SkeletalAnimation>("loaded_animation");
         animation->SetDuration(1.0f);
         animation->SetFrameRate(30.0f);
         
@@ -387,14 +387,14 @@ namespace Animation {
     }
 
     // AnimationDataCache implementation
-    void AnimationDataCache::CacheAnimation(const std::string& id, std::shared_ptr<Animation> animation) {
+    void AnimationDataCache::CacheAnimation(const std::string& id, std::shared_ptr<SkeletalAnimation> animation) {
         std::lock_guard<std::mutex> lock(m_cacheMutex);
         m_cache[id] = animation;
         UpdateAccessOrder(id);
         LOG_INFO("Cached animation '" + id + "'");
     }
 
-    std::shared_ptr<Animation> AnimationDataCache::GetCachedAnimation(const std::string& id) {
+    std::shared_ptr<SkeletalAnimation> AnimationDataCache::GetCachedAnimation(const std::string& id) {
         std::lock_guard<std::mutex> lock(m_cacheMutex);
         
         auto it = m_cache.find(id);

@@ -87,7 +87,7 @@ namespace Animation {
         Shutdown();
     }
 
-    bool AnimationController::Initialize(std::shared_ptr<Skeleton> skeleton) {
+    bool AnimationController::Initialize(std::shared_ptr<AnimationSkeleton> skeleton) {
         if (!skeleton) {
             LOG_ERROR("AnimationController: Cannot initialize with null skeleton");
             return false;
@@ -245,7 +245,7 @@ namespace Animation {
     }
 
     // Animation management
-    void AnimationController::AddAnimation(const std::string& name, std::shared_ptr<Animation> animation) {
+    void AnimationController::AddAnimation(const std::string& name, std::shared_ptr<SkeletalAnimation> animation) {
         if (!animation) {
             LOG_WARNING("AnimationController: Cannot add null animation '" + name + "'");
             return;
@@ -265,7 +265,7 @@ namespace Animation {
         }
     }
 
-    std::shared_ptr<Animation> AnimationController::GetAnimation(const std::string& name) const {
+    std::shared_ptr<SkeletalAnimation> AnimationController::GetAnimation(const std::string& name) const {
         auto it = m_animations.find(name);
         return it != m_animations.end() ? it->second : nullptr;
     }

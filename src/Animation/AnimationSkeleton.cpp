@@ -1,4 +1,4 @@
-#include "Animation/Skeleton.h"
+#include "Animation/AnimationSkeleton.h"
 #include "Core/Logger.h"
 #include <algorithm>
 #include <unordered_set>
@@ -6,14 +6,14 @@
 namespace GameEngine {
 namespace Animation {
 
-    Skeleton::Skeleton(const std::string& name)
+    AnimationSkeleton::AnimationSkeleton(const std::string& name)
         : m_name(name), m_nextBoneId(0) {
     }
 
-    std::shared_ptr<Bone> Skeleton::CreateBone(const std::string& name, const Math::Mat4& bindPose) {
+    std::shared_ptr<Bone> AnimationSkeleton::CreateBone(const std::string& name, const Math::Mat4& bindPose) {
         // Check if bone with this name already exists
         if (GetBone(name)) {
-            LOG_WARNING("Bone with name '" + name + "' already exists in skeleton '" + m_name + "'");
+            LOG_WARNING("Bone with name '" + name + "' already exists in animation skeleton '" + m_name + "'");
             return nullptr;
         }
 
@@ -32,29 +32,29 @@ namespace Animation {
             m_rootBone = bone;
         }
 
-        LOG_INFO("Created bone '" + name + "' with ID " + std::to_string(bone->GetId()));
+        LOG_INFO("Created bone '" + name + "' with ID " + std::to_string(bone->GetId()) + " in animation skeleton");
         return bone;
     }
 
-    std::shared_ptr<Bone> Skeleton::GetBone(const std::string& name) const {
+    std::shared_ptr<Bone> AnimationSkeleton::GetBone(const std::string& name) const {
         auto it = m_bonesByName.find(name);
         return (it != m_bonesByName.end()) ? it->second : nullptr;
     }
 
-    std::shared_ptr<Bone> Skeleton::GetBone(int32_t id) const {
+    std::shared_ptr<Bone> AnimationSkeleton::GetBone(int32_t id) const {
         auto it = m_bonesById.find(id);
         return (it != m_bonesById.end()) ? it->second : nullptr;
     }
 
-    bool Skeleton::AddBone(std::shared_ptr<Bone> bone, const std::string& parentName) {
+    bool AnimationSkeleton::AddBone(std::shared_ptr<Bone> bone, const std::string& parentName) {
         if (!bone) {
-            LOG_ERROR("Cannot add null bone to skeleton");
+            LOG_ERROR("Cannot add null bone to animation skeleton");
             return false;
         }
 
         // Check if bone already exists
         if (GetBone(bone->GetName())) {
-            LOG_WARNING("Bone '" + bone->GetName() + "' already exists in skeleton");
+            LOG_WARNING("Bone '" + bone->GetName() + "' already exists in animation skeleton");
             return false;
         }
 
@@ -81,7 +81,7 @@ namespace Animation {
         return true;
     }
 
-    bool Skeleton::RemoveBone(const std::string& name) {
+    bool AnimationSkeleton::RemoveBone(const std::string& name) {
         auto bone = GetBone(name);
         if (!bone) {
             return false;
@@ -111,24 +111,24 @@ namespace Animation {
         return true;
     }
 
-    void Skeleton::SetBoneParent(const std::string& boneName, const std::string& parentName) {
+    void AnimationSkeleton::SetBoneParent(const std::string& boneName, const std::string& parentName) {
         auto bone = GetBone(boneName);
         auto parent = GetBone(parentName);
 
         if (!bone) {
-            LOG_ERROR("Bone '" + boneName + "' not found");
+            LOG_ERROR("Bone '" + boneName + "' not found in animation skeleton");
             return;
         }
 
         if (!parentName.empty() && !parent) {
-            LOG_ERROR("Parent bone '" + parentName + "' not found");
+            LOG_ERROR("Parent bone '" + parentName + "' not found in animation skeleton");
             return;
         }
 
         bone->SetParent(parent);
     }
 
-    std::vector<std::shared_ptr<Bone>> Skeleton::GetRootBones() const {
+    std::vector<std::shared_ptr<Bone>> AnimationSkeleton::GetRootBones() const {
         std::vector<std::shared_ptr<Bone>> rootBones;
         for (const auto& bone : m_bones) {
             if (bone->IsRoot()) {
@@ -138,7 +138,7 @@ namespace Animation {
         return rootBones;
     }
 
-    void Skeleton::UpdateBoneTransforms() {
+    void AnimationSkeleton::UpdateBoneTransforms() {
         if (!m_rootBone) {
             return;
         }
@@ -147,7 +147,7 @@ namespace Animation {
         UpdateBoneTransformsRecursive(m_rootBone, Math::Mat4(1.0f));
     }
 
-    void Skeleton::UpdateBoneTransforms(std::shared_ptr<Bone> bone) {
+    void AnimationSkeleton::UpdateBoneTransforms(std::shared_ptr<Bone> bone) {
         if (!bone) {
             return;
         }
@@ -162,7 +162,7 @@ namespace Animation {
         UpdateBoneTransformsRecursive(bone, parentTransform);
     }
 
-    void Skeleton::UpdateBoneTransformsRecursive(std::shared_ptr<Bone> bone, const Math::Mat4& parentTransform) {
+    void AnimationSkeleton::UpdateBoneTransformsRecursive(std::shared_ptr<Bone> bone, const Math::Mat4& parentTransform) {
         if (!bone) {
             return;
         }
@@ -177,7 +177,7 @@ namespace Animation {
         }
     }
 
-    void Skeleton::UpdateBoneTransformsOptimized() {
+    void AnimationSkeleton::UpdateBoneTransformsOptimized() {
         // Optimized version that updates bones in order without recursion
         for (auto& bone : m_bones) {
             if (bone->IsRoot()) {
@@ -191,7 +191,7 @@ namespace Animation {
         }
     }
 
-    std::vector<Math::Mat4> Skeleton::GetSkinningMatrices() const {
+    std::vector<Math::Mat4> AnimationSkeleton::GetSkinningMatrices() const {
         std::vector<Math::Mat4> matrices;
         matrices.reserve(m_bones.size());
 
@@ -202,7 +202,7 @@ namespace Animation {
         return matrices;
     }
 
-    void Skeleton::GetSkinningMatrices(std::vector<Math::Mat4>& outMatrices) const {
+    void AnimationSkeleton::GetSkinningMatrices(std::vector<Math::Mat4>& outMatrices) const {
         outMatrices.clear();
         outMatrices.reserve(m_bones.size());
 
@@ -211,39 +211,39 @@ namespace Animation {
         }
     }
 
-    void Skeleton::SetBoneLocalTransform(int32_t boneId, const Math::Mat4& transform) {
+    void AnimationSkeleton::SetBoneLocalTransform(int32_t boneId, const Math::Mat4& transform) {
         auto bone = GetBone(boneId);
         if (bone) {
             bone->SetLocalTransform(transform);
         }
     }
 
-    void Skeleton::SetBoneLocalTransform(const std::string& boneName, const Math::Mat4& transform) {
+    void AnimationSkeleton::SetBoneLocalTransform(const std::string& boneName, const Math::Mat4& transform) {
         auto bone = GetBone(boneName);
         if (bone) {
             bone->SetLocalTransform(transform);
         }
     }
 
-    void Skeleton::SetBoneLocalTransforms(const std::vector<Math::Mat4>& transforms) {
+    void AnimationSkeleton::SetBoneLocalTransforms(const std::vector<Math::Mat4>& transforms) {
         size_t count = std::min(transforms.size(), m_bones.size());
         for (size_t i = 0; i < count; ++i) {
             m_bones[i]->SetLocalTransform(transforms[i]);
         }
     }
 
-    void Skeleton::SetBindPose() {
+    void AnimationSkeleton::SetBindPose() {
         for (auto& bone : m_bones) {
             bone->SetBindPose(bone->GetWorldTransform());
             bone->SetInverseBindPose(glm::inverse(bone->GetWorldTransform()));
         }
         m_hasValidBindPose = true;
-        LOG_INFO("Set bind pose for skeleton '" + m_name + "' with " + std::to_string(m_bones.size()) + " bones");
+        LOG_INFO("Set bind pose for animation skeleton '" + m_name + "' with " + std::to_string(m_bones.size()) + " bones");
     }
 
-    void Skeleton::RestoreBindPose() {
+    void AnimationSkeleton::RestoreBindPose() {
         if (!m_hasValidBindPose) {
-            LOG_WARNING("No valid bind pose to restore for skeleton '" + m_name + "'");
+            LOG_WARNING("No valid bind pose to restore for animation skeleton '" + m_name + "'");
             return;
         }
 
@@ -253,7 +253,7 @@ namespace Animation {
         UpdateBoneTransforms();
     }
 
-    void Skeleton::RebuildBoneMaps() {
+    void AnimationSkeleton::RebuildBoneMaps() {
         m_bonesByName.clear();
         m_bonesById.clear();
 
@@ -263,7 +263,7 @@ namespace Animation {
         }
     }
 
-    std::vector<std::string> Skeleton::GetBoneNames() const {
+    std::vector<std::string> AnimationSkeleton::GetBoneNames() const {
         std::vector<std::string> names;
         names.reserve(m_bones.size());
 
@@ -274,7 +274,7 @@ namespace Animation {
         return names;
     }
 
-    bool Skeleton::ValidateHierarchy() const {
+    bool AnimationSkeleton::ValidateHierarchy() const {
         std::unordered_set<int32_t> visitedIds;
         
         for (const auto& bone : m_bones) {
@@ -289,14 +289,14 @@ namespace Animation {
         return visitedIds.size() == m_bones.size();
     }
 
-    bool Skeleton::ValidateHierarchyRecursive(std::shared_ptr<Bone> bone, std::unordered_set<int32_t>& visitedIds) const {
+    bool AnimationSkeleton::ValidateHierarchyRecursive(std::shared_ptr<Bone> bone, std::unordered_set<int32_t>& visitedIds) const {
         if (!bone) {
             return false;
         }
 
         // Check for cycles
         if (visitedIds.find(bone->GetId()) != visitedIds.end()) {
-            LOG_ERROR("Cycle detected in skeleton hierarchy at bone '" + bone->GetName() + "'");
+            LOG_ERROR("Cycle detected in animation skeleton hierarchy at bone '" + bone->GetName() + "'");
             return false;
         }
 
@@ -312,8 +312,8 @@ namespace Animation {
         return true;
     }
 
-    void Skeleton::PrintHierarchy() const {
-        LOG_INFO("Skeleton '" + m_name + "' hierarchy:");
+    void AnimationSkeleton::PrintHierarchy() const {
+        LOG_INFO("Animation Skeleton '" + m_name + "' hierarchy:");
         if (m_rootBone) {
             PrintHierarchyRecursive(m_rootBone, 0);
         } else {
@@ -321,7 +321,7 @@ namespace Animation {
         }
     }
 
-    void Skeleton::PrintHierarchyRecursive(std::shared_ptr<Bone> bone, int32_t depth) const {
+    void AnimationSkeleton::PrintHierarchyRecursive(std::shared_ptr<Bone> bone, int32_t depth) const {
         if (!bone) {
             return;
         }
@@ -334,7 +334,7 @@ namespace Animation {
         }
     }
 
-    int32_t Skeleton::GetMaxDepth() const {
+    int32_t AnimationSkeleton::GetMaxDepth() const {
         int32_t maxDepth = 0;
         for (const auto& bone : m_bones) {
             maxDepth = std::max(maxDepth, bone->GetDepth());
@@ -342,7 +342,7 @@ namespace Animation {
         return maxDepth;
     }
 
-    Skeleton::SkeletonData Skeleton::Serialize() const {
+    AnimationSkeleton::SkeletonData AnimationSkeleton::Serialize() const {
         SkeletonData data;
         data.name = m_name;
         data.boneNames.reserve(m_bones.size());
@@ -369,7 +369,7 @@ namespace Animation {
         return data;
     }
 
-    bool Skeleton::Deserialize(const SkeletonData& data) {
+    bool AnimationSkeleton::Deserialize(const SkeletonData& data) {
         // Clear existing data
         m_bones.clear();
         m_bonesByName.clear();

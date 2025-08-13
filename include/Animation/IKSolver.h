@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Core/Math.h"
-#include "Animation/Skeleton.h"
+#include "Animation/AnimationSkeleton.h"
 #include <vector>
 #include <unordered_map>
 #include <memory>
@@ -33,8 +33,8 @@ public:
     void SetTolerance(float tolerance);
 
     // Solving
-    virtual bool Solve(Skeleton& skeleton) = 0;
-    bool IsTargetReachable(const Skeleton& skeleton) const;
+    virtual bool Solve(AnimationSkeleton& skeleton) = 0;
+    bool IsTargetReachable(const AnimationSkeleton& skeleton) const;
 
     // Properties
     Type GetType() const { return m_type; }
@@ -52,7 +52,7 @@ public:
     bool GetBlendMode() const { return m_smoothBlending; }
 
     // Validation
-    bool ValidateChain(const Skeleton& skeleton) const;
+    bool ValidateChain(const AnimationSkeleton& skeleton) const;
 
 protected:
     Type m_type;
@@ -74,21 +74,21 @@ protected:
     mutable std::vector<Math::Vec3> m_originalPositions;
 
     // Helper methods
-    float CalculateChainLength(const Skeleton& skeleton) const;
-    void ApplyBoneConstraints(Skeleton& skeleton, int boneIndex, const Math::Quat& rotation) const;
-    Math::Vec3 GetBonePosition(const Skeleton& skeleton, int boneIndex) const;
-    Math::Quat GetBoneRotation(const Skeleton& skeleton, int boneIndex) const;
-    void SetBoneRotation(Skeleton& skeleton, int boneIndex, const Math::Quat& rotation) const;
+    float CalculateChainLength(const AnimationSkeleton& skeleton) const;
+    void ApplyBoneConstraints(AnimationSkeleton& skeleton, int boneIndex, const Math::Quat& rotation) const;
+    Math::Vec3 GetBonePosition(const AnimationSkeleton& skeleton, int boneIndex) const;
+    Math::Quat GetBoneRotation(const AnimationSkeleton& skeleton, int boneIndex) const;
+    void SetBoneRotation(AnimationSkeleton& skeleton, int boneIndex, const Math::Quat& rotation) const;
     
     // IK/FK Blending helpers
-    void StoreOriginalPose(const Skeleton& skeleton) const;
-    void ApplyIKFKBlending(Skeleton& skeleton) const;
+    void StoreOriginalPose(const AnimationSkeleton& skeleton) const;
+    void ApplyIKFKBlending(AnimationSkeleton& skeleton) const;
     Math::Quat BlendRotations(const Math::Quat& fkRotation, const Math::Quat& ikRotation, float weight) const;
     
-    // Temporary helper methods for testing (will be replaced with proper Skeleton methods)
-    int GetParent(const Skeleton& skeleton, int boneIndex) const;
-    Math::Mat4 GetBoneWorldTransform(const Skeleton& skeleton, int boneIndex) const;
-    void SetBoneLocalTransform(Skeleton& skeleton, int boneIndex, const Math::Mat4& transform) const;
+    // Temporary helper methods for testing (will be replaced with proper AnimationSkeleton methods)
+    int GetParent(const AnimationSkeleton& skeleton, int boneIndex) const;
+    Math::Mat4 GetBoneWorldTransform(const AnimationSkeleton& skeleton, int boneIndex) const;
+    void SetBoneLocalTransform(AnimationSkeleton& skeleton, int boneIndex, const Math::Mat4& transform) const;
 };
 
 /**
@@ -110,7 +110,7 @@ public:
     int GetEndEffector() const { return m_endEffector; }
 
     // Solving
-    bool Solve(Skeleton& skeleton) override;
+    bool Solve(AnimationSkeleton& skeleton) override;
 
     // Validation
     bool IsValidConfiguration() const;
@@ -121,7 +121,7 @@ private:
     int m_endEffector = -1;
 
     // Two-bone IK specific solving
-    void SolveTwoBoneIK(Skeleton& skeleton);
+    void SolveTwoBoneIK(AnimationSkeleton& skeleton);
     Math::Vec3 CalculateElbowPosition(const Math::Vec3& shoulder, const Math::Vec3& target, 
                                      const Math::Vec3& poleTarget, float upperLength, float lowerLength) const;
     Math::Quat CalculateBoneRotation(const Math::Vec3& from, const Math::Vec3& to, 
@@ -137,7 +137,7 @@ public:
     FABRIKIK();
 
     // Solving
-    bool Solve(Skeleton& skeleton) override;
+    bool Solve(AnimationSkeleton& skeleton) override;
 
     // FABRIK specific settings
     void SetSubBasePosition(const Math::Vec3& position);
@@ -161,9 +161,9 @@ private:
     // FABRIK algorithm steps
     void ForwardReach(std::vector<Math::Vec3>& positions);
     void BackwardReach(std::vector<Math::Vec3>& positions);
-    void ApplyPositionsToSkeleton(Skeleton& skeleton, const std::vector<Math::Vec3>& positions);
-    void InitializePositions(const Skeleton& skeleton);
-    void CalculateBoneLengths(const Skeleton& skeleton);
+    void ApplyPositionsToSkeleton(AnimationSkeleton& skeleton, const std::vector<Math::Vec3>& positions);
+    void InitializePositions(const AnimationSkeleton& skeleton);
+    void CalculateBoneLengths(const AnimationSkeleton& skeleton);
     Math::Quat CalculateRotationBetweenVectors(const Math::Vec3& from, const Math::Vec3& to) const;
     
     // Enhanced constraint handling

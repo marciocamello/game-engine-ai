@@ -1,8 +1,8 @@
 #include "TestUtils.h"
 #include "Animation/BlendTree.h"
-#include "Animation/Animation.h"
+#include "Animation/SkeletalAnimation.h"
 #include "Animation/AnimationController.h"
-#include "Animation/Skeleton.h"
+#include "Animation/AnimationSkeleton.h"
 #include "Animation/Bone.h"
 
 using namespace GameEngine;

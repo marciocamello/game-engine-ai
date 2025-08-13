@@ -46,7 +46,7 @@ void IKSolver::SetIKWeight(float weight) {
     m_ikWeight = Math::Clamp(weight, 0.0f, 1.0f);
 }
 
-bool IKSolver::IsTargetReachable(const Skeleton& skeleton) const {
+bool IKSolver::IsTargetReachable(const AnimationSkeleton& skeleton) const {
     if (m_boneChain.empty()) {
         return false;
     }
@@ -58,7 +58,7 @@ bool IKSolver::IsTargetReachable(const Skeleton& skeleton) const {
     return distanceToTarget <= chainLength + m_tolerance;
 }
 
-bool IKSolver::ValidateChain(const Skeleton& skeleton) const {
+bool IKSolver::ValidateChain(const AnimationSkeleton& skeleton) const {
     if (m_boneChain.empty()) {
         LOG_ERROR("IK chain is empty");
         return false;
@@ -82,7 +82,7 @@ bool IKSolver::ValidateChain(const Skeleton& skeleton) const {
     return true;
 }
 
-float IKSolver::CalculateChainLength(const Skeleton& skeleton) const {
+float IKSolver::CalculateChainLength(const AnimationSkeleton& skeleton) const {
     if (m_chainLength > 0.0f) {
         return m_chainLength;
     }
@@ -101,7 +101,7 @@ float IKSolver::CalculateChainLength(const Skeleton& skeleton) const {
     return totalLength;
 }
 
-void IKSolver::ApplyBoneConstraints(Skeleton& skeleton, int boneIndex, const Math::Quat& rotation) const {
+void IKSolver::ApplyBoneConstraints(AnimationSkeleton& skeleton, int boneIndex, const Math::Quat& rotation) const {
     auto constraintIt = m_boneConstraints.find(boneIndex);
     if (constraintIt == m_boneConstraints.end()) {
         SetBoneRotation(skeleton, boneIndex, rotation);
@@ -125,17 +125,17 @@ void IKSolver::ApplyBoneConstraints(Skeleton& skeleton, int boneIndex, const Mat
     SetBoneRotation(skeleton, boneIndex, constrainedRotation);
 }
 
-Math::Vec3 IKSolver::GetBonePosition(const Skeleton& skeleton, int boneIndex) const {
+Math::Vec3 IKSolver::GetBonePosition(const AnimationSkeleton& skeleton, int boneIndex) const {
     Math::Mat4 worldTransform = GetBoneWorldTransform(skeleton, boneIndex);
     return Math::Vec3(worldTransform[3]);
 }
 
-Math::Quat IKSolver::GetBoneRotation(const Skeleton& skeleton, int boneIndex) const {
+Math::Quat IKSolver::GetBoneRotation(const AnimationSkeleton& skeleton, int boneIndex) const {
     Math::Mat4 worldTransform = GetBoneWorldTransform(skeleton, boneIndex);
     return glm::quat_cast(Math::Mat3(worldTransform));
 }
 
-void IKSolver::SetBoneRotation(Skeleton& skeleton, int boneIndex, const Math::Quat& rotation) const {
+void IKSolver::SetBoneRotation(AnimationSkeleton& skeleton, int boneIndex, const Math::Quat& rotation) const {
     // Convert quaternion to transformation matrix
     Math::Mat4 rotationMatrix = glm::mat4_cast(rotation);
     
@@ -147,21 +147,21 @@ void IKSolver::SetBoneRotation(Skeleton& skeleton, int boneIndex, const Math::Qu
 }
 
 // Temporary helper methods for testing
-int IKSolver::GetParent(const Skeleton& skeleton, int boneIndex) const {
+int IKSolver::GetParent(const AnimationSkeleton& skeleton, int boneIndex) const {
     // For testing purposes, assume simple parent-child relationship
     // This would be replaced with proper Skeleton method
     if (boneIndex <= 0) return -1;
     return boneIndex - 1;
 }
 
-Math::Mat4 IKSolver::GetBoneWorldTransform(const Skeleton& skeleton, int boneIndex) const {
+Math::Mat4 IKSolver::GetBoneWorldTransform(const AnimationSkeleton& skeleton, int boneIndex) const {
     // For testing purposes, create simple transforms
     // This would be replaced with proper Skeleton method
     Math::Vec3 position(static_cast<float>(boneIndex), 0.0f, 0.0f);
     return Math::Mat4(1.0f) * glm::translate(Math::Mat4(1.0f), position);
 }
 
-void IKSolver::SetBoneLocalTransform(Skeleton& skeleton, int boneIndex, const Math::Mat4& transform) const {
+void IKSolver::SetBoneLocalTransform(AnimationSkeleton& skeleton, int boneIndex, const Math::Mat4& transform) const {
     // For testing purposes, this is a no-op
     // This would be replaced with proper Skeleton method
     (void)skeleton;
@@ -169,7 +169,7 @@ void IKSolver::SetBoneLocalTransform(Skeleton& skeleton, int boneIndex, const Ma
     (void)transform;
 }
 
-void IKSolver::StoreOriginalPose(const Skeleton& skeleton) const {
+void IKSolver::StoreOriginalPose(const AnimationSkeleton& skeleton) const {
     m_originalRotations.clear();
     m_originalPositions.clear();
     
@@ -182,7 +182,7 @@ void IKSolver::StoreOriginalPose(const Skeleton& skeleton) const {
     }
 }
 
-void IKSolver::ApplyIKFKBlending(Skeleton& skeleton) const {
+void IKSolver::ApplyIKFKBlending(AnimationSkeleton& skeleton) const {
     if (m_ikWeight >= 1.0f) {
         return; // Full IK, no blending needed
     }

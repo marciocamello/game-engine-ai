@@ -1,6 +1,6 @@
 #include "TestUtils.h"
 #include "Animation/AnimationEvent.h"
-#include "Animation/Animation.h"
+#include "Animation/SkeletalAnimation.h"
 #include "Animation/AnimationController.h"
 
 using namespace GameEngine;

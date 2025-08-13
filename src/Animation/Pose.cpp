@@ -1,5 +1,5 @@
 #include "Animation/Pose.h"
-#include "Animation/Animation.h"
+#include "Animation/SkeletalAnimation.h"
 #include "Core/Logger.h"
 #include <algorithm>
 #include <functional>
@@ -60,13 +60,13 @@ namespace Animation {
     }
 
     // Pose implementation
-    Pose::Pose(std::shared_ptr<Skeleton> skeleton) : m_skeleton(skeleton) {
+    Pose::Pose(std::shared_ptr<AnimationSkeleton> skeleton) : m_skeleton(skeleton) {
         if (skeleton) {
             ResetToBindPose();
         }
     }
 
-    void Pose::SetSkeleton(std::shared_ptr<Skeleton> skeleton) {
+    void Pose::SetSkeleton(std::shared_ptr<AnimationSkeleton> skeleton) {
         m_skeleton = skeleton;
         if (skeleton) {
             ResetToBindPose();
@@ -422,11 +422,11 @@ namespace Animation {
     }
 
     // PoseEvaluator implementation
-    Pose PoseEvaluator::EvaluateAnimation(const Animation& animation, float time) {
+    Pose PoseEvaluator::EvaluateAnimation(const SkeletalAnimation& animation, float time) {
         return EvaluateAnimation(animation, time, nullptr);
     }
 
-    Pose PoseEvaluator::EvaluateAnimation(const Animation& animation, float time, std::shared_ptr<Skeleton> skeleton) {
+    Pose PoseEvaluator::EvaluateAnimation(const SkeletalAnimation& animation, float time, std::shared_ptr<AnimationSkeleton> skeleton) {
         Pose pose(skeleton);
         
         // Sample all animated bones
@@ -439,7 +439,7 @@ namespace Animation {
         return pose;
     }
 
-    Pose PoseEvaluator::EvaluateAnimationLayers(const std::vector<AnimationLayer>& layers, std::shared_ptr<Skeleton> skeleton) {
+    Pose PoseEvaluator::EvaluateAnimationLayers(const std::vector<AnimationLayer>& layers, std::shared_ptr<AnimationSkeleton> skeleton) {
         if (layers.empty()) {
             return Pose(skeleton);
         }
@@ -467,7 +467,7 @@ namespace Animation {
         return result;
     }
 
-    void PoseEvaluator::ApplyPoseToSkeleton(const Pose& pose, std::shared_ptr<Skeleton> skeleton) {
+    void PoseEvaluator::ApplyPoseToSkeleton(const Pose& pose, std::shared_ptr<AnimationSkeleton> skeleton) {
         if (!skeleton) return;
         
         for (const auto& bone : skeleton->GetAllBones()) {
@@ -478,7 +478,7 @@ namespace Animation {
         skeleton->UpdateBoneTransforms();
     }
 
-    Pose PoseEvaluator::ExtractPoseFromSkeleton(std::shared_ptr<Skeleton> skeleton) {
+    Pose PoseEvaluator::ExtractPoseFromSkeleton(std::shared_ptr<AnimationSkeleton> skeleton) {
         Pose pose(skeleton);
         pose.ExtractFromSkeleton();
         return pose;
@@ -492,7 +492,7 @@ namespace Animation {
         pose.EvaluateWorldToLocal();
     }
 
-    BoneTransform PoseEvaluator::EvaluateBoneAnimation(const Animation& animation, const std::string& boneName, float time) {
+    BoneTransform PoseEvaluator::EvaluateBoneAnimation(const SkeletalAnimation& animation, const std::string& boneName, float time) {
         BoneTransform transform;
         
         auto bonePose = animation.SampleBone(boneName, time);

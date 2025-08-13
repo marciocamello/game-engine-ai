@@ -673,7 +673,7 @@ namespace Animation {
 
     AnimationState::~AnimationState() = default;
 
-    void AnimationState::SetAnimation(std::shared_ptr<Animation> animation) {
+    void AnimationState::SetAnimation(std::shared_ptr<SkeletalAnimation> animation) {
         if (m_type != Type::Single) {
             LOG_WARNING("AnimationState: Cannot set animation on non-single state '" + m_name + "'");
             return;

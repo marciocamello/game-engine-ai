@@ -118,19 +118,15 @@ assets/
 
 ```
 scripts/
-├── build_unified.bat --tests    # Main build script (ONLY permitted build command)
-├── build_coverage.bat           # Code coverage build
-├── debug.bat                    # Debug build script
-├── dev.bat                      # Development console
+├── build_unified.bat            # Main build script (ONLY permitted build command)
+├── debug.bat                    # Debug launcher with multiple options
+├── dev.bat                      # Development console (interactive)
 ├── monitor.bat                  # Log monitoring script
-├── quick_test.bat               # Quick test execution
 ├── run_coverage_analysis.bat    # Coverage analysis runner
 ├── run_final_validation.bat     # Final validation tests
 ├── run_physics_tests.bat        # Physics-specific tests
 ├── run_tests.bat                # All tests runner (MANDATORY before task completion)
 ├── setup_dependencies.bat       # Dependency setup
-
-├── test_runner.bat              # Test execution utility
 └── README.md                    # Scripts documentation
 ```
 

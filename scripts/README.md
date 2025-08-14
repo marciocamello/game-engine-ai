@@ -1,184 +1,117 @@
-# Game Engine Kiro - Test Scripts
+# Game Engine Kiro - Scripts de Desenvolvimento
 
-Este diretório contém scripts para automatizar a execução de testes no Game Engine Kiro.
+Este diretório contém scripts essenciais para desenvolvimento, build e testes do Game Engine Kiro.
 
-## Scripts Disponíveis
+## Scripts Principais
 
-### 🏗️ `build_unified.bat --tests` - Build do Projeto
+### 🏗️ `build_unified.bat` - Build Principal
 
-Script principal para compilar o projeto com testes.
+**ÚNICO script autorizado para build do projeto.** Suporta todas as combinações de build necessárias.
 
 **Uso:**
 
 ```cmd
+# Build completo (padrão)
+scripts\build_unified.bat
+
+# Build com testes
 scripts\build_unified.bat --tests
+
+# Build de teste específico (recomendado para desenvolvimento)
+scripts\build_unified.bat --tests MathTest
+
+# Build apenas do engine
+scripts\build_unified.bat --engine
+
+# Build apenas dos projetos
+scripts\build_unified.bat --projects
+
+# Build debug
+scripts\build_unified.bat --debug --tests
+
+# Build com cobertura de código
+scripts\build_unified.bat --coverage
 ```
 
-### 🚀 `run_tests.bat` - Executor Avançado de Testes
+### 🚀 `run_tests.bat` - Executor de Testes
 
-Script principal para execução completa de testes com várias opções.
+Script principal para execução de todos os testes com descoberta automática.
 
 **Uso:**
-
-```cmd
-scripts\run_tests.bat [tipo] [opções]
-```
-
-**Tipos de Teste:**
-
-- `unit` - Executa apenas testes unitários
-- `integration` - Executa apenas testes de integração
-- `performance` - Executa apenas testes de performance
-- (sem parâmetro) - Executa todos os testes
-
-**Opções:**
-
-- `verbose` ou `-v` - Saída detalhada
-- `stop` ou `-s` - Para na primeira falha
-- `debug` - Usa build Debug ao invés de Release
-
-**Exemplos:**
 
 ```cmd
 # Executar todos os testes
 scripts\run_tests.bat
 
-# Executar apenas testes unitários com saída detalhada
-scripts\run_tests.bat unit verbose
+# Executar apenas testes unitários
+scripts\run_tests.bat --unit
 
-# Executar testes de integração e parar na primeira falha
-scripts\run_tests.bat integration stop
+# Executar apenas testes de integração
+scripts\run_tests.bat --integration
 
-# Executar testes usando build Debug
-scripts\run_tests.bat debug
+# Executar testes do engine
+scripts\run_tests.bat --engine
+
+# Executar testes de projetos
+scripts\run_tests.bat --projects
 ```
 
-### ⚡ `quick_test.bat` - Teste Rápido
+## Scripts de Desenvolvimento
 
-Script simples para execução rápida dos testes mais importantes.
+### 🖥️ `dev.bat` - Console de Desenvolvimento
+
+Console interativo com todas as opções de desenvolvimento em um só lugar.
 
 **Uso:**
 
 ```cmd
-scripts\quick_test.bat
+scripts\dev.bat
 ```
 
-Executa:
+**Funcionalidades:**
 
-- Teste unitário de matemática
-- Teste de integração básico do Bullet Physics
+- Build Release/Debug
+- Executar projetos
+- Monitorar logs
+- Análise de código
+- Verificação de memória
 
-### 🔧 `test_runner.bat` - Executor Básico
+### 🐛 `debug.bat` - Sessão de Debug
 
-Script básico que executa uma lista predefinida de testes.
+Launcher para sessões de debug com várias opções.
 
 **Uso:**
 
 ```cmd
-scripts\test_runner.bat [debug]
+scripts\debug.bat
 ```
 
-**Parâmetros:**
+**Opções de Debug:**
 
-- `debug` - Usa configuração Debug (padrão: Release)
+- Visual Studio Debugger
+- Console Output
+- File Logging
+- Memory Leak Detection
+- Performance Profiling
 
-### 🐧 `test_runner.sh` - Executor para Linux/macOS
+### 📋 `monitor.bat` - Monitor de Logs
 
-Versão do test_runner para sistemas Unix.
+Monitor interativo para logs do sistema.
 
 **Uso:**
 
-```bash
-./scripts/test_runner.sh [debug]
-```
-
-## Estrutura de Saída
-
-Todos os scripts seguem o padrão de saída estabelecido:
-
-```
-========================================
- Game Engine Kiro - Test Runner
-========================================
-
-Running Unit Tests...
-----------------------------------------
-[PASS] MathTest
-[FAILED] SomeTest (Exit code: 1)
-
-========================================
- Test Execution Summary
-========================================
-Total Tests: 2
-Passed: 1
-Failed: 1
-
-[FAILED] 1 TEST(S) FAILED!
-========================================
-```
-
-## Códigos de Saída
-
-- `0` - Todos os testes passaram
-- `1` - Um ou mais testes falharam
-- `1` - Erro de configuração (diretório build não encontrado, etc.)
-
-## Integração com Build System
-
-Os scripts automaticamente:
-
-- Detectam executáveis de teste no diretório `build/Release` ou `build/Debug`
-- Filtram executáveis que não são testes (GameExample, etc.)
-- Fornecem relatórios detalhados de execução
-- Retornam códigos de saída apropriados para integração CI/CD
-
-## Desenvolvimento
-
-### Adicionando Novos Testes
-
-1. Crie o teste seguindo os padrões estabelecidos
-2. Adicione ao CMakeLists.txt usando as funções helper
-3. Compile com `.\scripts\build_unified.bat --tests`
-4. Os scripts automaticamente descobrirão o novo teste
-
-### Modificando Scripts
-
-- **Windows**: Edite os arquivos `.bat`
-- **Linux/macOS**: Edite os arquivos `.sh` e torne-os executáveis com `chmod +x`
-
-## Troubleshooting
-
-### "Build directory not found"
-
-Execute `.\scripts\build_unified.bat --tests` primeiro para compilar os testes.
-
-### "Test executable not found"
-
-Verifique se o teste foi adicionado corretamente ao CMakeLists.txt e compilado.
-
-### Testes falhando
-
-Use a opção `verbose` para obter mais detalhes sobre as falhas:
-
 ```cmd
-scripts\run_tests.bat verbose
+scripts\monitor.bat
 ```
 
-## Exemplos de Uso Comum
+**Funcionalidades:**
 
-```cmd
-# Desenvolvimento diário - teste rápido
-scripts\quick_test.bat
+- Monitor de logs em tempo real
+- Busca por erros e warnings
+- Exportação de relatórios
+- Análise de logs históricos
 
-# Antes de commit - todos os testes
-scripts\run_tests.bat
-
-# Debug de problema específico - testes unitários detalhados
-scripts\run_tests.bat unit verbose
-
-# CI/CD - todos os testes com parada na primeira falha
-scripts\run_tests.bat stop
-```
+## Scripts Especializados
 
 ### 🧪 `run_physics_tests.bat` - Testes de Física
 
@@ -211,20 +144,14 @@ scripts\run_coverage_analysis.bat [build] [verbose] [open]
 - `verbose` - Saída detalhada
 - `open` - Abre o relatório HTML automaticamente
 
-### 🎮 Running Examples
+### 🎯 `run_final_validation.bat` - Validação Final
 
-To run the example projects after building:
+Script para validação completa do sistema antes de releases.
 
-**GameExample (Comprehensive):**
-
-```cmd
-build\projects\GameExample\Release\GameExample.exe
-```
-
-**BasicExample (Simple):**
+**Uso:**
 
 ```cmd
-build\projects\BasicExample\Release\BasicExample.exe
+scripts\run_final_validation.bat
 ```
 
 ### 📦 `setup_dependencies.bat` - Setup de Dependências
@@ -237,12 +164,91 @@ Script para configurar dependências do projeto (vcpkg).
 scripts\setup_dependencies.bat
 ```
 
-### 📋 `monitor.bat` - Monitor de Logs
+## Executando Projetos
 
-Script para monitorar logs do sistema.
+Após o build, execute os projetos diretamente:
 
-**Uso:**
+**GameExample (Completo):**
 
 ```cmd
+build\projects\GameExample\Release\GameExample.exe
+```
+
+**BasicExample (Simples):**
+
+```cmd
+build\projects\BasicExample\Release\BasicExample.exe
+```
+
+## Workflow de Desenvolvimento
+
+### Desenvolvimento Diário
+
+```cmd
+# 1. Build e teste
+scripts\build_unified.bat --tests
+
+# 2. Executar todos os testes
+scripts\run_tests.bat
+
+# 3. Monitorar logs (se necessário)
 scripts\monitor.bat
 ```
+
+### Desenvolvimento de Specs (Recomendado)
+
+```cmd
+# 1. Build teste específico (muito mais rápido)
+scripts\build_unified.bat --tests MathTest
+
+# 2. Executar teste específico
+build\Release\MathTest.exe
+
+# 3. Quando todos os testes individuais passarem
+scripts\run_tests.bat
+```
+
+### Antes de Commit
+
+```cmd
+# 1. Build completo
+scripts\build_unified.bat --tests
+
+# 2. Todos os testes
+scripts\run_tests.bat
+
+# 3. Validação final (opcional)
+scripts\run_final_validation.bat
+```
+
+## Códigos de Saída
+
+- `0` - Sucesso
+- `1` - Falha (build, testes, etc.)
+- `2` - Erro de configuração
+
+## Troubleshooting
+
+### "Build directory not found"
+
+Execute `scripts\build_unified.bat --tests` primeiro.
+
+### "Test executable not found"
+
+Verifique se o teste foi compilado corretamente.
+
+### Build falha
+
+1. Limpe o build: `Remove-Item -Recurse -Force build`
+2. Rebuild: `scripts\build_unified.bat --tests`
+
+### Testes falhando
+
+Use `scripts\run_tests.bat --unit` ou `--integration` para isolar problemas.
+
+## Regras Importantes
+
+- **NUNCA use cmake diretamente** - sempre use `build_unified.bat`
+- **NUNCA use comandos de deleção** além do cleanup de build especificado
+- **SEMPRE execute todos os testes** antes de completar tarefas
+- **Use testes individuais** durante desenvolvimento para velocidade

@@ -27,7 +27,7 @@ Coverage analysis for Linux/macOS will use gcov/lcov and is planned for future i
 
 ```cmd
 # Build project with coverage-enabled debug symbols
-.\build_coverage.bat
+.\scripts\build_unified.bat --coverage
 ```
 
 This will:
@@ -82,8 +82,8 @@ Add to your CI pipeline:
 ```yaml
 - name: Run Coverage Analysis
   run: |
-    .\build_coverage.bat
-    powershell -ExecutionPolicy Bypass -File .\scripts\run_coverage_analysis.bat
+    .\scripts\build_unified.bat --coverage
+    .\scripts\run_coverage_analysis.bat
   shell: cmd
 ```
 
@@ -173,7 +173,7 @@ Add to `.vscode/tasks.json`:
    ERROR: No test executables found for coverage analysis!
    ```
 
-   **Solution**: Run `.\build_coverage.bat` first to build test executables.
+   **Solution**: Run `.\scripts\build_unified.bat --coverage` first to build test executables.
 
 3. **Coverage analysis failed**
    ```
@@ -240,7 +240,7 @@ Coverage analysis includes performance metrics:
 The coverage system creates these files:
 
 - `.\scripts\run_coverage_analysis.bat` - Main coverage analysis script
-- `build_coverage.bat` - Coverage-enabled build script
+- `.\scripts\build_unified.bat` - Unified build script with coverage support
 - `coverage_config.json` - Configuration file
 - `coverage_baseline.json` - Baseline coverage metrics
 - `include/Core/TestCoverageManager.h` - Coverage manager header

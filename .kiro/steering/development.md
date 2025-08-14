@@ -4,6 +4,61 @@
 
 **BEFORE ANY TASK**: Read critical-rules.md - Violation = Incomplete Task
 
+## NAMESPACE AND SYMBOL CONFLICT PREVENTION - MANDATORY
+
+### Pre-Development Verification
+
+**BEFORE creating ANY new class, namespace, macro, or symbol:**
+
+1. **Search entire codebase**: `grep -r "ClassName" include/ src/`
+2. **Check all namespaces**: Verify no duplicate namespace names exist
+3. **Verify macro uniqueness**: Search for existing macro definitions
+4. **Check symbol conflicts**: Ensure no ambiguous names
+
+### Naming Standards - MANDATORY
+
+#### Namespace Rules
+
+- **MUST be unique**: No duplicate namespace names anywhere
+- **MUST be descriptive**: `GameEngine::Animation::SkeletalAnimation` NOT `GameEngine::Animation::Animation`
+- **MUST follow hierarchy**: `GameEngine::Module::SpecificPurpose`
+- **FORBIDDEN**: Generic names like `Utils`, `Common`, `Base`, `Helper`
+
+#### Class Naming Rules
+
+- **MUST be unique**: No two classes with same name, even in different namespaces
+- **MUST be descriptive**: `SkeletalAnimation` vs `GraphicsAnimation`
+- **MUST indicate purpose**: `AnimationSkeleton` vs `RenderSkeleton`
+- **FORBIDDEN**: Generic names like `Manager`, `Handler`, `Controller` without context
+
+#### Macro Naming Rules
+
+- **MUST have project prefix**: `GAMEENGINE_` or `GE_`
+- **MUST be unique**: No duplicate macro names
+- **MUST be descriptive**: `GAMEENGINE_MAX_ANIMATION_BONES` NOT `MAX_BONES`
+- **FORBIDDEN**: Generic names without prefixes
+
+### Conflict Detection Commands
+
+```powershell
+# Before creating new class "MyClass"
+grep -r "class MyClass" include/ src/
+grep -r "MyClass" include/ src/
+
+# Before creating new namespace "MyNamespace"
+grep -r "namespace MyNamespace" include/ src/
+
+# Before creating new macro "MY_MACRO"
+grep -r "#define MY_MACRO" include/ src/
+```
+
+### Violation Prevention
+
+- **NEVER assume a name is available**
+- **ALWAYS verify uniqueness before implementation**
+- **NEVER create ambiguous symbols**
+- **ALWAYS use fully qualified names in headers**
+
 ## DANGEROUS COMMANDS - ABSOLUTELY PROHIBITED
 
 ### Windows Dangerous Commands

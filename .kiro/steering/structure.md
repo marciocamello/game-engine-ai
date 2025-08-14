@@ -162,6 +162,13 @@ docs/
 - **ALL names, comments, and documentation MUST be in English**
 - **NO Portuguese or other languages in any part of the codebase**
 
+### CRITICAL RULE: Namespace and Symbol Uniqueness
+
+- **EVERY namespace MUST be globally unique**
+- **EVERY class name MUST be globally unique**
+- **EVERY macro MUST have unique name with project prefix**
+- **NO duplicate symbols allowed anywhere in the project**
+
 ### Files and Directories
 
 - **Headers**: PascalCase (e.g., `GraphicsRenderer.h`)
@@ -172,12 +179,45 @@ docs/
 ### Code Conventions
 
 - **Classes**: PascalCase (e.g., `GraphicsRenderer`, `PhysicsEngine`)
+  - **MUST be unique**: No duplicate class names anywhere
+  - **MUST be descriptive**: `SkeletalAnimation` vs `GraphicsAnimation`
 - **Methods**: PascalCase (e.g., `Initialize()`, `GetRenderer()`)
 - **Member variables**: m\_ prefix with camelCase (e.g., `m_renderer`, `m_isRunning`)
 - **Constants**: UPPER_SNAKE_CASE (e.g., `MAX_RIGID_BODIES`)
 - **Namespaces**: PascalCase (e.g., `GameEngine`, `Math`)
+  - **MUST be unique**: No duplicate namespace names
+  - **MUST be hierarchical**: `GameEngine::Module::Purpose`
+  - **FORBIDDEN**: Generic names like `Utils`, `Common`, `Base`
+- **Macros**: UPPER_SNAKE_CASE with project prefix
+  - **MUST use prefix**: `GAMEENGINE_` or `GE_`
+  - **Example**: `GAMEENGINE_MAX_BONES` NOT `MAX_BONES`
 - **Comments**: English only, technical and professional
 - **Variable names**: Descriptive English names
+
+### Conflict Prevention Rules
+
+#### Before Creating Any Symbol
+
+1. **Search entire codebase**: Verify name doesn't exist
+2. **Check all modules**: Ensure no future conflicts
+3. **Use descriptive names**: Avoid generic terms
+4. **Follow naming hierarchy**: Maintain consistent structure
+
+#### Namespace Design Rules
+
+- **Unique Purpose**: Each namespace serves one specific purpose
+- **Clear Hierarchy**: `GameEngine::Module::Component::SpecificClass`
+- **No Ambiguity**: Names clearly indicate functionality
+- **Example Good**: `GameEngine::Animation::SkeletalAnimation`
+- **Example Bad**: `GameEngine::Animation::Animation` (ambiguous)
+
+#### Class Design Rules
+
+- **Unique Names**: No two classes with same name anywhere
+- **Purpose-Specific**: Name indicates exact functionality
+- **Module-Aware**: Consider which module the class belongs to
+- **Example Good**: `AnimationSkeleton` vs `RenderSkeleton`
+- **Example Bad**: Two `Skeleton` classes (conflict)
 
 ### CMake Conventions
 

@@ -59,6 +59,57 @@
 - **NEVER add redundant code just to make tests pass**
 - **Reuse existing components whenever possible**
 
+### 3.1. NAMESPACE AND SYMBOL CONFLICTS - ZERO TOLERANCE
+
+#### Namespace Uniqueness - MANDATORY
+
+- **EVERY namespace MUST be unique across the entire project**
+- **NEVER create duplicate namespace names in different modules**
+- **NEVER use generic namespace names like `Utils`, `Common`, `Base`**
+- **ALWAYS use descriptive, module-specific namespace names**
+- **Example**: `GameEngine::Animation::SkeletalAnimation` NOT `GameEngine::Animation::Animation`
+
+#### Class Name Conflicts - FORBIDDEN
+
+- **NEVER create classes with identical names in different namespaces**
+- **Class names MUST be unique and descriptive of their purpose**
+- **Example**: Use `SkeletalAnimation` and `GraphicsAnimation`, NOT two `Animation` classes
+- **ALWAYS verify class name uniqueness before creating new classes**
+
+#### Macro Conflicts - ZERO TOLERANCE
+
+- **ALL macros MUST have unique names with proper prefixes**
+- **ALWAYS use project-specific prefixes: `GAMEENGINE_`, `GE_`**
+- **NEVER use generic macro names like `MAX`, `MIN`, `ASSERT`**
+- **Example**: `GAMEENGINE_MAX_BONES` NOT `MAX_BONES`
+- **ALWAYS check for existing macros before defining new ones**
+
+#### Symbol Resolution Rules
+
+- **NEVER rely on `using namespace` in headers**
+- **ALWAYS use fully qualified names in headers**
+- **NEVER create ambiguous symbol names**
+- **ALWAYS verify symbol uniqueness across all modules**
+
+#### Conflict Prevention Checklist
+
+Before creating ANY new symbol (class, namespace, macro, function):
+
+1. **Search entire codebase for existing names**
+2. **Verify no conflicts in current or planned modules**
+3. **Use descriptive, purpose-specific names**
+4. **Add proper prefixes for macros and global symbols**
+5. **Document the new symbol in appropriate headers**
+
+#### Violation Consequences
+
+- **Any namespace conflict** = IMMEDIATE task failure
+- **Any class name conflict** = IMMEDIATE refactoring required
+- **Any macro conflict** = IMMEDIATE renaming required
+- **Ambiguous symbols** = IMMEDIATE resolution required
+
+**This is the MINIMUM standard for ANY professional C++ project**
+
 ### 4. TEST STANDARDS
 
 #### Valid Tests

@@ -2,6 +2,15 @@
 
 Game Engine Kiro v1.1 introduces a comprehensive animation system supporting skeletal animation, blend trees, state machines, and advanced animation techniques for creating lifelike character movement and object animations.
 
+## 🔄 Important: Recent Namespace Changes
+
+**Note**: The animation system classes have been renamed to resolve namespace conflicts:
+
+- `GameEngine::Animation::Animation` → `GameEngine::Animation::SkeletalAnimation`
+- `GameEngine::Animation::Skeleton` → `GameEngine::Animation::AnimationSkeleton`
+
+All code examples in this document use the new class names. For migration information, see the [Migration Guide](namespace-class-conflict-resolution-migration-guide.md).
+
 ## 🎯 Overview
 
 The Animation System provides a complete solution for animating 3D models, characters, and objects with support for skeletal animation, morph targets, procedural animation, and complex animation blending and state management.
@@ -83,13 +92,13 @@ private:
 class AnimationPlayer {
 public:
     // Animation playback
-    void PlayAnimation(std::shared_ptr<SkeletalAnimation> animation, float weight = 1.0f, float fadeTime = 0.0f);
-    void StopAnimation(std::shared_ptr<SkeletalAnimation> animation, float fadeTime = 0.3f);
-    void CrossFade(std::shared_ptr<SkeletalAnimation> from, std::shared_ptr<SkeletalAnimation> to, float duration);
+    void PlayAnimation(std::shared_ptr<GameEngine::Animation::SkeletalAnimation> animation, float weight = 1.0f, float fadeTime = 0.0f);
+    void StopAnimation(std::shared_ptr<GameEngine::Animation::SkeletalAnimation> animation, float fadeTime = 0.3f);
+    void CrossFade(std::shared_ptr<GameEngine::Animation::SkeletalAnimation> from, std::shared_ptr<GameEngine::Animation::SkeletalAnimation> to, float duration);
 
     // Blending
-    void SetAnimationWeight(std::shared_ptr<SkeletalAnimation> animation, float weight);
-    float GetAnimationWeight(std::shared_ptr<SkeletalAnimation> animation) const;
+    void SetAnimationWeight(std::shared_ptr<GameEngine::Animation::SkeletalAnimation> animation, float weight);
+    float GetAnimationWeight(std::shared_ptr<GameEngine::Animation::SkeletalAnimation> animation) const;
 
     // Playback control
     void SetPlaybackSpeed(float speed);
@@ -98,8 +107,8 @@ public:
     float GetNormalizedTime() const;
 
     // Skeleton binding
-    void SetSkeleton(std::shared_ptr<AnimationSkeleton> skeleton);
-    std::shared_ptr<AnimationSkeleton> GetSkeleton() const;
+    void SetSkeleton(std::shared_ptr<GameEngine::Animation::AnimationSkeleton> skeleton);
+    std::shared_ptr<GameEngine::Animation::AnimationSkeleton> GetSkeleton() const;
 
     // Update and evaluation
     void Update(float deltaTime);
@@ -107,7 +116,7 @@ public:
 
 private:
     struct PlayingAnimation {
-        std::shared_ptr<SkeletalAnimation> animation;
+        std::shared_ptr<GameEngine::Animation::SkeletalAnimation> animation;
         float time = 0.0f;
         float weight = 1.0f;
         float fadeTarget = 1.0f;
@@ -116,7 +125,7 @@ private:
     };
 
     std::vector<PlayingAnimation> m_playingAnimations;
-    std::shared_ptr<AnimationSkeleton> m_skeleton;
+    std::shared_ptr<GameEngine::Animation::AnimationSkeleton> m_skeleton;
     float m_playbackSpeed = 1.0f;
 };
 ```
@@ -126,7 +135,7 @@ private:
 ### AnimationSkeleton Structure
 
 ```cpp
-class AnimationSkeleton {
+class GameEngine::Animation::AnimationSkeleton {
 public:
     struct Bone {
         std::string name;
@@ -160,7 +169,7 @@ private:
 ### Animation Data
 
 ```cpp
-class SkeletalAnimation {
+class GameEngine::Animation::SkeletalAnimation {
 public:
     struct BoneTrack {
         int boneIndex;
@@ -268,8 +277,8 @@ public:
     void SetLooping(bool looping);
 
     // Single animation state
-    void SetAnimation(std::shared_ptr<SkeletalAnimation> animation);
-    std::shared_ptr<SkeletalAnimation> GetAnimation() const;
+    void SetAnimation(std::shared_ptr<GameEngine::Animation::SkeletalAnimation> animation);
+    std::shared_ptr<GameEngine::Animation::SkeletalAnimation> GetAnimation() const;
 
     // Blend tree state
     void SetBlendTree(std::shared_ptr<BlendTree> blendTree);
@@ -294,7 +303,7 @@ private:
     float m_speed = 1.0f;
     bool m_looping = true;
 
-    std::shared_ptr<SkeletalAnimation> m_animation;
+    std::shared_ptr<GameEngine::Animation::SkeletalAnimation> m_animation;
     std::shared_ptr<BlendTree> m_blendTree;
     std::shared_ptr<AnimationStateMachine> m_subStateMachine;
     std::vector<AnimationEvent> m_events;
@@ -364,9 +373,9 @@ public:
     void SetParameters(const std::string& paramX, const std::string& paramY);
 
     // Motion management
-    void AddMotion(std::shared_ptr<SkeletalAnimation> animation, float threshold);
-    void AddMotion(std::shared_ptr<SkeletalAnimation> animation, const Math::Vec2& position);
-    void RemoveMotion(std::shared_ptr<SkeletalAnimation> animation);
+    void AddMotion(std::shared_ptr<GameEngine::Animation::SkeletalAnimation> animation, float threshold);
+    void AddMotion(std::shared_ptr<GameEngine::Animation::SkeletalAnimation> animation, const Math::Vec2& position);
+    void RemoveMotion(std::shared_ptr<GameEngine::Animation::SkeletalAnimation> animation);
 
     // Blend tree nodes
     void AddChildBlendTree(std::shared_ptr<BlendTree> childTree, float threshold);
@@ -377,7 +386,7 @@ public:
 
 private:
     struct BlendTreeNode {
-        std::shared_ptr<SkeletalAnimation> animation;
+        std::shared_ptr<GameEngine::Animation::SkeletalAnimation> animation;
         std::shared_ptr<BlendTree> childTree;
         float threshold = 0.0f;
         Math::Vec2 position = Math::Vec2(0.0f);
@@ -391,7 +400,7 @@ private:
 };
 
 struct AnimationSample {
-    std::shared_ptr<SkeletalAnimation> animation;
+    std::shared_ptr<GameEngine::Animation::SkeletalAnimation> animation;
     float weight;
     float time;
 };
@@ -403,21 +412,21 @@ struct AnimationSample {
 // 1D Blend Tree (e.g., walk/run based on speed)
 class Simple1DBlendTree : public BlendTree {
 public:
-    void AddMotion(std::shared_ptr<SkeletalAnimation> animation, float threshold);
+    void AddMotion(std::shared_ptr<GameEngine::Animation::SkeletalAnimation> animation, float threshold);
     void Evaluate(float parameter, std::vector<AnimationSample>& samples) const;
 };
 
 // 2D Directional Blend Tree (e.g., movement directions)
 class SimpleDirectional2DBlendTree : public BlendTree {
 public:
-    void AddMotion(std::shared_ptr<SkeletalAnimation> animation, const Math::Vec2& direction);
+    void AddMotion(std::shared_ptr<GameEngine::Animation::SkeletalAnimation> animation, const Math::Vec2& direction);
     void Evaluate(const Math::Vec2& direction, std::vector<AnimationSample>& samples) const;
 };
 
 // 2D Freeform Blend Tree (e.g., strafe movement)
 class Freeform2DBlendTree : public BlendTree {
 public:
-    void AddMotion(std::shared_ptr<SkeletalAnimation> animation, const Math::Vec2& position);
+    void AddMotion(std::shared_ptr<GameEngine::Animation::SkeletalAnimation> animation, const Math::Vec2& position);
     void Evaluate(const Math::Vec2& position, std::vector<AnimationSample>& samples) const;
 
 private:
@@ -535,7 +544,7 @@ public:
     void SetChainLength(float length);
 
     // Solving
-    bool Solve(AnimationSkeleton& skeleton, std::vector<Math::Mat4>& boneTransforms);
+    bool Solve(GameEngine::Animation::AnimationSkeleton& skeleton, std::vector<Math::Mat4>& boneTransforms);
     void SetIterations(int iterations);
     void SetTolerance(float tolerance);
 
@@ -556,7 +565,7 @@ public:
     void SetLowerBone(int boneIndex);
     void SetEndEffector(int boneIndex);
 
-    bool Solve(AnimationSkeleton& skeleton, std::vector<Math::Mat4>& boneTransforms) override;
+    bool Solve(GameEngine::Animation::AnimationSkeleton& skeleton, std::vector<Math::Mat4>& boneTransforms) override;
 };
 ```
 
@@ -575,7 +584,7 @@ public:
     void SetTargetWeight(float weight);
 
     // Update
-    void Update(float deltaTime, AnimationSkeleton& skeleton, std::vector<Math::Mat4>& boneTransforms);
+    void Update(float deltaTime, GameEngine::Animation::AnimationSkeleton& skeleton, std::vector<Math::Mat4>& boneTransforms);
 
 private:
     int m_headBone = -1;
@@ -602,9 +611,9 @@ auto animController = std::make_unique<AnimationController>();
 animController->SetSkeleton(skeleton);
 
 // Load animations
-auto idleAnim = resourceManager->Load<SkeletalAnimation>("animations/idle.fbx");
-auto walkAnim = resourceManager->Load<SkeletalAnimation>("animations/walk.fbx");
-auto runAnim = resourceManager->Load<SkeletalAnimation>("animations/run.fbx");
+auto idleAnim = resourceManager->Load<GameEngine::Animation::SkeletalAnimation>("animations/idle.fbx");
+auto walkAnim = resourceManager->Load<GameEngine::Animation::SkeletalAnimation>("animations/walk.fbx");
+auto runAnim = resourceManager->Load<GameEngine::Animation::SkeletalAnimation>("animations/run.fbx");
 
 // Create state machine
 auto stateMachine = std::make_shared<AnimationStateMachine>();

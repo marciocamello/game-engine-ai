@@ -2,6 +2,19 @@
 
 Complete API documentation for Game Engine Kiro. This reference covers all public classes, methods, and interfaces available to game developers.
 
+## 🔄 Recent Changes (Namespace Refactoring)
+
+**Important**: Game Engine Kiro has undergone a major namespace refactoring to resolve class name conflicts. The following classes have been renamed:
+
+| Old Class Name                     | New Class Name                             | Header File                     |
+| ---------------------------------- | ------------------------------------------ | ------------------------------- |
+| `GameEngine::Animation::Animation` | `GameEngine::Animation::SkeletalAnimation` | `Animation/SkeletalAnimation.h` |
+| `GameEngine::Graphics::Animation`  | `GameEngine::Graphics::GraphicsAnimation`  | `Graphics/GraphicsAnimation.h`  |
+| `GameEngine::Animation::Skeleton`  | `GameEngine::Animation::AnimationSkeleton` | `Animation/AnimationSkeleton.h` |
+| `GameEngine::Graphics::Skeleton`   | `GameEngine::Graphics::RenderSkeleton`     | `Graphics/RenderSkeleton.h`     |
+
+For complete migration information, see the [Migration Guide](namespace-class-conflict-resolution-migration-guide.md).
+
 ## 🎯 Core Systems
 
 ### Engine Class

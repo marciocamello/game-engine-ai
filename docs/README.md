@@ -84,6 +84,7 @@ New to Game Engine Kiro? Start here:
 ### Planning and Migration
 
 - **[Roadmap](roadmap.md)** - Development progress and future plans
+- **[Namespace Migration Guide](namespace-class-conflict-resolution-migration-guide.md)** - Guide for updating code after namespace refactoring
 
 ## 📖 Documentation Organization
 

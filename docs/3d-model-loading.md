@@ -77,7 +77,7 @@ public:
 
     // Animation
     bool HasAnimations() const;
-    std::vector<std::shared_ptr<GraphicsAnimation>> GetAnimations() const;
+    std::vector<std::shared_ptr<GameEngine::Graphics::GraphicsAnimation>> GetAnimations() const;
     void PlayAnimation(const std::string& name, bool loop = true);
 
     // Bounding information
@@ -92,7 +92,7 @@ private:
     std::shared_ptr<ModelNode> m_rootNode;
     std::vector<std::shared_ptr<Mesh>> m_meshes;
     std::vector<std::shared_ptr<Material>> m_materials;
-    std::vector<std::shared_ptr<GraphicsAnimation>> m_animations;
+    std::vector<std::shared_ptr<GameEngine::Graphics::GraphicsAnimation>> m_animations;
     BoundingBox m_boundingBox;
 };
 ```
@@ -261,7 +261,7 @@ struct MaterialPropertyMapping {
 ### Animation Data Structures
 
 ```cpp
-class GraphicsAnimation {
+class GameEngine::Graphics::GraphicsAnimation {
 public:
     struct Channel {
         std::string nodeName;
@@ -304,7 +304,7 @@ struct QuaternionKey {
 ### Skeletal Animation Support
 
 ```cpp
-class RenderSkeleton {
+class GameEngine::Graphics::RenderSkeleton {
 public:
     struct Bone {
         std::string name;

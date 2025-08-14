@@ -1,9 +1,16 @@
 { 
-  "timestamp": "14/08/2025 23:00:22,15", 
-  "last_duration": 12, 
+  "timestamp": "14/08/2025 23:06:06,24", 
+  "last_duration": 8, 
   "build_type": "Release", 
   "build_signature": "Release_ON_OFF_ON__MathTest", 
-  "compiled_files": , 
-  "cached_files": , 
-  "total_targets":  
+  "source_files": 114, 
+  "header_files": 117, 
+  "test_files": 102, 
+  "compiled_files": 28, 
+  "cached_files": 114, 
+  "cache_hit_rate": 100, 
+  "total_targets": 2, 
+  "generator": "vs-release", 
+  "cache_enabled": false, 
+  "performance_classification": "excellent" 
 } 

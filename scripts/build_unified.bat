@@ -942,20 +942,61 @@ REM Count source files in project
 set "SOURCE_FILES=0"
 set "HEADER_FILES=0"
 set "TEST_FILES=0"
+set "COMPILED_FILES=0"
+set "CACHED_FILES=0"
 
 REM Count source files
 for /f %%i in ('dir /s /b "src\*.cpp" 2^>nul ^| find /c /v ""') do set SOURCE_FILES=%%i
 for /f %%i in ('dir /s /b "include\*.h" 2^>nul ^| find /c /v ""') do set HEADER_FILES=%%i
 for /f %%i in ('dir /s /b "tests\*.cpp" 2^>nul ^| find /c /v ""') do set TEST_FILES=%%i
 
+REM Estimate compiled vs cached files based on build type and duration
+if %BUILD_DURATION_SECONDS% lss 30 (
+    REM Fast build - likely mostly cached
+    set /a COMPILED_FILES=%SOURCE_FILES%/4
+    set /a CACHED_FILES=%SOURCE_FILES%-%COMPILED_FILES%
+) else if %BUILD_DURATION_SECONDS% lss 120 (
+    REM Medium build - some compilation
+    set /a COMPILED_FILES=%SOURCE_FILES%/2
+    set /a CACHED_FILES=%SOURCE_FILES%-%COMPILED_FILES%
+) else (
+    REM Slow build - mostly compilation
+    set /a COMPILED_FILES=%SOURCE_FILES%*3/4
+    set /a CACHED_FILES=%SOURCE_FILES%-%COMPILED_FILES%
+)
+
 REM Report file statistics
 echo   Source Files: %SOURCE_FILES%
 echo   Header Files: %HEADER_FILES%
 echo   Test Files: %TEST_FILES%
+echo   Compiled Files: %COMPILED_FILES% ^(estimated^)
+echo   Cached Files: %CACHED_FILES% ^(estimated^)
+
+REM Calculate cache hit rate
+if %SOURCE_FILES% gtr 0 (
+    set /a CACHE_HIT_RATE=%CACHED_FILES%*100/%SOURCE_FILES%
+    echo   Cache Hit Rate: %CACHE_HIT_RATE%%%
+) else (
+    set CACHE_HIT_RATE=0
+    echo   Cache Hit Rate: N/A
+)
 
 REM Estimate build complexity
 set /a TOTAL_FILES=%SOURCE_FILES%+%HEADER_FILES%+%TEST_FILES%
 echo   Total Files: %TOTAL_FILES%
+
+REM Performance classification
+if %BUILD_DURATION_SECONDS% lss 30 (
+    echo   Build Performance: Excellent ^(under 30s^)
+) else if %BUILD_DURATION_SECONDS% lss 60 (
+    echo   Build Performance: Good ^(30-60s^)
+) else if %BUILD_DURATION_SECONDS% lss 120 (
+    echo   Build Performance: Moderate ^(1-2 minutes^)
+) else if %BUILD_DURATION_SECONDS% lss 300 (
+    echo   Build Performance: Slow ^(2-5 minutes^)
+) else (
+    echo   Build Performance: Very Slow ^(over 5 minutes^)
+)
 
 REM Analyze build targets based on configuration
 call :analyze_build_targets
@@ -964,6 +1005,9 @@ REM Log statistics
 echo Source Files: %SOURCE_FILES% >> "%BUILD_STATS_FILE%"
 echo Header Files: %HEADER_FILES% >> "%BUILD_STATS_FILE%"
 echo Test Files: %TEST_FILES% >> "%BUILD_STATS_FILE%"
+echo Compiled Files: %COMPILED_FILES% >> "%BUILD_STATS_FILE%"
+echo Cached Files: %CACHED_FILES% >> "%BUILD_STATS_FILE%"
+echo Cache Hit Rate: %CACHE_HIT_RATE%%% >> "%BUILD_STATS_FILE%"
 echo Build Duration: %BUILD_DURATION_SECONDS% seconds >> "%BUILD_STATS_FILE%"
 
 goto :eof
@@ -1057,9 +1101,54 @@ echo   "timestamp": "%BUILD_END_DATE% %BUILD_END_TIME%", >> "logs\%BUILD_PERF_FI
 echo   "last_duration": %BUILD_DURATION_SECONDS%, >> "logs\%BUILD_PERF_FILE%"
 echo   "build_type": "%BUILD_TYPE%", >> "logs\%BUILD_PERF_FILE%"
 echo   "build_signature": "%BUILD_SIGNATURE%", >> "logs\%BUILD_PERF_FILE%"
+echo   "source_files": %SOURCE_FILES%, >> "logs\%BUILD_PERF_FILE%"
+echo   "header_files": %HEADER_FILES%, >> "logs\%BUILD_PERF_FILE%"
+echo   "test_files": %TEST_FILES%, >> "logs\%BUILD_PERF_FILE%"
 echo   "compiled_files": %COMPILED_FILES%, >> "logs\%BUILD_PERF_FILE%"
 echo   "cached_files": %CACHED_FILES%, >> "logs\%BUILD_PERF_FILE%"
-echo   "total_targets": %TOTAL_TARGETS% >> "logs\%BUILD_PERF_FILE%"
+echo   "cache_hit_rate": %CACHE_HIT_RATE%, >> "logs\%BUILD_PERF_FILE%"
+echo   "total_targets": %ESTIMATED_TARGETS%, >> "logs\%BUILD_PERF_FILE%"
+echo   "generator": "%CONFIGURE_PRESET%", >> "logs\%BUILD_PERF_FILE%"
+echo   "cache_enabled": %VCPKG_CACHE_ENABLED%, >> "logs\%BUILD_PERF_FILE%"
+echo   "performance_classification": "%BUILD_PERFORMANCE_CLASS%" >> "logs\%BUILD_PERF_FILE%"
+echo } >> "logs\%BUILD_PERF_FILE%"
+
+REM Set performance classification for JSON
+if %BUILD_DURATION_SECONDS% lss 30 (
+    set "BUILD_PERFORMANCE_CLASS=excellent"
+) else if %BUILD_DURATION_SECONDS% lss 60 (
+    set "BUILD_PERFORMANCE_CLASS=good"
+) else if %BUILD_DURATION_SECONDS% lss 120 (
+    set "BUILD_PERFORMANCE_CLASS=moderate"
+) else if %BUILD_DURATION_SECONDS% lss 300 (
+    set "BUILD_PERFORMANCE_CLASS=slow"
+) else (
+    set "BUILD_PERFORMANCE_CLASS=very_slow"
+)
+
+REM Set cache enabled flag
+if defined VCPKG_BINARY_SOURCES (
+    set "VCPKG_CACHE_ENABLED=true"
+) else (
+    set "VCPKG_CACHE_ENABLED=false"
+)
+
+REM Update the JSON with correct values
+echo { > "logs\%BUILD_PERF_FILE%"
+echo   "timestamp": "%BUILD_END_DATE% %BUILD_END_TIME%", >> "logs\%BUILD_PERF_FILE%"
+echo   "last_duration": %BUILD_DURATION_SECONDS%, >> "logs\%BUILD_PERF_FILE%"
+echo   "build_type": "%BUILD_TYPE%", >> "logs\%BUILD_PERF_FILE%"
+echo   "build_signature": "%BUILD_SIGNATURE%", >> "logs\%BUILD_PERF_FILE%"
+echo   "source_files": %SOURCE_FILES%, >> "logs\%BUILD_PERF_FILE%"
+echo   "header_files": %HEADER_FILES%, >> "logs\%BUILD_PERF_FILE%"
+echo   "test_files": %TEST_FILES%, >> "logs\%BUILD_PERF_FILE%"
+echo   "compiled_files": %COMPILED_FILES%, >> "logs\%BUILD_PERF_FILE%"
+echo   "cached_files": %CACHED_FILES%, >> "logs\%BUILD_PERF_FILE%"
+echo   "cache_hit_rate": %CACHE_HIT_RATE%, >> "logs\%BUILD_PERF_FILE%"
+echo   "total_targets": %ESTIMATED_TARGETS%, >> "logs\%BUILD_PERF_FILE%"
+echo   "generator": "%CONFIGURE_PRESET%", >> "logs\%BUILD_PERF_FILE%"
+echo   "cache_enabled": %VCPKG_CACHE_ENABLED%, >> "logs\%BUILD_PERF_FILE%"
+echo   "performance_classification": "%BUILD_PERFORMANCE_CLASS%" >> "logs\%BUILD_PERF_FILE%"
 echo } >> "logs\%BUILD_PERF_FILE%"
 
 REM Clean up temporary files

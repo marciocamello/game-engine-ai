@@ -10,17 +10,22 @@ echo ========================================
 REM Initialize build diagnostics and performance monitoring
 call :init_build_diagnostics
 
-REM Default values
-set BUILD_ENGINE=OFF
-set BUILD_PROJECTS=OFF
-set BUILD_TESTS=OFF
-set SPECIFIC_PROJECT=
-set SPECIFIC_TEST=
-set BUILD_TYPE=Release
-set ENABLE_COVERAGE=OFF
-set CMAKE_ARGS=
-set BUILD_TYPE_DESC=
-set USE_NINJA=OFF
+REM Default values - Force clear any previous values
+set "BUILD_ENGINE=OFF"
+set "BUILD_PROJECTS=OFF"
+set "BUILD_TESTS=OFF"
+set "SPECIFIC_PROJECT="
+set "SPECIFIC_TEST="
+set "BUILD_TYPE=Release"
+set "ENABLE_COVERAGE=OFF"
+set "CMAKE_ARGS="
+set "BUILD_TYPE_DESC="
+set "USE_NINJA=OFF"
+set "CLEAN_ENGINE="
+set "CLEAN_TESTS="
+set "CLEAN_PROJECTS="
+set "CLEAN_CACHE="
+set "DISABLE_VCPKG_CACHE="
 
 REM Parse command line arguments with improved quoting and validation
 :parse_args
@@ -44,8 +49,11 @@ if /i "%~1"=="--tests" (
     if not "%~2"=="" (
         echo "%~2" | findstr /r /c:"^--" >nul
         if errorlevel 1 (
-            set "SPECIFIC_TEST=%~2"
-            shift
+            REM Only set specific test if it's not empty and not a flag
+            if not "%~2"=="" (
+                set "SPECIFIC_TEST=%~2"
+                shift
+            )
         )
     )
     shift
@@ -383,6 +391,78 @@ if exist "build\CMakeCache.txt" (
                 echo   Cached: %%a, Requested: %BUILD_TYPE%
                 if exist build (
                     rmdir /s /q build 2>nul
+                )
+            )
+        )
+    )
+    
+    REM Check for specific test/project configuration changes
+    if not "%SPECIFIC_TEST%"=="" (
+        findstr /C:"BUILD_SPECIFIC_TEST" "build\CMakeCache.txt" >nul 2>&1
+        if !errorlevel! equ 0 (
+            for /f "tokens=2 delims==" %%a in ('findstr /C:"BUILD_SPECIFIC_TEST:STRING" "build\CMakeCache.txt" 2^>nul') do (
+                if not "%%a"=="%SPECIFIC_TEST%" (
+                    echo WARNING: CMake cache specific test mismatch. Cleaning cache...
+                    echo   Cached: %%a, Requested: %SPECIFIC_TEST%
+                    if exist build (
+                        rmdir /s /q build 2>nul
+                    )
+                )
+            )
+        ) else (
+            REM No specific test in cache but we're requesting one - clean cache
+            echo WARNING: CMake cache has no specific test but one is requested. Cleaning cache...
+            if exist build (
+                rmdir /s /q build 2>nul
+            )
+        )
+    ) else (
+        REM We're not requesting a specific test, but cache might have one - check and clean if needed
+        findstr /C:"BUILD_SPECIFIC_TEST" "build\CMakeCache.txt" >nul 2>&1
+        if !errorlevel! equ 0 (
+            for /f "tokens=2 delims==" %%a in ('findstr /C:"BUILD_SPECIFIC_TEST:STRING" "build\CMakeCache.txt" 2^>nul') do (
+                if not "%%a"=="" (
+                    echo WARNING: CMake cache has specific test but none requested. Cleaning cache...
+                    echo   Cached: %%a, Requested: none
+                    if exist build (
+                        rmdir /s /q build 2>nul
+                    )
+                )
+            )
+        )
+    )
+    
+    REM Check for specific project configuration changes
+    if not "%SPECIFIC_PROJECT%"=="" (
+        findstr /C:"BUILD_SPECIFIC_PROJECT" "build\CMakeCache.txt" >nul 2>&1
+        if !errorlevel! equ 0 (
+            for /f "tokens=2 delims==" %%a in ('findstr /C:"BUILD_SPECIFIC_PROJECT:STRING" "build\CMakeCache.txt" 2^>nul') do (
+                if not "%%a"=="%SPECIFIC_PROJECT%" (
+                    echo WARNING: CMake cache specific project mismatch. Cleaning cache...
+                    echo   Cached: %%a, Requested: %SPECIFIC_PROJECT%
+                    if exist build (
+                        rmdir /s /q build 2>nul
+                    )
+                )
+            )
+        ) else (
+            REM No specific project in cache but we're requesting one - clean cache
+            echo WARNING: CMake cache has no specific project but one is requested. Cleaning cache...
+            if exist build (
+                rmdir /s /q build 2>nul
+            )
+        )
+    ) else (
+        REM We're not requesting a specific project, but cache might have one - check and clean if needed
+        findstr /C:"BUILD_SPECIFIC_PROJECT" "build\CMakeCache.txt" >nul 2>&1
+        if !errorlevel! equ 0 (
+            for /f "tokens=2 delims==" %%a in ('findstr /C:"BUILD_SPECIFIC_PROJECT:STRING" "build\CMakeCache.txt" 2^>nul') do (
+                if not "%%a"=="" (
+                    echo WARNING: CMake cache has specific project but none requested. Cleaning cache...
+                    echo   Cached: %%a, Requested: none
+                    if exist build (
+                        rmdir /s /q build 2>nul
+                    )
                 )
             )
         )
@@ -1024,7 +1104,18 @@ for /d %%d in (build\vs\x64\Debug\*Test.dir) do rmdir /s /q "%%d" 2>nul
 for /d %%d in (build\ninja\x64\Release\CMakeFiles\*Test.dir) do rmdir /s /q "%%d" 2>nul
 for /d %%d in (build\ninja\x64\Debug\CMakeFiles\*Test.dir) do rmdir /s /q "%%d" 2>nul
 
-echo   Test artifacts cleaned
+REM Clean CMake cache to force reconfiguration for test changes
+echo Cleaning CMake cache to ensure test configuration changes...
+if exist "build\CMakeCache.txt" del "build\CMakeCache.txt" 2>nul
+if exist "build\vs\x64\Release\CMakeCache.txt" del "build\vs\x64\Release\CMakeCache.txt" 2>nul
+if exist "build\vs\x64\Debug\CMakeCache.txt" del "build\vs\x64\Debug\CMakeCache.txt" 2>nul
+if exist "build\ninja\x64\Release\CMakeCache.txt" del "build\ninja\x64\Release\CMakeCache.txt" 2>nul
+if exist "build\ninja\x64\Debug\CMakeCache.txt" del "build\ninja\x64\Debug\CMakeCache.txt" 2>nul
+
+REM Clean build signature to force fresh configuration
+if exist "build\.last_build_signature" del "build\.last_build_signature" 2>nul
+
+echo   Test artifacts and cache cleaned
 goto :eof
 
 :clean_project_artifacts

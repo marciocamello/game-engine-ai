@@ -84,12 +84,14 @@ goto :test_success
 :run_unit_tests
 echo Running Unit Tests Only...
 call :run_unit_tests_internal
+if errorlevel 2 goto :no_tests_found
 if errorlevel 1 goto :test_failed
 goto :test_success
 
 :run_integration_tests
 echo Running Integration Tests Only...
 call :run_integration_tests_internal
+if errorlevel 2 goto :no_tests_found
 if errorlevel 1 goto :test_failed
 goto :test_success
 
@@ -110,9 +112,10 @@ exit /b 0
 
 :run_unit_tests_internal
 REM Auto-discover and run unit tests (exclude Integration tests and EnhancedTestRunner)
+set "TESTS_FOUND=0"
+setlocal enabledelayedexpansion
 for %%f in ("%TEST_PATH%\*Test.exe") do (
     set "testname=%%~nf"
-    setlocal enabledelayedexpansion
     REM Skip integration tests and test runner utility
     echo !testname! | findstr /i "Integration" >nul
     if errorlevel 1 (
@@ -120,6 +123,7 @@ for %%f in ("%TEST_PATH%\*Test.exe") do (
         if errorlevel 1 (
             echo !testname! | findstr /i "TestConfigManager" >nul
             if errorlevel 1 (
+                set /a TESTS_FOUND+=1
                 echo [INFO] Running !testname!...
                 "%%f" >nul 2>&1
                 if errorlevel 1 (
@@ -132,15 +136,24 @@ for %%f in ("%TEST_PATH%\*Test.exe") do (
             )
         )
     )
-    endlocal
 )
+
+if !TESTS_FOUND! equ 0 (
+    echo [INFO] No unit tests found in %TEST_PATH%
+    echo [INFO] Run 'scripts\build_unified.bat --tests' to build tests first
+    endlocal
+    exit /b 2
+)
+endlocal
 exit /b 0
 
 :run_integration_tests_internal
 REM Auto-discover and run integration tests
+set "INTEGRATION_TESTS_FOUND=0"
+setlocal enabledelayedexpansion
 for %%f in ("%TEST_PATH%\*IntegrationTest.exe") do (
     set "testname=%%~nf"
-    setlocal enabledelayedexpansion
+    set /a INTEGRATION_TESTS_FOUND+=1
     echo [INFO] Running !testname!...
     "%%f" >nul 2>&1
     if errorlevel 1 (
@@ -150,8 +163,15 @@ for %%f in ("%TEST_PATH%\*IntegrationTest.exe") do (
     ) else (
         echo [PASS] !testname!
     )
-    endlocal
 )
+
+if !INTEGRATION_TESTS_FOUND! equ 0 (
+    echo [INFO] No integration tests found in %TEST_PATH%
+    echo [INFO] Run 'scripts\build_unified.bat --tests' to build tests first
+    endlocal
+    exit /b 2
+)
+endlocal
 exit /b 0
 
 :run_project_tests_internal
@@ -265,6 +285,17 @@ echo [FAILED] One or more tests failed!
 echo ========================================
 echo.
 exit /b 1
+
+:no_tests_found
+echo.
+echo ========================================
+echo [INFO] NO TESTS FOUND!
+echo ========================================
+echo.
+echo No test executables were found in the build directory.
+echo Please run 'scripts\build_unified.bat --tests' to build tests first.
+echo.
+exit /b 2
 
 :help
 echo Game Engine Kiro - Test Runner

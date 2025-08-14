@@ -9,14 +9,15 @@
 #include <functional>
 
 namespace GameEngine {
+namespace Graphics {
 
     /**
-     * @brief Bone in a skeletal hierarchy
+     * @brief Bone in a skeletal hierarchy for rendering
      */
-    class Bone : public std::enable_shared_from_this<Bone> {
+    class RenderBone : public std::enable_shared_from_this<RenderBone> {
     public:
-        Bone(const std::string& name = "", int32_t index = -1);
-        ~Bone() = default;
+        RenderBone(const std::string& name = "", int32_t index = -1);
+        ~RenderBone() = default;
 
         // Basic properties
         void SetName(const std::string& name) { m_name = name; }
@@ -26,12 +27,12 @@ namespace GameEngine {
         int32_t GetIndex() const { return m_index; }
 
         // Hierarchy management
-        void SetParent(std::shared_ptr<Bone> parent);
-        std::shared_ptr<Bone> GetParent() const { return m_parent.lock(); }
+        void SetParent(std::shared_ptr<RenderBone> parent);
+        std::shared_ptr<RenderBone> GetParent() const { return m_parent.lock(); }
         
-        void AddChild(std::shared_ptr<Bone> child);
-        void RemoveChild(std::shared_ptr<Bone> child);
-        const std::vector<std::shared_ptr<Bone>>& GetChildren() const { return m_children; }
+        void AddChild(std::shared_ptr<RenderBone> child);
+        void RemoveChild(std::shared_ptr<RenderBone> child);
+        const std::vector<std::shared_ptr<RenderBone>>& GetChildren() const { return m_children; }
 
         // Transform management
         void SetLocalTransform(const Math::Mat4& transform) { m_localTransform = transform; }
@@ -59,8 +60,8 @@ namespace GameEngine {
         int32_t m_index;
 
         // Hierarchy
-        std::weak_ptr<Bone> m_parent;
-        std::vector<std::shared_ptr<Bone>> m_children;
+        std::weak_ptr<RenderBone> m_parent;
+        std::vector<std::shared_ptr<RenderBone>> m_children;
 
         // Transforms
         Math::Mat4 m_localTransform = Math::Mat4(1.0f);
@@ -69,25 +70,25 @@ namespace GameEngine {
     };
 
     /**
-     * @brief Skeletal system for bone-based animation
+     * @brief Skeletal system for bone-based rendering
      */
-    class Skeleton {
+    class RenderSkeleton {
     public:
-        Skeleton() = default;
-        ~Skeleton() = default;
+        RenderSkeleton() = default;
+        ~RenderSkeleton() = default;
 
         // Bone management
-        void AddBone(std::shared_ptr<Bone> bone);
-        void SetBones(const std::vector<std::shared_ptr<Bone>>& bones);
-        const std::vector<std::shared_ptr<Bone>>& GetBones() const { return m_bones; }
+        void AddBone(std::shared_ptr<RenderBone> bone);
+        void SetBones(const std::vector<std::shared_ptr<RenderBone>>& bones);
+        const std::vector<std::shared_ptr<RenderBone>>& GetBones() const { return m_bones; }
 
-        std::shared_ptr<Bone> GetBone(size_t index) const;
-        std::shared_ptr<Bone> FindBone(const std::string& name) const;
+        std::shared_ptr<RenderBone> GetBone(size_t index) const;
+        std::shared_ptr<RenderBone> FindBone(const std::string& name) const;
         size_t GetBoneCount() const { return m_bones.size(); }
 
         // Root bone management
-        void SetRootBone(std::shared_ptr<Bone> root) { m_rootBone = root; }
-        std::shared_ptr<Bone> GetRootBone() const { return m_rootBone; }
+        void SetRootBone(std::shared_ptr<RenderBone> root) { m_rootBone = root; }
+        std::shared_ptr<RenderBone> GetRootBone() const { return m_rootBone; }
 
         // Bone matrices for GPU skinning
         std::vector<Math::Mat4> GetBoneMatrices() const;
@@ -106,28 +107,28 @@ namespace GameEngine {
         void RestoreBindPose();
 
     private:
-        std::vector<std::shared_ptr<Bone>> m_bones;
-        std::shared_ptr<Bone> m_rootBone;
-        std::unordered_map<std::string, std::shared_ptr<Bone>> m_boneMap;
+        std::vector<std::shared_ptr<RenderBone>> m_bones;
+        std::shared_ptr<RenderBone> m_rootBone;
+        std::unordered_map<std::string, std::shared_ptr<RenderBone>> m_boneMap;
 
         // Cached bone matrices for GPU upload
         mutable std::vector<Math::Mat4> m_boneMatrices;
         mutable bool m_matricesDirty = true;
 
         void BuildBoneMap();
-        void PrintBoneHierarchy(std::shared_ptr<Bone> bone, size_t depth = 0) const;
+        void PrintBoneHierarchy(std::shared_ptr<RenderBone> bone, size_t depth = 0) const;
     };
 
     /**
      * @brief Skin binding information for meshes
      */
-    class Skin {
+    class RenderSkin {
     public:
-        Skin() = default;
-        ~Skin() = default;
+        RenderSkin() = default;
+        ~RenderSkin() = default;
 
-        void SetSkeleton(std::shared_ptr<Skeleton> skeleton) { m_skeleton = skeleton; }
-        std::shared_ptr<Skeleton> GetSkeleton() const { return m_skeleton; }
+        void SetSkeleton(std::shared_ptr<RenderSkeleton> skeleton) { m_skeleton = skeleton; }
+        std::shared_ptr<RenderSkeleton> GetSkeleton() const { return m_skeleton; }
 
         void SetInverseBindMatrices(const std::vector<Math::Mat4>& matrices) { m_inverseBindMatrices = matrices; }
         const std::vector<Math::Mat4>& GetInverseBindMatrices() const { return m_inverseBindMatrices; }
@@ -142,9 +143,10 @@ namespace GameEngine {
         bool IsValid() const;
 
     private:
-        std::shared_ptr<Skeleton> m_skeleton;
+        std::shared_ptr<RenderSkeleton> m_skeleton;
         std::vector<Math::Mat4> m_inverseBindMatrices;
         std::vector<uint32_t> m_joints; // Indices into skeleton bones
     };
 
+} // namespace Graphics
 } // namespace GameEngine

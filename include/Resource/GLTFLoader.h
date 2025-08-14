@@ -3,8 +3,8 @@
 #include "Graphics/Model.h"
 #include "Graphics/Mesh.h"
 #include "Graphics/Material.h"
-#include "Graphics/Animation.h"
-#include "Graphics/Skeleton.h"
+#include "Graphics/GraphicsAnimation.h"
+#include "Graphics/RenderSkeleton.h"
 #include "Animation/MorphTarget.h"
 #include "Core/Math.h"
 #include <nlohmann/json.hpp>
@@ -135,14 +135,14 @@ namespace GameEngine {
         void ParsePBRMetallicRoughness(const nlohmann::json& pbrJson, std::shared_ptr<Material> material);
         
         // Animation parsing
-        std::shared_ptr<Animation> ParseAnimation(const nlohmann::json& animationJson, uint32_t animationIndex);
-        std::shared_ptr<AnimationChannel> ParseAnimationChannel(const nlohmann::json& channelJson);
+        std::shared_ptr<Graphics::GraphicsAnimation> ParseAnimation(const nlohmann::json& animationJson, uint32_t animationIndex);
+        std::shared_ptr<Graphics::AnimationChannel> ParseAnimationChannel(const nlohmann::json& channelJson);
         template<typename T>
-        std::shared_ptr<AnimationSampler<T>> ParseAnimationSampler(const nlohmann::json& samplerJson);
-        InterpolationType ParseInterpolationType(const std::string& interpolation);
+        std::shared_ptr<Graphics::AnimationSampler<T>> ParseAnimationSampler(const nlohmann::json& samplerJson);
+        Graphics::InterpolationType ParseInterpolationType(const std::string& interpolation);
         
         // Skeleton and skin parsing
-        std::shared_ptr<Skin> ParseSkin(const nlohmann::json& skinJson, uint32_t skinIndex);
+        std::shared_ptr<Graphics::RenderSkin> ParseSkin(const nlohmann::json& skinJson, uint32_t skinIndex);
         std::shared_ptr<Skeleton> CreateSkeletonFromSkin(const nlohmann::json& skinJson);
         
         // Morph target parsing

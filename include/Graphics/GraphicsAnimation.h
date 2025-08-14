@@ -7,6 +7,7 @@
 #include <unordered_map>
 
 namespace GameEngine {
+namespace Graphics {
 
     /**
      * @brief Interpolation types for animation keyframes
@@ -115,12 +116,12 @@ namespace GameEngine {
     };
 
     /**
-     * @brief Complete animation containing multiple channels
+     * @brief Complete graphics animation containing multiple channels
      */
-    class Animation {
+    class GraphicsAnimation {
     public:
-        Animation(const std::string& name = "");
-        ~Animation() = default;
+        GraphicsAnimation(const std::string& name = "");
+        ~GraphicsAnimation() = default;
 
         void SetName(const std::string& name) { m_name = name; }
         const std::string& GetName() const { return m_name; }
@@ -147,7 +148,7 @@ namespace GameEngine {
         void Reset();
 
         // Apply animation to scene nodes
-        void ApplyToNodes(const std::vector<std::shared_ptr<class ModelNode>>& nodes) const;
+        void ApplyToNodes(const std::vector<std::shared_ptr<class GameEngine::ModelNode>>& nodes) const;
 
     private:
         std::string m_name;
@@ -165,4 +166,5 @@ namespace GameEngine {
     using FloatSampler = AnimationSampler<float>;
     using WeightsSampler = AnimationSampler<std::vector<float>>;
 
+} // namespace Graphics
 } // namespace GameEngine

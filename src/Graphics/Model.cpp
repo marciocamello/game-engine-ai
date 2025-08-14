@@ -3,8 +3,8 @@
 #include "Graphics/Mesh.h"
 #include "Graphics/Material.h"
 #include "Graphics/Shader.h"
-#include "Graphics/Animation.h"
-#include "Graphics/Skeleton.h"
+#include "Graphics/GraphicsAnimation.h"
+#include "Graphics/RenderSkeleton.h"
 #include "Resource/ResourceUsageTracker.h"
 #include "Core/Logger.h"
 #include <algorithm>

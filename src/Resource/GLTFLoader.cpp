@@ -1,8 +1,8 @@
 #include "Resource/GLTFLoader.h"
 #include "Graphics/ModelNode.h"
 #include "Graphics/Texture.h"
-#include "Graphics/Animation.h"
-#include "Graphics/Skeleton.h"
+#include "Graphics/GraphicsAnimation.h"
+#include "Graphics/RenderSkeleton.h"
 #include "Animation/MorphTarget.h"
 #include "Core/Logger.h"
 #include <filesystem>

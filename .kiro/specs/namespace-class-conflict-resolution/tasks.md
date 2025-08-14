@@ -8,7 +8,7 @@
   - Update namespace declarations to ensure consistency
   - _Requirements: 1.1, 3.1, 3.3_
 
-- [ ] 2. Rename Graphics System Header Files
+- [x] 2. Rename Graphics System Header Files
 
   - Rename `include/Graphics/Animation.h` to `include/Graphics/GraphicsAnimation.h`
   - Rename `include/Graphics/Skeleton.h` to `include/Graphics/RenderSkeleton.h`

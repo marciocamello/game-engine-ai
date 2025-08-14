@@ -2,8 +2,8 @@
 
 #include "Graphics/Mesh.h"
 #include "Graphics/Material.h"
-#include "Graphics/Skeleton.h"
-#include "Graphics/Animation.h"
+#include "Graphics/RenderSkeleton.h"
+#include "Graphics/GraphicsAnimation.h"
 #include "Resource/ResourceManager.h"
 #include "Core/Math.h"
 #include <string>
@@ -36,8 +36,8 @@ namespace GameEngine {
         struct FBXLoadResult {
             std::vector<std::shared_ptr<Mesh>> meshes;
             std::vector<std::shared_ptr<Material>> materials;
-            std::shared_ptr<Skeleton> skeleton;
-            std::vector<std::shared_ptr<Animation>> animations;
+            std::shared_ptr<Graphics::RenderSkeleton> skeleton;
+            std::vector<std::shared_ptr<Graphics::GraphicsAnimation>> animations;
             bool success = false;
             std::string errorMessage;
             
@@ -101,11 +101,11 @@ namespace GameEngine {
         std::shared_ptr<Material> ProcessFBXMaterial(const aiMaterial* aiMat, const std::string& filepath);
         
         // Animation and rigging processing
-        std::shared_ptr<Skeleton> ProcessFBXSkeleton(const aiScene* scene);
-        std::vector<std::shared_ptr<Animation>> ProcessFBXAnimations(const aiScene* scene);
-        std::shared_ptr<Animation> ProcessFBXAnimation(const aiAnimation* aiAnim);
+        std::shared_ptr<Graphics::RenderSkeleton> ProcessFBXSkeleton(const aiScene* scene);
+        std::vector<std::shared_ptr<Graphics::GraphicsAnimation>> ProcessFBXAnimations(const aiScene* scene);
+        std::shared_ptr<Graphics::GraphicsAnimation> ProcessFBXAnimation(const aiAnimation* aiAnim);
         void ProcessBoneWeights(const aiMesh* mesh, const aiScene* scene, std::vector<Vertex>& vertices);
-        void ExtractBoneData(const aiMesh* mesh, std::shared_ptr<Skeleton> skeleton);
+        void ExtractBoneData(const aiMesh* mesh, std::shared_ptr<Graphics::RenderSkeleton> skeleton);
         
         // FBX-specific processing
         void ApplyCoordinateSystemConversion(std::vector<Vertex>& vertices) const;

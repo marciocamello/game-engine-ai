@@ -1,9 +1,10 @@
-#include "Graphics/Animation.h"
+#include "Graphics/GraphicsAnimation.h"
 #include "Graphics/ModelNode.h"
 #include "Core/Logger.h"
 #include <algorithm>
 
 namespace GameEngine {
+namespace Graphics {
 
 // AnimationSampler implementation
 template<typename T>
@@ -189,21 +190,21 @@ float AnimationChannel::GetDuration() const {
     return maxDuration;
 }
 
-// Animation implementation
-Animation::Animation(const std::string& name) : m_name(name) {
+// GraphicsAnimation implementation
+GraphicsAnimation::GraphicsAnimation(const std::string& name) : m_name(name) {
 }
 
-void Animation::AddChannel(std::shared_ptr<AnimationChannel> channel) {
+void GraphicsAnimation::AddChannel(std::shared_ptr<AnimationChannel> channel) {
     if (channel) {
         m_channels.push_back(channel);
     }
 }
 
-void Animation::SetChannels(const std::vector<std::shared_ptr<AnimationChannel>>& channels) {
+void GraphicsAnimation::SetChannels(const std::vector<std::shared_ptr<AnimationChannel>>& channels) {
     m_channels = channels;
 }
 
-float Animation::GetDuration() const {
+float GraphicsAnimation::GetDuration() const {
     float maxDuration = 0.0f;
     
     for (const auto& channel : m_channels) {
@@ -215,7 +216,7 @@ float Animation::GetDuration() const {
     return maxDuration;
 }
 
-void Animation::Update(float deltaTime) {
+void GraphicsAnimation::Update(float deltaTime) {
     m_currentTime += deltaTime * m_playbackSpeed;
     
     float duration = GetDuration();
@@ -228,11 +229,11 @@ void Animation::Update(float deltaTime) {
     }
 }
 
-void Animation::Reset() {
+void GraphicsAnimation::Reset() {
     m_currentTime = 0.0f;
 }
 
-void Animation::ApplyToNodes(const std::vector<std::shared_ptr<ModelNode>>& nodes) const {
+void GraphicsAnimation::ApplyToNodes(const std::vector<std::shared_ptr<GameEngine::ModelNode>>& nodes) const {
     for (const auto& channel : m_channels) {
         if (!channel) continue;
         
@@ -264,4 +265,5 @@ void Animation::ApplyToNodes(const std::vector<std::shared_ptr<ModelNode>>& node
     }
 }
 
+} // namespace Graphics
 } // namespace GameEngine

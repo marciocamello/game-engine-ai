@@ -1,8 +1,8 @@
 #include "Resource/ModelDebugger.h"
 #include "Graphics/ModelNode.h"
 #include "Graphics/Material.h"
-#include "Graphics/Animation.h"
-#include "Graphics/Skeleton.h"
+#include "Graphics/GraphicsAnimation.h"
+#include "Graphics/RenderSkeleton.h"
 #include "Core/Logger.h"
 #include <filesystem>
 #include <fstream>

@@ -1,16 +1,17 @@
-#include "Graphics/Skeleton.h"
+#include "Graphics/RenderSkeleton.h"
 #include "Core/Logger.h"
 #include <algorithm>
 #include <iostream>
 
 namespace GameEngine {
+namespace Graphics {
 
-// Bone implementation
-Bone::Bone(const std::string& name, int32_t index) 
+// RenderBone implementation
+RenderBone::RenderBone(const std::string& name, int32_t index) 
     : m_name(name), m_index(index) {
 }
 
-void Bone::SetParent(std::shared_ptr<Bone> parent) {
+void RenderBone::SetParent(std::shared_ptr<RenderBone> parent) {
     // Remove from old parent
     if (auto oldParent = m_parent.lock()) {
         oldParent->RemoveChild(shared_from_this());
@@ -24,7 +25,7 @@ void Bone::SetParent(std::shared_ptr<Bone> parent) {
     }
 }
 
-void Bone::AddChild(std::shared_ptr<Bone> child) {
+void RenderBone::AddChild(std::shared_ptr<RenderBone> child) {
     if (!child) return;
     
     // Check if already a child
@@ -35,7 +36,7 @@ void Bone::AddChild(std::shared_ptr<Bone> child) {
     }
 }
 
-void Bone::RemoveChild(std::shared_ptr<Bone> child) {
+void RenderBone::RemoveChild(std::shared_ptr<RenderBone> child) {
     if (!child) return;
     
     auto it = std::find(m_children.begin(), m_children.end(), child);
@@ -45,11 +46,11 @@ void Bone::RemoveChild(std::shared_ptr<Bone> child) {
     }
 }
 
-Math::Mat4 Bone::GetSkinningMatrix() const {
+Math::Mat4 RenderBone::GetSkinningMatrix() const {
     return m_worldTransform * m_inverseBindMatrix;
 }
 
-void Bone::UpdateTransforms(const Math::Mat4& parentTransform) {
+void RenderBone::UpdateTransforms(const Math::Mat4& parentTransform) {
     m_worldTransform = parentTransform * m_localTransform;
     
     // Update children recursively
@@ -60,15 +61,15 @@ void Bone::UpdateTransforms(const Math::Mat4& parentTransform) {
     }
 }
 
-size_t Bone::GetDepth() const {
+size_t RenderBone::GetDepth() const {
     if (auto parent = m_parent.lock()) {
         return parent->GetDepth() + 1;
     }
     return 0;
 }
 
-// Skeleton implementation
-void Skeleton::AddBone(std::shared_ptr<Bone> bone) {
+// RenderSkeleton implementation
+void RenderSkeleton::AddBone(std::shared_ptr<RenderBone> bone) {
     if (!bone) return;
     
     m_bones.push_back(bone);
@@ -76,20 +77,20 @@ void Skeleton::AddBone(std::shared_ptr<Bone> bone) {
     BuildBoneMap();
 }
 
-void Skeleton::SetBones(const std::vector<std::shared_ptr<Bone>>& bones) {
+void RenderSkeleton::SetBones(const std::vector<std::shared_ptr<RenderBone>>& bones) {
     m_bones = bones;
     m_matricesDirty = true;
     BuildBoneMap();
 }
 
-std::shared_ptr<Bone> Skeleton::GetBone(size_t index) const {
+std::shared_ptr<RenderBone> RenderSkeleton::GetBone(size_t index) const {
     if (index >= m_bones.size()) {
         return nullptr;
     }
     return m_bones[index];
 }
 
-std::shared_ptr<Bone> Skeleton::FindBone(const std::string& name) const {
+std::shared_ptr<RenderBone> RenderSkeleton::FindBone(const std::string& name) const {
     auto it = m_boneMap.find(name);
     if (it != m_boneMap.end()) {
         return it->second;
@@ -97,14 +98,14 @@ std::shared_ptr<Bone> Skeleton::FindBone(const std::string& name) const {
     return nullptr;
 }
 
-std::vector<Math::Mat4> Skeleton::GetBoneMatrices() const {
+std::vector<Math::Mat4> RenderSkeleton::GetBoneMatrices() const {
     if (m_matricesDirty) {
-        const_cast<Skeleton*>(this)->UpdateBoneMatrices();
+        const_cast<RenderSkeleton*>(this)->UpdateBoneMatrices();
     }
     return m_boneMatrices;
 }
 
-void Skeleton::UpdateBoneMatrices() {
+void RenderSkeleton::UpdateBoneMatrices() {
     m_boneMatrices.clear();
     m_boneMatrices.reserve(m_bones.size());
     
@@ -125,7 +126,7 @@ void Skeleton::UpdateBoneMatrices() {
     m_matricesDirty = false;
 }
 
-void Skeleton::BuildHierarchy() {
+void RenderSkeleton::BuildHierarchy() {
     // Find root bone (bone with no parent or index 0)
     for (const auto& bone : m_bones) {
         if (bone && bone->IsRoot()) {
@@ -142,15 +143,15 @@ void Skeleton::BuildHierarchy() {
     BuildBoneMap();
 }
 
-void Skeleton::ValidateHierarchy() const {
+void RenderSkeleton::ValidateHierarchy() const {
     if (!m_rootBone) {
-        LOG_WARNING("Skeleton has no root bone");
+        LOG_WARNING("RenderSkeleton has no root bone");
         return;
     }
     
     // Check for cycles and orphaned bones
-    std::unordered_set<std::shared_ptr<Bone>> visited;
-    std::function<void(std::shared_ptr<Bone>)> validateBone = [&](std::shared_ptr<Bone> bone) {
+    std::unordered_set<std::shared_ptr<RenderBone>> visited;
+    std::function<void(std::shared_ptr<RenderBone>)> validateBone = [&](std::shared_ptr<RenderBone> bone) {
         if (!bone) return;
         
         if (visited.find(bone) != visited.end()) {
@@ -173,16 +174,16 @@ void Skeleton::ValidateHierarchy() const {
     }
 }
 
-void Skeleton::PrintHierarchy() const {
+void RenderSkeleton::PrintHierarchy() const {
     if (m_rootBone) {
-        std::cout << "Skeleton Hierarchy:" << std::endl;
+        std::cout << "RenderSkeleton Hierarchy:" << std::endl;
         PrintBoneHierarchy(m_rootBone, 0);
     } else {
-        std::cout << "Skeleton has no root bone" << std::endl;
+        std::cout << "RenderSkeleton has no root bone" << std::endl;
     }
 }
 
-size_t Skeleton::GetMaxDepth() const {
+size_t RenderSkeleton::GetMaxDepth() const {
     size_t maxDepth = 0;
     for (const auto& bone : m_bones) {
         if (bone) {
@@ -192,7 +193,7 @@ size_t Skeleton::GetMaxDepth() const {
     return maxDepth;
 }
 
-void Skeleton::SetBindPose() {
+void RenderSkeleton::SetBindPose() {
     // Store current transforms as bind pose
     for (auto& bone : m_bones) {
         if (bone) {
@@ -201,7 +202,7 @@ void Skeleton::SetBindPose() {
     }
 }
 
-void Skeleton::RestoreBindPose() {
+void RenderSkeleton::RestoreBindPose() {
     // Reset all bones to identity transform
     for (auto& bone : m_bones) {
         if (bone) {
@@ -217,7 +218,7 @@ void Skeleton::RestoreBindPose() {
     m_matricesDirty = true;
 }
 
-void Skeleton::BuildBoneMap() {
+void RenderSkeleton::BuildBoneMap() {
     m_boneMap.clear();
     for (const auto& bone : m_bones) {
         if (bone && !bone->GetName().empty()) {
@@ -226,7 +227,7 @@ void Skeleton::BuildBoneMap() {
     }
 }
 
-void Skeleton::PrintBoneHierarchy(std::shared_ptr<Bone> bone, size_t depth) const {
+void RenderSkeleton::PrintBoneHierarchy(std::shared_ptr<RenderBone> bone, size_t depth) const {
     if (!bone) return;
     
     std::string indent(depth * 2, ' ');
@@ -238,8 +239,8 @@ void Skeleton::PrintBoneHierarchy(std::shared_ptr<Bone> bone, size_t depth) cons
     }
 }
 
-// Skin implementation
-std::vector<Math::Mat4> Skin::GetSkinningMatrices() const {
+// RenderSkin implementation
+std::vector<Math::Mat4> RenderSkin::GetSkinningMatrices() const {
     std::vector<Math::Mat4> matrices;
     
     if (!m_skeleton) {
@@ -269,7 +270,7 @@ std::vector<Math::Mat4> Skin::GetSkinningMatrices() const {
     return matrices;
 }
 
-bool Skin::IsValid() const {
+bool RenderSkin::IsValid() const {
     if (!m_skeleton) {
         return false;
     }
@@ -289,4 +290,5 @@ bool Skin::IsValid() const {
     return true;
 }
 
+} // namespace Graphics
 } // namespace GameEngine

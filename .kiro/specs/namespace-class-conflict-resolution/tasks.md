@@ -90,7 +90,7 @@
   - Update build scripts to remove any references to examples executables
   - _Requirements: 6.1, 6.2, 6.3_
 
-- [ ] 12. Update CMakeLists.txt Build Configuration
+- [x] 12. Update CMakeLists.txt Build Configuration
 
   - Remove all `add_executable` statements that reference files in `examples/` directory
   - Remove corresponding `target_link_libraries` statements for examples executables

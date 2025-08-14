@@ -93,6 +93,70 @@ function(discover_game_projects)
     endforeach()
 endfunction()
 
+# Function to validate build configuration and prevent conflicts
+function(validate_build_configuration)
+    # Check for conflicting old class names in headers
+    set(CONFLICTING_HEADERS
+        "include/Animation/Animation.h"
+        "include/Graphics/Animation.h"
+        "include/Animation/Skeleton.h"
+        "include/Graphics/Skeleton.h"
+    )
+    
+    foreach(header ${CONFLICTING_HEADERS})
+        if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${header}")
+            message(FATAL_ERROR 
+                "Conflicting header file found: ${header}\n"
+                "This indicates incomplete namespace refactoring. Please ensure all conflicting class names have been resolved.\n"
+                "Expected new headers:\n"
+                "  - include/Animation/SkeletalAnimation.h\n"
+                "  - include/Animation/AnimationSkeleton.h\n"
+                "  - include/Graphics/GraphicsAnimation.h\n"
+                "  - include/Graphics/RenderSkeleton.h"
+            )
+        endif()
+    endforeach()
+    
+    # Check for conflicting old implementation files
+    set(CONFLICTING_SOURCES
+        "src/Animation/Animation.cpp"
+        "src/Graphics/Animation.cpp"
+        "src/Animation/Skeleton.cpp"
+        "src/Graphics/Skeleton.cpp"
+    )
+    
+    foreach(source ${CONFLICTING_SOURCES})
+        if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${source}")
+            message(FATAL_ERROR 
+                "Conflicting source file found: ${source}\n"
+                "This indicates incomplete namespace refactoring. Please ensure all conflicting class names have been resolved.\n"
+                "Expected new source files:\n"
+                "  - src/Animation/SkeletalAnimation.cpp\n"
+                "  - src/Animation/AnimationSkeleton.cpp\n"
+                "  - src/Graphics/GraphicsAnimation.cpp\n"
+                "  - src/Graphics/RenderSkeleton.cpp"
+            )
+        endif()
+    endforeach()
+    
+    # Verify that projects directory structure is properly configured
+    if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/projects/GameExample/CMakeLists.txt")
+        message(WARNING "GameExample project not found in projects/ directory")
+    endif()
+    
+    if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/projects/BasicExample/CMakeLists.txt")
+        message(WARNING "BasicExample project not found in projects/ directory")
+    endif()
+    
+    # Ensure examples/ directory is not being used for builds
+    if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/examples")
+        message(STATUS "Legacy examples/ directory detected - this is kept for reference only and will not be built")
+        message(STATUS "All example applications are now in the projects/ directory structure")
+    endif()
+    
+    message(STATUS "Build configuration validation completed successfully")
+endfunction()
+
 # Function to print build summary
 function(print_build_summary)
     message(STATUS "=== Build Configuration Summary ===")
@@ -292,6 +356,9 @@ if(TRUE)
 
     # Discover and include engine modules
     discover_engine_modules()
+    
+    # Validate build configuration to prevent conflicts with old files
+    validate_build_configuration()
     
     # Function to include engine modules hierarchically
     function(include_engine_modules)
@@ -648,109 +715,19 @@ if((BUILD_PROJECTS OR BUILD_SPECIFIC_PROJECT) AND (NOT BUILD_SPECIFIC_TEST OR BU
             endif()
         endforeach()
         
-        # Legacy examples directory executables - DEPRECATED
-        # These executables have been moved to the projects/ directory structure
-        # The examples/ directory is kept for reference but no longer built
-        # Use projects/GameExample and projects/BasicExample instead
-        
-        # COMMENTED OUT - Legacy examples executables (moved to projects/ structure)
-        if(FALSE) # Disabled - use projects/ structure instead
-            # Character comparison example (temporarily disabled due to interface issues)
-            # add_executable(CharacterComparison
-            #     examples/character_comparison.cpp
-            # )
-            # 
-            # target_link_libraries(CharacterComparison PRIVATE GameEngineKiro)
-
-            # Character controller test
-            add_executable(CharacterControllerTest
-                examples/character_controller_test.cpp
-            )
-
-            target_link_libraries(CharacterControllerTest PRIVATE GameEngineKiro)
-
-            # Physics debug renderer example
-            add_executable(PhysicsDebugExample
-                examples/physics_debug_example.cpp
-            )
-
-            target_link_libraries(PhysicsDebugExample PRIVATE GameEngineKiro)
-
-            # FBX test example
-            add_executable(FBXTestSimple
-                examples/test_fbx_simple.cpp
-            )
-
-            target_link_libraries(FBXTestSimple PRIVATE GameEngineKiro)
-
-            # FBX minimal test
-            add_executable(FBXTestMinimal
-                examples/test_fbx_minimal.cpp
-            )
-
-            target_link_libraries(FBXTestMinimal PRIVATE GameEngineKiro)
-
-            # FBX via ModelLoader test
-            add_executable(FBXViaModelLoader
-                examples/test_fbx_via_modelloader.cpp
-            )
-
-            target_link_libraries(FBXViaModelLoader PRIVATE GameEngineKiro)
-
-            # FBX Animation test
-            add_executable(FBXAnimationTest
-                examples/test_fbx_animation.cpp
-            )
-
-            target_link_libraries(FBXAnimationTest PRIVATE GameEngineKiro)
-
-            # FBX Debug test
-            add_executable(DebugFBXLoading
-                examples/debug_fbx_loading.cpp
-            )
-
-            target_link_libraries(DebugFBXLoading PRIVATE GameEngineKiro)
-
-            # FBX Isolated Debug test
-            add_executable(DebugFBXIsolated
-                examples/debug_fbx_isolated.cpp
-            )
-
-            target_link_libraries(DebugFBXIsolated PRIVATE GameEngineKiro)
-
-            # Mesh Creation Debug test
-            add_executable(DebugMeshCreation
-                examples/debug_mesh_creation.cpp
-            )
-
-            target_link_libraries(DebugMeshCreation PRIVATE GameEngineKiro)
-
-            # VertexLayout Debug test
-            add_executable(DebugVertexLayout
-                examples/debug_vertex_layout.cpp
-            )
-
-            target_link_libraries(DebugVertexLayout PRIVATE GameEngineKiro)
-
-            # Direct Mesh Debug test
-            add_executable(DebugMeshDirect
-                examples/debug_mesh_direct.cpp
-            )
-
-            target_link_libraries(DebugMeshDirect PRIVATE GameEngineKiro)
-
-            # Model Hot Reload example
-            add_executable(ModelHotReloadExample
-                examples/model_hot_reload_example.cpp
-            )
-            target_link_libraries(ModelHotReloadExample PRIVATE GameEngineKiro)
-        endif() # End of legacy examples (disabled - use projects/ structure)
+        # Legacy examples/ directory has been completely removed from build system
+        # All example applications have been moved to the projects/ directory structure:
+        # - projects/GameExample/ - Main game example with full engine features
+        # - projects/BasicExample/ - Simple example for learning and testing
+        # - projects/Tests/ - Comprehensive test suite
+        # 
+        # The examples/ directory is kept for reference only and is not built
     endfunction()
     
     # Include game projects
     include_game_projects()
 
-endif() # End of test build block
+endif() # End of projects build block
 
 # Print build summary
 print_build_summary()

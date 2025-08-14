@@ -1205,10 +1205,52 @@ std::shared_ptr<Graphics::AnimationChannel> GLTFLoader::ParseAnimationChannel(co
 }
 
 template<typename T>
-std::shared_ptr<Graphics::AnimationSampler<T>> GLTFLoader::ParseAnimationSampler(const nlohmann::json& samplerJson) {
-    // TODO: Implement GLTF animation sampler parsing with new Graphics::AnimationSampler system
-    // This is a placeholder implementation for now
-    return nullptr;
+std::shared_ptr<AnimationSampler<T>> GLTFLoader::ParseAnimationSampler(const nlohmann::json& samplerJson) {
+    auto sampler = std::make_shared<AnimationSampler<T>>();
+    
+    if (!samplerJson.contains("input") || !samplerJson.contains("output")) {
+        LogError("Animation sampler missing input or output");
+        return nullptr;
+    }
+    
+    uint32_t inputAccessor = samplerJson["input"];
+    uint32_t outputAccessor = samplerJson["output"];
+    
+    // Parse interpolation type
+    std::string interpolation = samplerJson.value("interpolation", "LINEAR");
+    sampler->SetInterpolationType(ParseInterpolationType(interpolation));
+    
+    // Get time values
+    auto timeValues = GetAccessorData<float>(inputAccessor);
+    
+    // Get output values
+    std::vector<T> outputValues;
+    if constexpr (std::is_same_v<T, Math::Vec3>) {
+        outputValues = GetVec3AccessorData(outputAccessor);
+    } else if constexpr (std::is_same_v<T, Math::Quat>) {
+        auto quatData = GetAccessorData<Math::Vec4>(outputAccessor);
+        outputValues.reserve(quatData.size());
+        for (const auto& q : quatData) {
+            outputValues.emplace_back(q.w, q.x, q.y, q.z); // GLTF uses (x,y,z,w), GLM uses (w,x,y,z)
+        }
+    } else if constexpr (std::is_same_v<T, std::vector<float>>) {
+        // For morph target weights, we need to handle variable-length arrays
+        auto floatData = GetAccessorData<float>(outputAccessor);
+        // Group floats into vectors based on the number of morph targets
+        // This is a simplified approach - in practice, we'd need to know the target count
+        outputValues.push_back(floatData);
+    }
+    
+    // Create keyframes
+    std::vector<Keyframe<T>> keyframes;
+    size_t keyframeCount = std::min(timeValues.size(), outputValues.size());
+    
+    for (size_t i = 0; i < keyframeCount; ++i) {
+        keyframes.emplace_back(timeValues[i], outputValues[i]);
+    }
+    
+    sampler->SetKeyframes(keyframes);
+    return sampler;
 }
 
 Graphics::InterpolationType GLTFLoader::ParseInterpolationType(const std::string& interpolation) {

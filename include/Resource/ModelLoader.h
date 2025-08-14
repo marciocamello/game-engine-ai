@@ -21,6 +21,13 @@ namespace GameEngine {
     class GLTFLoader;
     class FBXLoader;
     class Model;
+    
+    namespace Animation {
+        class AnimationImporter;
+        class AnimationSkeleton;
+        class SkeletalAnimation;
+        struct AnimationImportResult;
+    }
 }
 
 namespace GameEngine {
@@ -69,9 +76,15 @@ namespace GameEngine {
             bool success = false;
             std::string errorMessage;
             
+            // Animation data
+            std::shared_ptr<Animation::AnimationSkeleton> skeleton;
+            std::vector<std::shared_ptr<Animation::SkeletalAnimation>> animations;
+            
             // Statistics
             uint32_t totalVertices = 0;
             uint32_t totalTriangles = 0;
+            size_t boneCount = 0;
+            size_t animationCount = 0;
             float loadingTimeMs = 0.0f;
             std::string formatUsed;
         };
@@ -114,6 +127,10 @@ namespace GameEngine {
         void SetImportScale(float scale);
         float GetImportScale() const { return m_importScale; }
         
+        // Animation import configuration
+        void SetAnimationImportEnabled(bool enabled);
+        bool IsAnimationImportEnabled() const { return m_animationImportEnabled; }
+        
         // Cache configuration
         void SetCacheEnabled(bool enabled);
         bool IsCacheEnabled() const { return m_cacheEnabled; }
@@ -150,12 +167,14 @@ namespace GameEngine {
         // Specialized loaders
         std::unique_ptr<GLTFLoader> m_gltfLoader;
         std::unique_ptr<FBXLoader> m_fbxLoader;
+        std::unique_ptr<Animation::AnimationImporter> m_animationImporter;
 
         // Configuration
         LoadingFlags m_loadingFlags = LoadingFlags::None;
         float m_importScale = 1.0f;
         bool m_initialized = false;
         bool m_cacheEnabled = true;
+        bool m_animationImportEnabled = true;
 
         // Supported formats cache
         mutable std::unordered_set<std::string> m_supportedExtensions;
@@ -165,6 +184,10 @@ namespace GameEngine {
         void CacheSupportedExtensions() const;
         std::string NormalizeExtension(const std::string& extension) const;
         void LogLoadingStats(const LoadResult& result) const;
+        
+#ifdef GAMEENGINE_HAS_ASSIMP
+        bool HasSkeletalMeshes(const aiScene* scene) const;
+#endif
     };
 
     // Bitwise operators for LoadingFlags

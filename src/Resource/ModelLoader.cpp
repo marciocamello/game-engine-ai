@@ -4,6 +4,7 @@
 #include "Resource/FBXLoader.h"
 #include "Resource/ModelLoadingException.h"
 #include "Resource/ModelCache.h"
+#include "Animation/AnimationImporter.h"
 #include "Core/Logger.h"
 #include <filesystem>
 #include <chrono>
@@ -47,6 +48,7 @@ bool ModelLoader::Initialize() {
     // Initialize specialized loaders
     m_gltfLoader = std::make_unique<GLTFLoader>();
     m_fbxLoader = std::make_unique<FBXLoader>();
+    m_animationImporter = std::make_unique<Animation::AnimationImporter>();
     
     // Initialize FBX loader
     if (m_fbxLoader && !m_fbxLoader->Initialize()) {
@@ -100,6 +102,8 @@ void ModelLoader::Shutdown() {
         m_fbxLoader->Shutdown();
         m_fbxLoader.reset();
     }
+    
+    m_animationImporter.reset();
 
 #ifdef GAMEENGINE_HAS_ASSIMP
     m_importer.reset();
@@ -187,6 +191,26 @@ ModelLoader::LoadResult ModelLoader::LoadModel(const std::string& filepath) {
         
         // Process the scene
         result = ProcessScene(scene, filepath);
+        
+        // Import animations if enabled
+        if (m_animationImportEnabled && m_animationImporter && (scene->mNumAnimations > 0 || HasSkeletalMeshes(scene))) {
+            try {
+                auto animResult = m_animationImporter->ImportFromScene(scene, DetectFormat(filepath));
+                if (animResult.success) {
+                    result.skeleton = animResult.skeleton;
+                    result.animations = animResult.animations;
+                    result.boneCount = animResult.boneCount;
+                    result.animationCount = animResult.animationCount;
+                    
+                    LOG_INFO("Successfully imported animations: " + std::to_string(result.animationCount) + 
+                            " animations, " + std::to_string(result.boneCount) + " bones");
+                } else {
+                    LOG_WARNING("Failed to import animations: " + animResult.errorMessage);
+                }
+            } catch (const std::exception& e) {
+                LOG_WARNING("Exception during animation import: " + std::string(e.what()));
+            }
+        }
         
         // Calculate loading time
         auto endTime = std::chrono::high_resolution_clock::now();
@@ -458,6 +482,11 @@ void ModelLoader::SetImportScale(float scale) {
     } else {
         Logger::GetInstance().Warning("ModelLoader::SetImportScale: Invalid scale " + std::to_string(scale) + ", keeping current value " + std::to_string(m_importScale));
     }
+}
+
+void ModelLoader::SetAnimationImportEnabled(bool enabled) {
+    m_animationImportEnabled = enabled;
+    LOG_INFO("Animation import " + std::string(enabled ? "enabled" : "disabled"));
 }
 
 void ModelLoader::SetCacheEnabled(bool enabled) {
@@ -931,13 +960,41 @@ bool ModelLoader::AttemptGracefulRecovery(const ModelLoadingException& exception
 
 void ModelLoader::LogLoadingStats(const LoadResult& result) const {
     if (result.success) {
-        Logger::GetInstance().Info("Model loading completed: " + std::to_string(result.meshes.size()) + " meshes, " + 
-                                 std::to_string(result.totalVertices) + " vertices, " + 
-                                 std::to_string(result.totalTriangles) + " triangles, " + 
-                                 std::to_string(result.loadingTimeMs) + "ms, format: " + result.formatUsed);
+        std::stringstream ss;
+        ss << "Model loading completed: " << result.meshes.size() << " meshes, " 
+           << result.totalVertices << " vertices, " << result.totalTriangles << " triangles";
+        
+        if (result.boneCount > 0) {
+            ss << ", " << result.boneCount << " bones";
+        }
+        
+        if (result.animationCount > 0) {
+            ss << ", " << result.animationCount << " animations";
+        }
+        
+        ss << ", " << result.loadingTimeMs << "ms, format: " << result.formatUsed;
+        
+        Logger::GetInstance().Info(ss.str());
     } else {
         Logger::GetInstance().Error("Model loading failed: " + result.errorMessage);
     }
 }
+
+#ifdef GAMEENGINE_HAS_ASSIMP
+bool ModelLoader::HasSkeletalMeshes(const aiScene* scene) const {
+    if (!scene) {
+        return false;
+    }
+    
+    for (uint32_t i = 0; i < scene->mNumMeshes; ++i) {
+        const aiMesh* mesh = scene->mMeshes[i];
+        if (mesh && mesh->mNumBones > 0) {
+            return true;
+        }
+    }
+    
+    return false;
+}
+#endif
 
 } // namespace GameEngine

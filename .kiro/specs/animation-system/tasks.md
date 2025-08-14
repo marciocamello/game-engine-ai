@@ -160,7 +160,7 @@
     - Create animation metadata preservation and property mapping
     - _Requirements: 8.4, 8.5, 8.7_
 
-- [x] 11. Implement performance optimization features
+- [ ] 11. Implement performance optimization features
 
   - [x] 11.1 Add animation LOD and culling system
 

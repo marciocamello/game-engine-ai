@@ -10,6 +10,40 @@ if(MSVC)
     set(CMAKE_EXPORT_COMPILE_COMMANDS ON CACHE BOOL "" FORCE)
 endif()
 
+# Ninja generator detection and optimization
+if(CMAKE_GENERATOR STREQUAL "Ninja" OR CMAKE_GENERATOR STREQUAL "Ninja Multi-Config")
+    set(USING_NINJA TRUE)
+    message(STATUS "Using Ninja generator - enabling build optimizations")
+    
+    # Ninja-specific optimizations
+    set(CMAKE_JOB_POOLS "compile=8;link=2" CACHE STRING "Ninja job pools for parallel builds")
+    set(CMAKE_JOB_POOL_COMPILE "compile" CACHE STRING "Job pool for compilation")
+    set(CMAKE_JOB_POOL_LINK "link" CACHE STRING "Job pool for linking")
+    
+    # Enable build diagnostics for Ninja
+    set(CMAKE_VERBOSE_MAKEFILE OFF CACHE BOOL "Verbose output disabled for cleaner Ninja builds")
+    
+    # Optimize dependency scanning
+    set(CMAKE_DEPENDS_USE_COMPILER TRUE CACHE BOOL "Use compiler for dependency scanning")
+    
+    # Enable colored output for Ninja builds
+    if(CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+        # MSVC doesn't support colored output in the same way, but we can enable diagnostics
+        add_compile_options(/diagnostics:column)
+    elseif(CMAKE_CXX_COMPILER_ID STREQUAL "GNU" OR CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
+        add_compile_options(-fcolor-diagnostics)
+    endif()
+    
+    message(STATUS "Ninja optimizations applied:")
+    message(STATUS "  - Parallel compilation jobs: 8")
+    message(STATUS "  - Parallel linking jobs: 2")
+    message(STATUS "  - Compiler-based dependency scanning: enabled")
+    message(STATUS "  - Colored diagnostics: enabled")
+else()
+    set(USING_NINJA FALSE)
+    message(STATUS "Using ${CMAKE_GENERATOR} generator")
+endif()
+
 # Build configuration options
 option(BUILD_ENGINE_ONLY "Build only the engine library" OFF)
 option(BUILD_PROJECTS_ONLY "Build only game projects" OFF)
@@ -161,6 +195,16 @@ endfunction()
 function(print_build_summary)
     message(STATUS "=== Build Configuration Summary ===")
     
+    # Build system information
+    message(STATUS "Build System:")
+    message(STATUS "  - Generator: ${CMAKE_GENERATOR}")
+    if(USING_NINJA)
+        message(STATUS "  - Ninja Optimizations: Enabled")
+        message(STATUS "  - Parallel Compile Jobs: 8")
+        message(STATUS "  - Parallel Link Jobs: 2")
+        message(STATUS "  - Dependency Scanning: Compiler-based")
+    endif()
+    
     get_property(modules GLOBAL PROPERTY ENGINE_MODULES)
     if(modules)
         message(STATUS "Engine Modules:")
@@ -188,6 +232,17 @@ function(print_build_summary)
     if(BUILD_SPECIFIC_TEST)
         message(STATUS "  - Specific Test: ${BUILD_SPECIFIC_TEST}")
     endif()
+    
+    # Ninja-specific build tips
+    if(USING_NINJA)
+        message(STATUS "")
+        message(STATUS "Ninja Build Tips:")
+        message(STATUS "  - Use 'ninja -d explain' to see why files are rebuilt")
+        message(STATUS "  - Use 'ninja -t targets' to list all available targets")
+        message(STATUS "  - Use 'ninja -t graph' to visualize build dependencies")
+        message(STATUS "  - Use 'ninja -j N' to override parallel job count")
+    endif()
+    
     message(STATUS "===================================")
 endfunction()
 
@@ -336,6 +391,18 @@ if(TRUE)
         target_compile_options(GameEngineKiro PRIVATE /W4)
         target_compile_definitions(GameEngineKiro PRIVATE _CRT_SECURE_NO_WARNINGS)
         
+        # Ninja-specific MSVC optimizations
+        if(USING_NINJA)
+            # Enable faster PDB generation for Ninja builds
+            target_compile_options(GameEngineKiro PRIVATE /FS)
+            # Enable parallel compilation within each translation unit
+            target_compile_options(GameEngineKiro PRIVATE /MP)
+            # Optimize for build speed in debug builds
+            if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+                target_compile_options(GameEngineKiro PRIVATE /JMC)
+            endif()
+        endif()
+        
         # Coverage support for MSVC (debug symbols and optimization control)
         if(ENABLE_COVERAGE OR CMAKE_BUILD_TYPE STREQUAL "Debug")
             target_compile_options(GameEngineKiro PRIVATE /Zi /Od)
@@ -343,6 +410,14 @@ if(TRUE)
         endif()
     else()
         target_compile_options(GameEngineKiro PRIVATE -Wall -Wextra -Wpedantic)
+        
+        # Ninja-specific GCC/Clang optimizations
+        if(USING_NINJA)
+            # Enable colored diagnostics for better Ninja output
+            target_compile_options(GameEngineKiro PRIVATE -fcolor-diagnostics)
+            # Optimize build times
+            target_compile_options(GameEngineKiro PRIVATE -pipe)
+        endif()
         
         # Coverage support for GCC/Clang
         if(ENABLE_COVERAGE)

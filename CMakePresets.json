@@ -49,11 +49,17 @@
                 "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/vcpkg/scripts/buildsystems/vcpkg.cmake",
                 "CMAKE_CXX_STANDARD": "20",
                 "CMAKE_CXX_STANDARD_REQUIRED": "ON",
-                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+                "CMAKE_JOB_POOLS": "compile=8;link=2",
+                "CMAKE_JOB_POOL_COMPILE": "compile",
+                "CMAKE_JOB_POOL_LINK": "link",
+                "CMAKE_DEPENDS_USE_COMPILER": "ON",
+                "CMAKE_VERBOSE_MAKEFILE": "OFF"
             },
             "environment": {
                 "VCPKG_FEATURE_FLAGS": "manifests,binarycaching,versions",
-                "VCPKG_BINARY_SOURCES": "files,$env{USERPROFILE}/.vcpkg-cache,readwrite"
+                "VCPKG_BINARY_SOURCES": "files,$env{USERPROFILE}/.vcpkg-cache,readwrite",
+                "NINJA_STATUS": "[%f/%t] "
             }
         },
         {
@@ -66,11 +72,40 @@
                 "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/vcpkg/scripts/buildsystems/vcpkg.cmake",
                 "CMAKE_CXX_STANDARD": "20",
                 "CMAKE_CXX_STANDARD_REQUIRED": "ON",
-                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+                "CMAKE_JOB_POOLS": "compile=8;link=2",
+                "CMAKE_JOB_POOL_COMPILE": "compile",
+                "CMAKE_JOB_POOL_LINK": "link",
+                "CMAKE_DEPENDS_USE_COMPILER": "ON",
+                "CMAKE_VERBOSE_MAKEFILE": "OFF"
             },
             "environment": {
                 "VCPKG_FEATURE_FLAGS": "manifests,binarycaching,versions",
-                "VCPKG_BINARY_SOURCES": "files,$env{USERPROFILE}/.vcpkg-cache,readwrite"
+                "VCPKG_BINARY_SOURCES": "files,$env{USERPROFILE}/.vcpkg-cache,readwrite",
+                "NINJA_STATUS": "[%f/%t] "
+            }
+        },
+        {
+            "name": "ninja-relwithdebinfo",
+            "displayName": "Ninja - RelWithDebInfo (MSVC)",
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build/ninja/x64/RelWithDebInfo",
+            "cacheVariables": {
+                "CMAKE_BUILD_TYPE": "RelWithDebInfo",
+                "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/vcpkg/scripts/buildsystems/vcpkg.cmake",
+                "CMAKE_CXX_STANDARD": "20",
+                "CMAKE_CXX_STANDARD_REQUIRED": "ON",
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON",
+                "CMAKE_JOB_POOLS": "compile=8;link=2",
+                "CMAKE_JOB_POOL_COMPILE": "compile",
+                "CMAKE_JOB_POOL_LINK": "link",
+                "CMAKE_DEPENDS_USE_COMPILER": "ON",
+                "CMAKE_VERBOSE_MAKEFILE": "OFF"
+            },
+            "environment": {
+                "VCPKG_FEATURE_FLAGS": "manifests,binarycaching,versions",
+                "VCPKG_BINARY_SOURCES": "files,$env{USERPROFILE}/.vcpkg-cache,readwrite",
+                "NINJA_STATUS": "[%f/%t] "
             }
         }
     ],
@@ -92,6 +127,10 @@
         {
             "name": "ninja-release",
             "configurePreset": "ninja-release"
+        },
+        {
+            "name": "ninja-relwithdebinfo",
+            "configurePreset": "ninja-relwithdebinfo"
         }
     ],
     "testPresets": [
@@ -121,6 +160,13 @@
         {
             "name": "ninja-release-test",
             "configurePreset": "ninja-release",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "ninja-relwithdebinfo-test",
+            "configurePreset": "ninja-relwithdebinfo",
             "output": {
                 "outputOnFailure": true
             }

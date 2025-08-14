@@ -212,57 +212,98 @@ REM Check for CMakePresets.json and determine preset to use
 set "USE_PRESETS=OFF"
 set "CONFIGURE_PRESET="
 set "BUILD_PRESET="
+set "NINJA_AVAILABLE=OFF"
+set "VS_ENV_AVAILABLE=OFF"
+
+REM Enhanced Ninja detection
+echo Detecting build environment...
+set "NINJA_AVAILABLE=OFF"
+set "VS_ENV_AVAILABLE=OFF"
+
+ninja --version >nul 2>&1
+if !errorlevel! equ 0 set "NINJA_AVAILABLE=ON"
+
+if defined VCINSTALLDIR set "VS_ENV_AVAILABLE=ON"
+
+if "%NINJA_AVAILABLE%"=="ON" (
+    echo   - Ninja: Available
+) else (
+    echo   - Ninja: Not found in PATH
+)
+
+if "%VS_ENV_AVAILABLE%"=="ON" (
+    echo   - Visual Studio Environment: Available
+) else (
+    echo   - Visual Studio Environment: Not detected
+)
+
 if exist "CMakePresets.json" (
     set "USE_PRESETS=ON"
     echo CMakePresets.json detected - using modern preset configuration
     
-    REM Choose preset based on user preference
+    REM Determine which preset to use
     if "%USE_NINJA%"=="ON" (
-        REM Check if Ninja is available and Visual Studio environment is set
-        ninja --version >nul 2>&1
-        if !errorlevel! equ 0 (
-            if defined VCINSTALLDIR (
-                echo Using Ninja presets (explicitly requested)
-                if "%BUILD_TYPE%"=="Debug" (
-                    set "CONFIGURE_PRESET=ninja-debug"
-                    set "BUILD_PRESET=ninja-debug"
-                ) else (
-                    set "CONFIGURE_PRESET=ninja-release"
-                    set "BUILD_PRESET=ninja-release"
-                )
+        REM Ninja explicitly requested
+        if "%NINJA_AVAILABLE%"=="ON" (
+            if "%VS_ENV_AVAILABLE%"=="ON" (
+                echo Using Ninja presets ^(explicitly requested^)
+                goto :set_ninja_preset
             ) else (
                 echo WARNING: Ninja requested but Visual Studio environment not detected
+                echo Ninja requires MSVC compiler environment to be set up
+                echo Please run this script from a Visual Studio Developer Command Prompt
                 echo Falling back to Visual Studio presets
-                if "%BUILD_TYPE%"=="Debug" (
-                    set "CONFIGURE_PRESET=vs-debug"
-                    set "BUILD_PRESET=vs-debug"
-                ) else (
-                    set "CONFIGURE_PRESET=vs-release"
-                    set "BUILD_PRESET=vs-release"
-                )
+                goto :set_vs_preset
             )
         ) else (
             echo WARNING: Ninja requested but not found in PATH
+            echo To install Ninja: winget install Ninja-build.Ninja
             echo Falling back to Visual Studio presets
-            if "%BUILD_TYPE%"=="Debug" (
-                set "CONFIGURE_PRESET=vs-debug"
-                set "BUILD_PRESET=vs-debug"
-            ) else (
-                set "CONFIGURE_PRESET=vs-release"
-                set "BUILD_PRESET=vs-release"
-            )
+            goto :set_vs_preset
         )
     ) else (
-        REM Use Visual Studio presets by default
-        echo Using Visual Studio presets ^(default^) - use --ninja for Ninja builds
-        if "%BUILD_TYPE%"=="Debug" (
-            set "CONFIGURE_PRESET=vs-debug"
-            set "BUILD_PRESET=vs-debug"
+        REM Automatic selection
+        if "%NINJA_AVAILABLE%"=="ON" (
+            if "%VS_ENV_AVAILABLE%"=="ON" (
+                if defined GAMEENGINE_PREFER_VS (
+                    echo Environment variable GAMEENGINE_PREFER_VS detected - using Visual Studio presets
+                    goto :set_vs_preset
+                ) else (
+                    echo Using Ninja presets ^(automatically selected for faster builds^)
+                    echo Tip: Use --ninja flag to explicitly request Ninja, or set GAMEENGINE_PREFER_VS=1 to prefer Visual Studio
+                    goto :set_ninja_preset
+                )
+            ) else (
+                echo Using Visual Studio presets ^(fallback - VS environment not detected^)
+                goto :set_vs_preset
+            )
         ) else (
-            set "CONFIGURE_PRESET=vs-release"
-            set "BUILD_PRESET=vs-release"
+            echo Using Visual Studio presets ^(fallback - Ninja not available^)
+            goto :set_vs_preset
         )
     )
+    
+    :set_ninja_preset
+    if "%BUILD_TYPE%"=="Debug" (
+        set "CONFIGURE_PRESET=ninja-debug"
+        set "BUILD_PRESET=ninja-debug"
+    ) else (
+        set "CONFIGURE_PRESET=ninja-release"
+        set "BUILD_PRESET=ninja-release"
+    )
+    goto :preset_set
+    
+    :set_vs_preset
+    if "%BUILD_TYPE%"=="Debug" (
+        set "CONFIGURE_PRESET=vs-debug"
+        set "BUILD_PRESET=vs-debug"
+    ) else (
+        set "CONFIGURE_PRESET=vs-release"
+        set "BUILD_PRESET=vs-release"
+    )
+    goto :preset_set
+    
+    :preset_set
     echo Using preset: !CONFIGURE_PRESET!
 ) else (
     echo CMakePresets.json not found - using manual configuration
@@ -504,6 +545,7 @@ if "%BUILD_PROJECTS%"=="ON" (
 if "%BUILD_TESTS%"=="ON" echo   Run All Tests: .\scripts\run_tests.bat
 if "%ENABLE_COVERAGE%"=="ON" echo   Generate Coverage: .\scripts\run_coverage_analysis.bat
 echo   Monitor Logs: .\scripts\monitor.bat
+if "!CONFIGURE_PRESET:~0,5!"=="ninja" echo   Ninja Diagnostics: .\scripts\ninja_diagnostics.bat
 
 goto :end
 
@@ -526,7 +568,8 @@ echo   --release         Build in Release mode ^(default^)
 echo   --coverage        Build with coverage support ^(Debug + Tests^)
 echo.
 echo Generator Options:
-echo   --ninja           Use Ninja generator ^(advanced users^) - requires VS environment
+echo   --ninja           Force Ninja generator usage ^(requires Ninja in PATH + VS environment^)
+echo                     Note: Ninja is automatically selected when available unless GAMEENGINE_PREFER_VS=1
 echo.
 echo Common Combinations:
 echo   build_unified.bat                                    # Build everything
@@ -570,6 +613,12 @@ echo   build_unified.bat --engine               # Build engine artifact
 echo   build_unified.bat --tests                # Run test suite
 echo   build_unified.bat --projects             # Build all projects
 echo   build_unified.bat --coverage             # Generate coverage reports
+echo.
+echo Ninja Generator Setup:
+echo   To install Ninja: winget install Ninja-build.Ninja
+echo   Or download from: https://github.com/ninja-build/ninja/releases
+echo   Ninja requires Visual Studio Developer Command Prompt environment
+echo   Set GAMEENGINE_PREFER_VS=1 to always use Visual Studio generator
 echo.
 
 :end

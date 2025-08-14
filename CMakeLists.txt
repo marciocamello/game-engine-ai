@@ -52,6 +52,28 @@ option(BUILD_ENGINE_AND_TESTS_ONLY "Build engine and tests only" OFF)
 option(BUILD_SPECIFIC_PROJECT "Build a specific project only" "")
 option(BUILD_SPECIFIC_TEST "Build a specific test only" "")
 
+# Derive build flags from options (for backward compatibility)
+set(BUILD_ENGINE ON)  # Engine is always built as it's the core library
+set(BUILD_PROJECTS OFF)
+set(BUILD_TESTS OFF)
+
+# Determine what to build based on options
+if(BUILD_PROJECTS_ONLY)
+    set(BUILD_PROJECTS ON)
+elseif(BUILD_TESTS_ONLY)
+    set(BUILD_TESTS ON)
+elseif(BUILD_ENGINE_AND_TESTS_ONLY)
+    set(BUILD_TESTS ON)
+elseif(BUILD_SPECIFIC_PROJECT)
+    set(BUILD_PROJECTS ON)
+elseif(BUILD_SPECIFIC_TEST)
+    set(BUILD_TESTS ON)
+elseif(NOT BUILD_ENGINE_ONLY AND NOT BUILD_PROJECTS_ONLY AND NOT BUILD_TESTS_ONLY AND NOT BUILD_ENGINE_AND_TESTS_ONLY)
+    # Default: build everything
+    set(BUILD_PROJECTS ON)
+    set(BUILD_TESTS ON)
+endif()
+
 # Engine configuration
 option(ENABLE_VULKAN "Enable Vulkan renderer" OFF)
 option(ENABLE_OPENGL "Enable OpenGL renderer" ON)

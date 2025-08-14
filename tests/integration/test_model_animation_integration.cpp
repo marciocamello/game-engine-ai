@@ -7,6 +7,7 @@
 #include "Core/Logger.h"
 #include <memory>
 
+using namespace GameEngine;
 using namespace GameEngine::Testing;
 
 /**

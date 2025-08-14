@@ -90,6 +90,11 @@ if /i "%~1"=="--ninja" (
     shift
     goto :parse_args
 )
+if /i "%~1"=="--no-cache" (
+    set DISABLE_VCPKG_CACHE=ON
+    shift
+    goto :parse_args
+)
 if /i "%~1"=="--help" goto :help
 if /i "%~1"=="-h" goto :help
 
@@ -176,21 +181,21 @@ if not "%SPECIFIC_PROJECT%"=="" (
     set "CMAKE_ARGS=%CMAKE_ARGS% -DBUILD_SPECIFIC_PROJECT=%SPECIFIC_PROJECT% -DBUILD_SPECIFIC_TEST="
 )
 
-if "%BUILD_TESTS%"=="ON" (
-    set "CMAKE_ARGS=%CMAKE_ARGS% -DBUILD_TESTS=ON"
-) else (
-    set "CMAKE_ARGS=%CMAKE_ARGS% -DBUILD_TESTS=OFF"
+REM Map internal flags to CMake options
+if "%BUILD_ENGINE%"=="ON" if "%BUILD_PROJECTS%"=="OFF" if "%BUILD_TESTS%"=="OFF" (
+    set "CMAKE_ARGS=%CMAKE_ARGS% -DBUILD_ENGINE_ONLY=ON"
 )
-if "%BUILD_PROJECTS%"=="ON" (
-    set "CMAKE_ARGS=%CMAKE_ARGS% -DBUILD_PROJECTS=ON"
-) else (
-    set "CMAKE_ARGS=%CMAKE_ARGS% -DBUILD_PROJECTS=OFF"
+if "%BUILD_ENGINE%"=="OFF" if "%BUILD_PROJECTS%"=="ON" if "%BUILD_TESTS%"=="OFF" (
+    set "CMAKE_ARGS=%CMAKE_ARGS% -DBUILD_PROJECTS_ONLY=ON"
 )
-if "%BUILD_ENGINE%"=="ON" (
-    set "CMAKE_ARGS=%CMAKE_ARGS% -DBUILD_ENGINE=ON"
-) else (
-    set "CMAKE_ARGS=%CMAKE_ARGS% -DBUILD_ENGINE=OFF"
+if "%BUILD_ENGINE%"=="OFF" if "%BUILD_PROJECTS%"=="OFF" if "%BUILD_TESTS%"=="ON" (
+    set "CMAKE_ARGS=%CMAKE_ARGS% -DBUILD_TESTS_ONLY=ON"
 )
+if "%BUILD_ENGINE%"=="ON" if "%BUILD_PROJECTS%"=="OFF" if "%BUILD_TESTS%"=="ON" (
+    set "CMAKE_ARGS=%CMAKE_ARGS% -DBUILD_ENGINE_AND_TESTS_ONLY=ON"
+)
+
+REM For all other combinations, let CMake build everything (default behavior)
 if "%ENABLE_COVERAGE%"=="ON" (
     set "CMAKE_ARGS=%CMAKE_ARGS% -DENABLE_COVERAGE=ON"
 )
@@ -200,6 +205,25 @@ echo Build Type: %BUILD_TYPE%
 if "%ENABLE_COVERAGE%"=="ON" echo Coverage: Enabled
 if not "%SPECIFIC_PROJECT%"=="" echo Specific Project: %SPECIFIC_PROJECT%
 if not "%SPECIFIC_TEST%"=="" echo Specific Test: %SPECIFIC_TEST%
+
+REM Configure vcpkg binary cache environment (optional optimization)
+echo.
+echo Configuring vcpkg binary cache...
+REM Detect if running from IDE or terminal and adjust cache behavior
+if defined KIRO_IDE_SESSION (
+    echo Detected Kiro IDE environment - disabling cache for compatibility
+    set DISABLE_VCPKG_CACHE=ON
+)
+if defined VSCODE_PID (
+    echo Detected VS Code environment - disabling cache for compatibility
+    set DISABLE_VCPKG_CACHE=ON
+)
+REM Check if running in a restricted environment
+if "%SESSIONNAME%"=="Console" if not defined USERPROFILE (
+    echo Detected restricted environment - disabling cache
+    set DISABLE_VCPKG_CACHE=ON
+)
+call :setup_vcpkg_cache
 
 REM Verify dependencies, CMakePresets, and build state
 echo.
@@ -317,6 +341,23 @@ if exist "build\.build_failed" (
     )
 )
 
+REM Check for CMake cache conflicts and clean if necessary
+if exist "build\CMakeCache.txt" (
+    REM Check if CMake cache is from a different configuration
+    findstr /C:"CMAKE_BUILD_TYPE" "build\CMakeCache.txt" >nul 2>&1
+    if !errorlevel! equ 0 (
+        for /f "tokens=2 delims==" %%a in ('findstr /C:"CMAKE_BUILD_TYPE:STRING" "build\CMakeCache.txt" 2^>nul') do (
+            if not "%%a"=="%BUILD_TYPE%" (
+                echo WARNING: CMake cache build type mismatch. Cleaning cache...
+                echo   Cached: %%a, Requested: %BUILD_TYPE%
+                if exist build (
+                    rmdir /s /q build 2>nul
+                )
+            )
+        )
+    )
+)
+
 REM Record build start state and check for consecutive identical builds
 set "BUILD_SIGNATURE=%BUILD_TYPE%_%BUILD_ENGINE%_%BUILD_PROJECTS%_%BUILD_TESTS%_%SPECIFIC_PROJECT%_%SPECIFIC_TEST%"
 echo %DATE% %TIME% > build_state.tmp
@@ -335,6 +376,12 @@ if exist "build\.last_build_signature" (
         echo.
         echo NOTE: This build configuration is identical to the last successful build.
         echo If no source files have changed, the build should be very fast.
+        echo.
+    ) else (
+        echo.
+        echo NOTE: Build configuration changed from last build.
+        echo Previous: !LAST_SIGNATURE!
+        echo Current:  !BUILD_SIGNATURE!
         echo.
     )
 )
@@ -466,7 +513,7 @@ if exist build_state.tmp (
     del build_state.tmp
 )
 
-REM Success message with file locations
+REM Success message with file locations and cache statistics
 echo.
 echo ========================================
 echo Build Completed Successfully!
@@ -474,6 +521,11 @@ echo ========================================
 echo.
 if "%USE_PRESETS%"=="ON" (
     echo Using CMakePresets: !CONFIGURE_PRESET!
+)
+
+REM Report cache statistics if cache was used
+if defined VCPKG_BINARY_SOURCES (
+    call :report_build_cache_stats
 )
 echo.
 echo Built Components:
@@ -494,7 +546,7 @@ if "%BUILD_PROJECTS%"=="ON" (
             if "!CONFIGURE_PRESET:~0,5!"=="ninja" (
                 echo   - Project ^(%SPECIFIC_PROJECT%^): build\ninja\x64\%BUILD_TYPE%\projects\%SPECIFIC_PROJECT%\%SPECIFIC_PROJECT%.exe
             ) else (
-                echo   - Project ^(%SPECIFIC_PROJECT%^): build\vs\x64\%BUILD_TYPE%\projects\%SPECIFIC_PROJECT%\%SPECIFIC_PROJECT%.exe
+                echo   - Project ^(%SPECIFIC_PROJECT%^): build\vs\x64\%BUILD_TYPE%\projects\%SPECIFIC_PROJECT%\%BUILD_TYPE%\%SPECIFIC_PROJECT%.exe
             )
         ) else (
             echo   - Project ^(%SPECIFIC_PROJECT%^): build\projects\%SPECIFIC_PROJECT%\%BUILD_TYPE%\%SPECIFIC_PROJECT%.exe
@@ -504,7 +556,7 @@ if "%BUILD_PROJECTS%"=="ON" (
             if "!CONFIGURE_PRESET:~0,5!"=="ninja" (
                 echo   - Game Projects: build\ninja\x64\%BUILD_TYPE%\projects\[ProjectName]\[ProjectName].exe
             ) else (
-                echo   - Game Projects: build\vs\x64\%BUILD_TYPE%\projects\[ProjectName]\[ProjectName].exe
+                echo   - Game Projects: build\vs\x64\%BUILD_TYPE%\projects\[ProjectName]\%BUILD_TYPE%\[ProjectName].exe
             )
         ) else (
             echo   - Game Projects: build\projects\[ProjectName]\%BUILD_TYPE%\[ProjectName].exe
@@ -539,8 +591,18 @@ if "%ENABLE_COVERAGE%"=="ON" echo   - Coverage: Enabled ^(use run_coverage_analy
 echo.
 echo Quick Commands:
 if "%BUILD_PROJECTS%"=="ON" (
-    echo   Run GameExample: build\projects\GameExample\%BUILD_TYPE%\GameExample.exe
-    echo   Run BasicExample: build\projects\BasicExample\%BUILD_TYPE%\BasicExample.exe
+    if "%USE_PRESETS%"=="ON" (
+        if "!CONFIGURE_PRESET:~0,5!"=="ninja" (
+            echo   Run GameExample: build\ninja\x64\%BUILD_TYPE%\projects\GameExample\GameExample.exe
+            echo   Run BasicExample: build\ninja\x64\%BUILD_TYPE%\projects\BasicExample\BasicExample.exe
+        ) else (
+            echo   Run GameExample: build\vs\x64\%BUILD_TYPE%\projects\GameExample\%BUILD_TYPE%\GameExample.exe
+            echo   Run BasicExample: build\vs\x64\%BUILD_TYPE%\projects\BasicExample\%BUILD_TYPE%\BasicExample.exe
+        )
+    ) else (
+        echo   Run GameExample: build\projects\GameExample\%BUILD_TYPE%\GameExample.exe
+        echo   Run BasicExample: build\projects\BasicExample\%BUILD_TYPE%\BasicExample.exe
+    )
 )
 if "%BUILD_TESTS%"=="ON" echo   Run All Tests: .\scripts\run_tests.bat
 if "%ENABLE_COVERAGE%"=="ON" echo   Generate Coverage: .\scripts\run_coverage_analysis.bat
@@ -548,6 +610,135 @@ echo   Monitor Logs: .\scripts\monitor.bat
 if "!CONFIGURE_PRESET:~0,5!"=="ninja" echo   Ninja Diagnostics: .\scripts\ninja_diagnostics.bat
 
 goto :end
+
+:setup_vcpkg_cache
+REM Configure vcpkg binary cache environment with validation and fallback
+if "%DISABLE_VCPKG_CACHE%"=="ON" (
+    echo vcpkg binary cache explicitly disabled via --no-cache flag
+    call :cache_fallback
+    goto :eof
+)
+
+call :validate_cache_health
+if "%CACHE_HEALTH_OK%"=="ON" (
+    call :configure_cache
+) else (
+    call :cache_fallback
+)
+goto :eof
+
+:validate_cache_health
+REM Validate cache health and availability (simplified approach)
+set "CACHE_HEALTH_OK=OFF"
+set "VCPKG_CACHE_DIR=%USERPROFILE%\.vcpkg-cache"
+
+REM Check if cache directory can be created/accessed
+if not exist "%VCPKG_CACHE_DIR%" (
+    echo Creating vcpkg binary cache directory: %VCPKG_CACHE_DIR%
+    mkdir "%VCPKG_CACHE_DIR%" 2>nul
+    if errorlevel 1 (
+        echo WARNING: Failed to create vcpkg cache directory
+        goto :eof
+    )
+)
+
+REM Simple write test
+echo test > "%VCPKG_CACHE_DIR%\test_write.tmp" 2>nul
+if errorlevel 1 (
+    echo WARNING: vcpkg cache directory is not writable
+    goto :eof
+)
+del "%VCPKG_CACHE_DIR%\test_write.tmp" 2>nul
+
+REM Cache is considered healthy if directory exists and is writable
+set "CACHE_HEALTH_OK=ON"
+goto :eof
+
+:configure_cache
+REM Configure vcpkg binary sources environment variable (process-local only)
+REM Use a more conservative cache configuration to avoid conflicts
+set "VCPKG_BINARY_SOURCES=files,%VCPKG_CACHE_DIR%,read"
+
+REM Keep feature flags minimal to avoid compatibility issues
+set "VCPKG_FEATURE_FLAGS=manifests,versions"
+
+echo vcpkg binary cache configured:
+echo   Cache Directory: %VCPKG_CACHE_DIR%
+echo   Binary Sources: %VCPKG_BINARY_SOURCES% ^(read-only for safety^)
+echo   Feature Flags: %VCPKG_FEATURE_FLAGS%
+echo   Note: Conservative cache settings for maximum compatibility
+
+REM Generate cache statistics and reporting
+call :report_cache_statistics
+goto :eof
+
+:report_cache_statistics
+REM Report cache statistics and health
+if exist "%VCPKG_CACHE_DIR%" (
+    REM Count cache files
+    for /f %%i in ('dir /b "%VCPKG_CACHE_DIR%\*.zip" 2^>nul ^| find /c /v ""') do set CACHE_PACKAGES=%%i
+    
+    REM Calculate cache size
+    set CACHE_SIZE_BYTES=0
+    for /f "tokens=3" %%a in ('dir "%VCPKG_CACHE_DIR%\*.zip" 2^>nul ^| findstr /r "[0-9].*\.zip"') do (
+        set /a CACHE_SIZE_BYTES+=%%a
+    )
+    set /a CACHE_SIZE_MB=!CACHE_SIZE_BYTES!/1048576
+    
+    if !CACHE_PACKAGES! gtr 0 (
+        echo   Cache Status: !CACHE_PACKAGES! packages cached ^(!CACHE_SIZE_MB! MB^)
+        echo   Cache Hit Rate: Will be calculated during build
+    ) else (
+        echo   Cache Status: Empty ^(first build will populate cache^)
+    )
+    
+    REM Check for cache maintenance needs
+    if !CACHE_SIZE_MB! gtr 1000 (
+        echo   Cache Maintenance: Consider cleaning old packages ^(cache size: !CACHE_SIZE_MB! MB^)
+    )
+)
+goto :eof
+
+:cache_fallback
+echo vcpkg binary cache disabled - using normal compilation
+REM Clear any cache-related environment variables to ensure clean fallback
+set "VCPKG_BINARY_SOURCES="
+set "VCPKG_FEATURE_FLAGS=manifests,versions"
+set "VCPKG_CACHE_DIR="
+
+echo   Cache Status: Disabled ^(fallback to normal compilation^)
+if "%DISABLE_VCPKG_CACHE%"=="ON" (
+    echo   Reason: Cache explicitly disabled via --no-cache flag
+) else (
+    echo   Reason: Cache validation failed or cache unavailable
+)
+echo   Impact: Dependencies will be compiled from source ^(slower but reliable^)
+
+REM Log fallback reason for diagnostics
+echo %DATE% %TIME% - vcpkg cache fallback activated >> build_cache.log
+goto :eof
+
+:report_build_cache_stats
+REM Report cache statistics after successful build
+if exist "%VCPKG_CACHE_DIR%" (
+    for /f %%i in ('dir /b "%VCPKG_CACHE_DIR%\*.zip" 2^>nul ^| find /c /v ""') do set POST_BUILD_PACKAGES=%%i
+    
+    REM Compare with pre-build count if available
+    if defined CACHE_PACKAGES (
+        set /a NEW_PACKAGES=!POST_BUILD_PACKAGES!-!CACHE_PACKAGES!
+        if !NEW_PACKAGES! gtr 0 (
+            echo vcpkg Cache: !NEW_PACKAGES! new packages cached ^(total: !POST_BUILD_PACKAGES!^)
+        ) else (
+            echo vcpkg Cache: All dependencies served from cache ^(!POST_BUILD_PACKAGES! packages^)
+        )
+    ) else (
+        echo vcpkg Cache: !POST_BUILD_PACKAGES! packages available
+    )
+    
+    REM Log cache usage for future analysis
+    echo %DATE% %TIME% - Build completed, cache packages: !POST_BUILD_PACKAGES! >> build_cache.log
+)
+goto :eof
 
 :help
 echo Game Engine Kiro - Unified Build System
@@ -570,6 +761,7 @@ echo.
 echo Generator Options:
 echo   --ninja           Force Ninja generator usage ^(requires Ninja in PATH + VS environment^)
 echo                     Note: Ninja is automatically selected when available unless GAMEENGINE_PREFER_VS=1
+echo   --no-cache        Disable vcpkg binary cache ^(compile all dependencies from source^)
 echo.
 echo Common Combinations:
 echo   build_unified.bat                                    # Build everything

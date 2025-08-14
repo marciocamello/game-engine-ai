@@ -7,6 +7,8 @@
 #include <unordered_map>
 
 namespace GameEngine {
+    class ModelNode;  // Forward declaration
+
 namespace Graphics {
 
     /**
@@ -148,7 +150,7 @@ namespace Graphics {
         void Reset();
 
         // Apply animation to scene nodes
-        void ApplyToNodes(const std::vector<std::shared_ptr<class GameEngine::ModelNode>>& nodes) const;
+        void ApplyToNodes(const std::vector<std::shared_ptr<ModelNode>>& nodes) const;
 
     private:
         std::string m_name;

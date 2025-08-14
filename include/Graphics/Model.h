@@ -10,12 +10,20 @@
 
 namespace GameEngine {
     class Shader;
-    class Animation;
-    class Skeleton;
-    class Skin;
     class ModelNode;
     class Mesh;
     class Material;
+    
+    namespace Animation {
+        class SkeletalAnimation;
+        class AnimationSkeleton;
+    }
+    
+    namespace Graphics {
+        class GraphicsAnimation;
+        class RenderSkeleton;
+        class RenderSkin;
+    }
 
     struct ModelStats {
         uint32_t nodeCount = 0;
@@ -59,24 +67,24 @@ namespace GameEngine {
 
         // Animation access
         bool HasAnimations() const;
-        std::vector<std::shared_ptr<Animation>> GetAnimations() const;
-        std::shared_ptr<Animation> GetAnimation(size_t index) const;
-        std::shared_ptr<Animation> FindAnimation(const std::string& name) const;
+        std::vector<std::shared_ptr<Graphics::GraphicsAnimation>> GetAnimations() const;
+        std::shared_ptr<Graphics::GraphicsAnimation> GetAnimation(size_t index) const;
+        std::shared_ptr<Graphics::GraphicsAnimation> FindAnimation(const std::string& name) const;
         size_t GetAnimationCount() const;
-        void AddAnimation(std::shared_ptr<Animation> animation);
-        void SetAnimations(const std::vector<std::shared_ptr<Animation>>& animations);
+        void AddAnimation(std::shared_ptr<Graphics::GraphicsAnimation> animation);
+        void SetAnimations(const std::vector<std::shared_ptr<Graphics::GraphicsAnimation>>& animations);
 
         // Skeleton access
-        std::shared_ptr<Skeleton> GetSkeleton() const;
+        std::shared_ptr<Graphics::RenderSkeleton> GetSkeleton() const;
         bool HasSkeleton() const;
-        void SetSkeleton(std::shared_ptr<Skeleton> skeleton);
+        void SetSkeleton(std::shared_ptr<Graphics::RenderSkeleton> skeleton);
         
         // Skin access
-        std::vector<std::shared_ptr<Skin>> GetSkins() const;
-        std::shared_ptr<Skin> GetSkin(size_t index) const;
+        std::vector<std::shared_ptr<Graphics::RenderSkin>> GetSkins() const;
+        std::shared_ptr<Graphics::RenderSkin> GetSkin(size_t index) const;
         size_t GetSkinCount() const;
-        void AddSkin(std::shared_ptr<Skin> skin);
-        void SetSkins(const std::vector<std::shared_ptr<Skin>>& skins);
+        void AddSkin(std::shared_ptr<Graphics::RenderSkin> skin);
+        void SetSkins(const std::vector<std::shared_ptr<Graphics::RenderSkin>>& skins);
 
         // Rendering
         void Render(const Math::Mat4& transform, std::shared_ptr<Shader> shader);
@@ -125,9 +133,9 @@ namespace GameEngine {
         std::shared_ptr<ModelNode> m_rootNode;
         std::vector<std::shared_ptr<Mesh>> m_meshes;
         std::vector<std::shared_ptr<Material>> m_materials;
-        std::vector<std::shared_ptr<Animation>> m_animations;
-        std::shared_ptr<Skeleton> m_skeleton;
-        std::vector<std::shared_ptr<Skin>> m_skins;
+        std::vector<std::shared_ptr<Graphics::GraphicsAnimation>> m_animations;
+        std::shared_ptr<Graphics::RenderSkeleton> m_skeleton;
+        std::vector<std::shared_ptr<Graphics::RenderSkin>> m_skins;
         std::vector<std::shared_ptr<Model>> m_lodLevels; // Placeholder
 
         BoundingBox m_boundingBox;
@@ -143,7 +151,7 @@ namespace GameEngine {
         std::unordered_map<std::string, std::shared_ptr<ModelNode>> m_nodeMap;
         std::unordered_map<std::string, std::shared_ptr<Mesh>> m_meshMap;
         std::unordered_map<std::string, std::shared_ptr<Material>> m_materialMap;
-        std::unordered_map<std::string, std::shared_ptr<Animation>> m_animationMap;
+        std::unordered_map<std::string, std::shared_ptr<Graphics::GraphicsAnimation>> m_animationMap;
 
         // Helper methods
         void CalculateBounds();

@@ -99,9 +99,9 @@ namespace GameEngine {
         std::vector<AccessorInfo> m_accessors;
         std::vector<std::shared_ptr<Material>> m_materials;
         std::vector<std::shared_ptr<Mesh>> m_meshes;
-        std::vector<std::shared_ptr<Animation>> m_animations;
-        std::vector<std::shared_ptr<Skeleton>> m_skeletons;
-        std::vector<std::shared_ptr<Skin>> m_skins;
+        std::vector<std::shared_ptr<Graphics::GraphicsAnimation>> m_animations;
+        std::vector<std::shared_ptr<Graphics::RenderSkeleton>> m_skeletons;
+        std::vector<std::shared_ptr<Graphics::RenderSkin>> m_skins;
         
         // Loading methods
         bool LoadGLTFJson(const std::string& filepath);
@@ -143,7 +143,7 @@ namespace GameEngine {
         
         // Skeleton and skin parsing
         std::shared_ptr<Graphics::RenderSkin> ParseSkin(const nlohmann::json& skinJson, uint32_t skinIndex);
-        std::shared_ptr<Skeleton> CreateSkeletonFromSkin(const nlohmann::json& skinJson);
+        std::shared_ptr<Graphics::RenderSkeleton> CreateSkeletonFromSkin(const nlohmann::json& skinJson);
         
         // Morph target parsing
         std::shared_ptr<MorphTargetSet> ParseMorphTargets(const nlohmann::json& targetsJson);

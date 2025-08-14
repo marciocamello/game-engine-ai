@@ -13,8 +13,11 @@ namespace GameEngine {
     class Mesh;
     class Material;
     class ModelNode;
-    class Animation;
-    class Skeleton;
+    
+    namespace Graphics {
+        class GraphicsAnimation;
+        class RenderSkeleton;
+    }
 
     /**
      * @brief Binary model cache for faster subsequent loading
@@ -130,10 +133,10 @@ namespace GameEngine {
         std::shared_ptr<Material> DeserializeMaterial(std::ifstream& file);
         bool SerializeModelNode(std::shared_ptr<ModelNode> node, std::ofstream& file);
         std::shared_ptr<ModelNode> DeserializeModelNode(std::ifstream& file);
-        bool SerializeAnimation(std::shared_ptr<Animation> animation, std::ofstream& file);
-        std::shared_ptr<Animation> DeserializeAnimation(std::ifstream& file);
-        bool SerializeSkeleton(std::shared_ptr<Skeleton> skeleton, std::ofstream& file);
-        std::shared_ptr<Skeleton> DeserializeSkeleton(std::ifstream& file);
+        bool SerializeAnimation(std::shared_ptr<Graphics::GraphicsAnimation> animation, std::ofstream& file);
+        std::shared_ptr<Graphics::GraphicsAnimation> DeserializeAnimation(std::ifstream& file);
+        bool SerializeSkeleton(std::shared_ptr<Graphics::RenderSkeleton> skeleton, std::ofstream& file);
+        std::shared_ptr<Graphics::RenderSkeleton> DeserializeSkeleton(std::ifstream& file);
 
         // Utility serialization methods
         void WriteString(std::ofstream& file, const std::string& str);

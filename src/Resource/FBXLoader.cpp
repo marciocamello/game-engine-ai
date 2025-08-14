@@ -927,14 +927,14 @@ void FBXLoader::LogFBXLoadingStats(const FBXLoadResult& result) const {
     }
 }
 
-std::shared_ptr<Skeleton> FBXLoader::ProcessFBXSkeleton(const aiScene* scene) {
+std::shared_ptr<Graphics::RenderSkeleton> FBXLoader::ProcessFBXSkeleton(const aiScene* scene) {
     if (!scene || scene->mNumMeshes == 0) {
         return nullptr;
     }
     
-    auto skeleton = std::make_shared<Skeleton>();
-    std::vector<std::shared_ptr<Bone>> bones;
-    std::unordered_map<std::string, std::shared_ptr<Bone>> boneMap;
+    auto skeleton = std::make_shared<Graphics::RenderSkeleton>();
+    std::vector<std::shared_ptr<Graphics::RenderBone>> bones;
+    std::unordered_map<std::string, std::shared_ptr<Graphics::RenderBone>> boneMap;
     
     Logger::GetInstance().Debug("FBXLoader: Processing skeleton...");
     
@@ -958,7 +958,7 @@ std::shared_ptr<Skeleton> FBXLoader::ProcessFBXSkeleton(const aiScene* scene) {
             }
             
             // Create new bone
-            auto bone = std::make_shared<Bone>(boneName, boneIndex++);
+            auto bone = std::make_shared<Graphics::RenderBone>(boneName, boneIndex++);
             
             // Set inverse bind matrix
             Math::Mat4 inverseBindMatrix;
@@ -977,13 +977,13 @@ std::shared_ptr<Skeleton> FBXLoader::ProcessFBXSkeleton(const aiScene* scene) {
     }
     
     // Second pass: establish hierarchy using scene node structure
-    std::function<void(const aiNode*, std::shared_ptr<Bone>)> processNode = [&](const aiNode* node, std::shared_ptr<Bone> parentBone) -> void {
+    std::function<void(const aiNode*, std::shared_ptr<Graphics::RenderBone>)> processNode = [&](const aiNode* node, std::shared_ptr<Graphics::RenderBone> parentBone) -> void {
         if (!node) return;
         
         std::string nodeName(node->mName.C_Str());
         auto it = boneMap.find(nodeName);
         
-        std::shared_ptr<Bone> currentBone = nullptr;
+        std::shared_ptr<Graphics::RenderBone> currentBone = nullptr;
         if (it != boneMap.end()) {
             currentBone = it->second;
             
@@ -1026,8 +1026,8 @@ std::shared_ptr<Skeleton> FBXLoader::ProcessFBXSkeleton(const aiScene* scene) {
     return skeleton;
 }
 
-std::vector<std::shared_ptr<Animation>> FBXLoader::ProcessFBXAnimations(const aiScene* scene) {
-    std::vector<std::shared_ptr<Animation>> animations;
+std::vector<std::shared_ptr<Graphics::GraphicsAnimation>> FBXLoader::ProcessFBXAnimations(const aiScene* scene) {
+    std::vector<std::shared_ptr<Graphics::GraphicsAnimation>> animations;
     
     if (!scene || scene->mNumAnimations == 0) {
         return animations;
@@ -1048,93 +1048,20 @@ std::vector<std::shared_ptr<Animation>> FBXLoader::ProcessFBXAnimations(const ai
     return animations;
 }
 
-std::shared_ptr<Animation> FBXLoader::ProcessFBXAnimation(const aiAnimation* aiAnim) {
+std::shared_ptr<Graphics::GraphicsAnimation> FBXLoader::ProcessFBXAnimation(const aiAnimation* aiAnim) {
     if (!aiAnim) {
         return nullptr;
     }
     
-    auto animation = std::make_shared<Animation>(std::string(aiAnim->mName.C_Str()));
+    auto animation = std::make_shared<Graphics::GraphicsAnimation>(std::string(aiAnim->mName.C_Str()));
     
     Logger::GetInstance().Debug("Processing animation: " + animation->GetName() + 
                               " (duration: " + std::to_string(aiAnim->mDuration) + 
                               ", ticks/sec: " + std::to_string(aiAnim->mTicksPerSecond) + ")");
     
-    std::vector<std::shared_ptr<AnimationChannel>> channels;
+    // TODO: Implement FBX animation processing with new Graphics::AnimationChannel system
+    // This is a placeholder implementation for now
     
-    // Process each channel (bone animation)
-    for (uint32_t channelIndex = 0; channelIndex < aiAnim->mNumChannels; channelIndex++) {
-        const aiNodeAnim* nodeAnim = aiAnim->mChannels[channelIndex];
-        std::string boneName(nodeAnim->mNodeName.C_Str());
-        
-        auto channel = std::make_shared<AnimationChannel>();
-        channel->SetTargetNode(channelIndex); // Use channel index as node index for now
-        
-        // Create translation sampler if we have position keys
-        if (nodeAnim->mNumPositionKeys > 0) {
-            auto translationSampler = std::make_shared<Vec3Sampler>();
-            translationSampler->SetInterpolationType(InterpolationType::Linear);
-            
-            std::vector<Keyframe<Math::Vec3>> keyframes;
-            for (uint32_t posIndex = 0; posIndex < nodeAnim->mNumPositionKeys; posIndex++) {
-                const aiVectorKey& key = nodeAnim->mPositionKeys[posIndex];
-                float time = static_cast<float>(key.mTime / aiAnim->mTicksPerSecond);
-                Math::Vec3 position(key.mValue.x, key.mValue.y, key.mValue.z);
-                
-                // Apply coordinate system conversion and scale
-                position *= m_config.importScale;
-                
-                keyframes.emplace_back(time, position);
-            }
-            
-            translationSampler->SetKeyframes(keyframes);
-            channel->SetTranslationSampler(translationSampler);
-        }
-        
-        // Create rotation sampler if we have rotation keys
-        if (nodeAnim->mNumRotationKeys > 0) {
-            auto rotationSampler = std::make_shared<QuatSampler>();
-            rotationSampler->SetInterpolationType(InterpolationType::Linear);
-            
-            std::vector<Keyframe<Math::Quat>> keyframes;
-            for (uint32_t rotIndex = 0; rotIndex < nodeAnim->mNumRotationKeys; rotIndex++) {
-                const aiQuatKey& key = nodeAnim->mRotationKeys[rotIndex];
-                float time = static_cast<float>(key.mTime / aiAnim->mTicksPerSecond);
-                Math::Quat rotation(key.mValue.w, key.mValue.x, key.mValue.y, key.mValue.z);
-                
-                keyframes.emplace_back(time, rotation);
-            }
-            
-            rotationSampler->SetKeyframes(keyframes);
-            channel->SetRotationSampler(rotationSampler);
-        }
-        
-        // Create scale sampler if we have scale keys
-        if (nodeAnim->mNumScalingKeys > 0) {
-            auto scaleSampler = std::make_shared<Vec3Sampler>();
-            scaleSampler->SetInterpolationType(InterpolationType::Linear);
-            
-            std::vector<Keyframe<Math::Vec3>> keyframes;
-            for (uint32_t scaleIndex = 0; scaleIndex < nodeAnim->mNumScalingKeys; scaleIndex++) {
-                const aiVectorKey& key = nodeAnim->mScalingKeys[scaleIndex];
-                float time = static_cast<float>(key.mTime / aiAnim->mTicksPerSecond);
-                Math::Vec3 scale(key.mValue.x, key.mValue.y, key.mValue.z);
-                
-                keyframes.emplace_back(time, scale);
-            }
-            
-            scaleSampler->SetKeyframes(keyframes);
-            channel->SetScaleSampler(scaleSampler);
-        }
-        
-        channels.push_back(channel);
-        
-        Logger::GetInstance().Debug("Added animation channel for bone: " + boneName + 
-                                  " (pos: " + std::to_string(nodeAnim->mNumPositionKeys) + 
-                                  ", rot: " + std::to_string(nodeAnim->mNumRotationKeys) + 
-                                  ", scale: " + std::to_string(nodeAnim->mNumScalingKeys) + ")");
-    }
-    
-    animation->SetChannels(channels);
     return animation;
 }
 
@@ -1188,7 +1115,7 @@ void FBXLoader::ProcessBoneWeights(const aiMesh* mesh, const aiScene* scene, std
     Logger::GetInstance().Debug("Processed bone weights for " + std::to_string(vertices.size()) + " vertices");
 }
 
-void FBXLoader::ExtractBoneData(const aiMesh* mesh, std::shared_ptr<Skeleton> skeleton) {
+void FBXLoader::ExtractBoneData(const aiMesh* mesh, std::shared_ptr<Graphics::RenderSkeleton> skeleton) {
     if (!mesh || !mesh->HasBones() || !skeleton) {
         return;
     }

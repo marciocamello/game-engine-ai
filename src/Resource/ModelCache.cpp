@@ -800,22 +800,22 @@ namespace GameEngine {
         return std::make_shared<ModelNode>("Root");
     }
 
-    bool ModelCache::SerializeAnimation(std::shared_ptr<Animation> animation, std::ofstream& file) {
+    bool ModelCache::SerializeAnimation(std::shared_ptr<Graphics::GraphicsAnimation> animation, std::ofstream& file) {
         // Placeholder
         return true;
     }
 
-    std::shared_ptr<Animation> ModelCache::DeserializeAnimation(std::ifstream& file) {
+    std::shared_ptr<Graphics::GraphicsAnimation> ModelCache::DeserializeAnimation(std::ifstream& file) {
         // Placeholder
         return nullptr;
     }
 
-    bool ModelCache::SerializeSkeleton(std::shared_ptr<Skeleton> skeleton, std::ofstream& file) {
+    bool ModelCache::SerializeSkeleton(std::shared_ptr<Graphics::RenderSkeleton> skeleton, std::ofstream& file) {
         // Placeholder
         return true;
     }
 
-    std::shared_ptr<Skeleton> ModelCache::DeserializeSkeleton(std::ifstream& file) {
+    std::shared_ptr<Graphics::RenderSkeleton> ModelCache::DeserializeSkeleton(std::ifstream& file) {
         // Placeholder
         return nullptr;
     }

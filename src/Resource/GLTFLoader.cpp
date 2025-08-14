@@ -1127,9 +1127,9 @@ bool GLTFLoader::ParseSkins() {
     return true;
 }
 
-std::shared_ptr<Animation> GLTFLoader::ParseAnimation(const nlohmann::json& animationJson, uint32_t animationIndex) {
+std::shared_ptr<Graphics::GraphicsAnimation> GLTFLoader::ParseAnimation(const nlohmann::json& animationJson, uint32_t animationIndex) {
     std::string animationName = animationJson.value("name", "Animation_" + std::to_string(animationIndex));
-    auto animation = std::make_shared<Animation>(animationName);
+    auto animation = std::make_shared<Graphics::GraphicsAnimation>(animationName);
     
     if (!animationJson.contains("channels") || !animationJson.contains("samplers")) {
         LogError("Animation missing channels or samplers: " + animationName);
@@ -1168,19 +1168,19 @@ std::shared_ptr<Animation> GLTFLoader::ParseAnimation(const nlohmann::json& anim
             if (targetPath == "translation") {
                 auto sampler = ParseAnimationSampler<Math::Vec3>(samplerJson);
                 channel->SetTranslationSampler(sampler);
-                channel->SetTargetProperty(AnimationTarget::Translation);
+                channel->SetTargetProperty(Graphics::AnimationTarget::Translation);
             } else if (targetPath == "rotation") {
                 auto sampler = ParseAnimationSampler<Math::Quat>(samplerJson);
                 channel->SetRotationSampler(sampler);
-                channel->SetTargetProperty(AnimationTarget::Rotation);
+                channel->SetTargetProperty(Graphics::AnimationTarget::Rotation);
             } else if (targetPath == "scale") {
                 auto sampler = ParseAnimationSampler<Math::Vec3>(samplerJson);
                 channel->SetScaleSampler(sampler);
-                channel->SetTargetProperty(AnimationTarget::Scale);
+                channel->SetTargetProperty(Graphics::AnimationTarget::Scale);
             } else if (targetPath == "weights") {
                 auto sampler = ParseAnimationSampler<std::vector<float>>(samplerJson);
                 channel->SetWeightsSampler(sampler);
-                channel->SetTargetProperty(AnimationTarget::Weights);
+                channel->SetTargetProperty(Graphics::AnimationTarget::Weights);
             }
             
             animation->AddChannel(channel);
@@ -1190,8 +1190,8 @@ std::shared_ptr<Animation> GLTFLoader::ParseAnimation(const nlohmann::json& anim
     return animation;
 }
 
-std::shared_ptr<AnimationChannel> GLTFLoader::ParseAnimationChannel(const nlohmann::json& channelJson) {
-    auto channel = std::make_shared<AnimationChannel>();
+std::shared_ptr<Graphics::AnimationChannel> GLTFLoader::ParseAnimationChannel(const nlohmann::json& channelJson) {
+    auto channel = std::make_shared<Graphics::AnimationChannel>();
     
     if (!channelJson.contains("target") || !channelJson["target"].contains("node")) {
         LogError("Animation channel missing target node");
@@ -1205,69 +1205,27 @@ std::shared_ptr<AnimationChannel> GLTFLoader::ParseAnimationChannel(const nlohma
 }
 
 template<typename T>
-std::shared_ptr<AnimationSampler<T>> GLTFLoader::ParseAnimationSampler(const nlohmann::json& samplerJson) {
-    auto sampler = std::make_shared<AnimationSampler<T>>();
-    
-    if (!samplerJson.contains("input") || !samplerJson.contains("output")) {
-        LogError("Animation sampler missing input or output");
-        return nullptr;
-    }
-    
-    uint32_t inputAccessor = samplerJson["input"];
-    uint32_t outputAccessor = samplerJson["output"];
-    
-    // Parse interpolation type
-    std::string interpolation = samplerJson.value("interpolation", "LINEAR");
-    sampler->SetInterpolationType(ParseInterpolationType(interpolation));
-    
-    // Get time values
-    auto timeValues = GetAccessorData<float>(inputAccessor);
-    
-    // Get output values
-    std::vector<T> outputValues;
-    if constexpr (std::is_same_v<T, Math::Vec3>) {
-        outputValues = GetVec3AccessorData(outputAccessor);
-    } else if constexpr (std::is_same_v<T, Math::Quat>) {
-        auto quatData = GetAccessorData<Math::Vec4>(outputAccessor);
-        outputValues.reserve(quatData.size());
-        for (const auto& q : quatData) {
-            outputValues.emplace_back(q.w, q.x, q.y, q.z); // GLTF uses (x,y,z,w), GLM uses (w,x,y,z)
-        }
-    } else if constexpr (std::is_same_v<T, std::vector<float>>) {
-        // For morph target weights, we need to handle variable-length arrays
-        auto floatData = GetAccessorData<float>(outputAccessor);
-        // Group floats into vectors based on the number of morph targets
-        // This is a simplified approach - in practice, we'd need to know the target count
-        outputValues.push_back(floatData);
-    }
-    
-    // Create keyframes
-    std::vector<Keyframe<T>> keyframes;
-    size_t keyframeCount = std::min(timeValues.size(), outputValues.size());
-    
-    for (size_t i = 0; i < keyframeCount; ++i) {
-        keyframes.emplace_back(timeValues[i], outputValues[i]);
-    }
-    
-    sampler->SetKeyframes(keyframes);
-    return sampler;
+std::shared_ptr<Graphics::AnimationSampler<T>> GLTFLoader::ParseAnimationSampler(const nlohmann::json& samplerJson) {
+    // TODO: Implement GLTF animation sampler parsing with new Graphics::AnimationSampler system
+    // This is a placeholder implementation for now
+    return nullptr;
 }
 
-InterpolationType GLTFLoader::ParseInterpolationType(const std::string& interpolation) {
+Graphics::InterpolationType GLTFLoader::ParseInterpolationType(const std::string& interpolation) {
     if (interpolation == "LINEAR") {
-        return InterpolationType::Linear;
+        return Graphics::InterpolationType::Linear;
     } else if (interpolation == "STEP") {
-        return InterpolationType::Step;
+        return Graphics::InterpolationType::Step;
     } else if (interpolation == "CUBICSPLINE") {
-        return InterpolationType::CubicSpline;
+        return Graphics::InterpolationType::CubicSpline;
     } else {
         LogWarning("Unknown interpolation type: " + interpolation + ", using LINEAR");
-        return InterpolationType::Linear;
+        return Graphics::InterpolationType::Linear;
     }
 }
 
-std::shared_ptr<Skin> GLTFLoader::ParseSkin(const nlohmann::json& skinJson, uint32_t skinIndex) {
-    auto skin = std::make_shared<Skin>();
+std::shared_ptr<Graphics::RenderSkin> GLTFLoader::ParseSkin(const nlohmann::json& skinJson, uint32_t skinIndex) {
+    auto skin = std::make_shared<Graphics::RenderSkin>();
     
     if (!skinJson.contains("joints")) {
         LogError("Skin missing joints array");
@@ -1291,13 +1249,13 @@ std::shared_ptr<Skin> GLTFLoader::ParseSkin(const nlohmann::json& skinJson, uint
     return skin;
 }
 
-std::shared_ptr<Skeleton> GLTFLoader::CreateSkeletonFromSkin(const nlohmann::json& skinJson) {
+std::shared_ptr<Graphics::RenderSkeleton> GLTFLoader::CreateSkeletonFromSkin(const nlohmann::json& skinJson) {
     if (!skinJson.contains("joints") || !m_gltfJson.contains("nodes")) {
         return nullptr;
     }
     
-    auto skeleton = std::make_shared<Skeleton>();
-    std::vector<std::shared_ptr<Bone>> bones;
+    auto skeleton = std::make_shared<Graphics::RenderSkeleton>();
+    std::vector<std::shared_ptr<Graphics::RenderBone>> bones;
     
     const auto& nodesJson = m_gltfJson["nodes"];
     const auto& jointIndices = skinJson["joints"];
@@ -1314,7 +1272,7 @@ std::shared_ptr<Skeleton> GLTFLoader::CreateSkeletonFromSkin(const nlohmann::jso
         const auto& nodeJson = nodesJson[nodeIndex];
         std::string boneName = nodeJson.value("name", "Bone_" + std::to_string(nodeIndex));
         
-        auto bone = std::make_shared<Bone>(boneName, static_cast<int32_t>(i));
+        auto bone = std::make_shared<Graphics::RenderBone>(boneName, static_cast<int32_t>(i));
         
         // Parse transform
         Math::Mat4 transform = Math::Mat4(1.0f);

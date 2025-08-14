@@ -39,8 +39,8 @@ if "%1"=="--tests" (
     if not "%2"=="" (
         echo %2 | findstr /r "^--" >nul
         if errorlevel 1 (
-            set SPECIFIC_TEST=%2
-            set CMAKE_ARGS=%CMAKE_ARGS% -DBUILD_SPECIFIC_TEST=%2
+            set SPECIFIC_TEST=%~2
+            REM (mudança A) remover adição prematura a CMAKE_ARGS aqui
             shift
         )
     )
@@ -48,9 +48,9 @@ if "%1"=="--tests" (
     goto :parse_args
 )
 if "%1"=="--project" (
-    set SPECIFIC_PROJECT=%2
+    set SPECIFIC_PROJECT=%~2
     set BUILD_PROJECTS=ON
-    set CMAKE_ARGS=%CMAKE_ARGS% -DBUILD_SPECIFIC_PROJECT=%2
+    REM (mudança A) remover adição prematura a CMAKE_ARGS aqui
     shift
     shift
     goto :parse_args
@@ -134,7 +134,8 @@ if not "%SPECIFIC_TEST%"=="" (
     set BUILD_ENGINE=ON
     set BUILD_PROJECTS=OFF
     set SPECIFIC_PROJECT=
-    set CMAKE_ARGS=%CMAKE_ARGS% -DBUILD_SPECIFIC_TEST=%SPECIFIC_TEST% -DBUILD_SPECIFIC_PROJECT=
+    REM (mudança B) citar valores específicos
+    set CMAKE_ARGS=%CMAKE_ARGS% -DBUILD_SPECIFIC_TEST="%SPECIFIC_TEST%" -DBUILD_SPECIFIC_PROJECT=
 )
 
 REM When building specific project, force engine ON and tests OFF, clear specific test
@@ -142,7 +143,8 @@ if not "%SPECIFIC_PROJECT%"=="" (
     set BUILD_ENGINE=ON
     set BUILD_TESTS=OFF
     set SPECIFIC_TEST=
-    set CMAKE_ARGS=%CMAKE_ARGS% -DBUILD_SPECIFIC_PROJECT=%SPECIFIC_PROJECT% -DBUILD_SPECIFIC_TEST=
+    REM (mudança B) citar valores específicos
+    set CMAKE_ARGS=%CMAKE_ARGS% -DBUILD_SPECIFIC_PROJECT="%SPECIFIC_PROJECT%" -DBUILD_SPECIFIC_TEST=
 )
 
 if "%BUILD_TESTS%"=="ON" (
@@ -184,7 +186,8 @@ cd build
 REM Configure with CMake
 echo.
 echo Configuring build system...
-cmake .. -DCMAKE_BUILD_TYPE=%BUILD_TYPE% -DCMAKE_TOOLCHAIN_FILE=../vcpkg/scripts/buildsystems/vcpkg.cmake -A x64 %CMAKE_ARGS%
+REM (mudança C) remover -DCMAKE_BUILD_TYPE no configure (VS é multi-config)
+cmake .. -DCMAKE_TOOLCHAIN_FILE=../vcpkg/scripts/buildsystems/vcpkg.cmake -A x64 %CMAKE_ARGS%
 if errorlevel 1 (
     echo ERROR: CMake configuration failed!
     cd ..

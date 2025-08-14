@@ -193,18 +193,18 @@ namespace GameEngine {
         return !m_animations.empty();
     }
 
-    std::vector<std::shared_ptr<Animation>> Model::GetAnimations() const {
+    std::vector<std::shared_ptr<Graphics::GraphicsAnimation>> Model::GetAnimations() const {
         return m_animations;
     }
 
-    std::shared_ptr<Animation> Model::GetAnimation(size_t index) const {
+    std::shared_ptr<Graphics::GraphicsAnimation> Model::GetAnimation(size_t index) const {
         if (index < m_animations.size()) {
             return m_animations[index];
         }
         return nullptr;
     }
 
-    std::shared_ptr<Animation> Model::FindAnimation(const std::string& name) const {
+    std::shared_ptr<Graphics::GraphicsAnimation> Model::FindAnimation(const std::string& name) const {
         auto it = m_animationMap.find(name);
         if (it != m_animationMap.end()) {
             return it->second;
@@ -216,20 +216,20 @@ namespace GameEngine {
         return m_animations.size();
     }
 
-    void Model::AddAnimation(std::shared_ptr<Animation> animation) {
+    void Model::AddAnimation(std::shared_ptr<Graphics::GraphicsAnimation> animation) {
         if (animation) {
             m_animations.push_back(animation);
             BuildAnimationMap();
         }
     }
 
-    void Model::SetAnimations(const std::vector<std::shared_ptr<Animation>>& animations) {
+    void Model::SetAnimations(const std::vector<std::shared_ptr<Graphics::GraphicsAnimation>>& animations) {
         m_animations = animations;
         BuildAnimationMap();
     }
 
     // Skeleton methods
-    std::shared_ptr<Skeleton> Model::GetSkeleton() const {
+    std::shared_ptr<Graphics::RenderSkeleton> Model::GetSkeleton() const {
         return m_skeleton;
     }
 
@@ -237,16 +237,16 @@ namespace GameEngine {
         return m_skeleton != nullptr;
     }
 
-    void Model::SetSkeleton(std::shared_ptr<Skeleton> skeleton) {
+    void Model::SetSkeleton(std::shared_ptr<Graphics::RenderSkeleton> skeleton) {
         m_skeleton = skeleton;
     }
 
     // Skin methods
-    std::vector<std::shared_ptr<Skin>> Model::GetSkins() const {
+    std::vector<std::shared_ptr<Graphics::RenderSkin>> Model::GetSkins() const {
         return m_skins;
     }
 
-    std::shared_ptr<Skin> Model::GetSkin(size_t index) const {
+    std::shared_ptr<Graphics::RenderSkin> Model::GetSkin(size_t index) const {
         if (index < m_skins.size()) {
             return m_skins[index];
         }
@@ -257,13 +257,13 @@ namespace GameEngine {
         return m_skins.size();
     }
 
-    void Model::AddSkin(std::shared_ptr<Skin> skin) {
+    void Model::AddSkin(std::shared_ptr<Graphics::RenderSkin> skin) {
         if (skin) {
             m_skins.push_back(skin);
         }
     }
 
-    void Model::SetSkins(const std::vector<std::shared_ptr<Skin>>& skins) {
+    void Model::SetSkins(const std::vector<std::shared_ptr<Graphics::RenderSkin>>& skins) {
         m_skins = skins;
     }
 

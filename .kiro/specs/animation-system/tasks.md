@@ -160,7 +160,7 @@
     - Create animation metadata preservation and property mapping
     - _Requirements: 8.4, 8.5, 8.7_
 
-- [-] 11. Implement performance optimization features
+- [x] 11. Implement performance optimization features
 
   - [x] 11.1 Add animation LOD and culling system
 
@@ -169,7 +169,7 @@
     - Create performance scaling based on system capabilities
     - _Requirements: 9.4, 9.1, 9.5_
 
-  - [-] 11.2 Create multi-threading and GPU acceleration support
+  - [x] 11.2 Create multi-threading and GPU acceleration support
 
     - Add multi-threaded animation updates for multiple characters
     - Implement GPU-accelerated skinning with compute shaders

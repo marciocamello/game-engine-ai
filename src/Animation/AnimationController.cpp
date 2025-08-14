@@ -75,11 +75,6 @@ namespace Animation {
         }
     }
 
-    // AnimationEvent implementation
-    bool AnimationEvent::IsValid() const {
-        return !name.empty() && time >= 0.0f && time <= 1.0f;
-    }
-
     // AnimationController implementation
     AnimationController::AnimationController() = default;
 

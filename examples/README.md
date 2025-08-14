@@ -1,6 +1,40 @@
-# Game Engine Kiro - Examples
+# Game Engine Kiro - Examples (DEPRECATED)
 
-This directory contains example applications that demonstrate the capabilities of Game Engine Kiro. The examples are organized into two main categories: basic and enhanced demonstrations.
+⚠️ **DEPRECATED**: This directory is deprecated and no longer actively maintained.
+
+**Please use the new `projects/` directory structure instead:**
+
+- `projects/BasicExample/` - Replaces `examples/basic_example.cpp`
+- `projects/GameExample/` - Replaces `examples/main.cpp`
+
+## Migration Notice
+
+This directory contains legacy example applications that have been moved to the new `projects/` structure. The examples are kept here for reference purposes only and are no longer built by the CMake system.
+
+### What Changed
+
+- **Old Structure**: `examples/` directory with individual .cpp files
+- **New Structure**: `projects/` directory with proper CMake project structure
+- **Benefits**: Better organization, individual project configurations, cleaner build system
+
+### How to Use New Structure
+
+```powershell
+# Build all projects (including examples)
+.\scripts\build_unified.bat --tests
+
+# Run the new BasicExample
+.\build\projects\BasicExample\Release\BasicExample.exe
+
+# Run the new GameExample
+.\build\projects\GameExample\Release\GameExample.exe
+```
+
+---
+
+## Legacy Documentation (For Reference Only)
+
+This directory previously contained example applications that demonstrate the capabilities of Game Engine Kiro. The examples were organized into two main categories: basic and enhanced demonstrations.
 
 ## Example Structure
 

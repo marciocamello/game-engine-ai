@@ -24,7 +24,7 @@
   - Update include statements to reference new header names
   - _Requirements: 1.2, 4.1_
 
-- [ ] 4. Update Graphics System Implementation Files
+- [x] 4. Update Graphics System Implementation Files
 
   - Rename `src/Graphics/Animation.cpp` to `src/Graphics/GraphicsAnimation.cpp`
   - Rename `src/Graphics/Skeleton.cpp` to `src/Graphics/RenderSkeleton.cpp`

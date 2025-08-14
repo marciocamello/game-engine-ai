@@ -1205,8 +1205,8 @@ std::shared_ptr<Graphics::AnimationChannel> GLTFLoader::ParseAnimationChannel(co
 }
 
 template<typename T>
-std::shared_ptr<AnimationSampler<T>> GLTFLoader::ParseAnimationSampler(const nlohmann::json& samplerJson) {
-    auto sampler = std::make_shared<AnimationSampler<T>>();
+std::shared_ptr<Graphics::AnimationSampler<T>> GLTFLoader::ParseAnimationSampler(const nlohmann::json& samplerJson) {
+    auto sampler = std::make_shared<Graphics::AnimationSampler<T>>();
     
     if (!samplerJson.contains("input") || !samplerJson.contains("output")) {
         LogError("Animation sampler missing input or output");
@@ -1242,7 +1242,7 @@ std::shared_ptr<AnimationSampler<T>> GLTFLoader::ParseAnimationSampler(const nlo
     }
     
     // Create keyframes
-    std::vector<Keyframe<T>> keyframes;
+    std::vector<Graphics::Keyframe<T>> keyframes;
     size_t keyframeCount = std::min(timeValues.size(), outputValues.size());
     
     for (size_t i = 0; i < keyframeCount; ++i) {
@@ -1411,8 +1411,8 @@ std::shared_ptr<MorphTargetSet> GLTFLoader::ParseMorphTargets(const nlohmann::js
 }
 
 // Explicit template instantiations for animation samplers
-template std::shared_ptr<AnimationSampler<Math::Vec3>> GLTFLoader::ParseAnimationSampler<Math::Vec3>(const nlohmann::json& samplerJson);
-template std::shared_ptr<AnimationSampler<Math::Quat>> GLTFLoader::ParseAnimationSampler<Math::Quat>(const nlohmann::json& samplerJson);
-template std::shared_ptr<AnimationSampler<std::vector<float>>> GLTFLoader::ParseAnimationSampler<std::vector<float>>(const nlohmann::json& samplerJson);
+template std::shared_ptr<Graphics::AnimationSampler<Math::Vec3>> GLTFLoader::ParseAnimationSampler<Math::Vec3>(const nlohmann::json& samplerJson);
+template std::shared_ptr<Graphics::AnimationSampler<Math::Quat>> GLTFLoader::ParseAnimationSampler<Math::Quat>(const nlohmann::json& samplerJson);
+template std::shared_ptr<Graphics::AnimationSampler<std::vector<float>>> GLTFLoader::ParseAnimationSampler<std::vector<float>>(const nlohmann::json& samplerJson);
 
 } // namespace GameEngine

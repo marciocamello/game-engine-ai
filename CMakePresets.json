@@ -1,203 +1,75 @@
-{ 
-    "version": 6, 
-    "configurePresets": [ 
-        { 
-            "name": "vs-debug", 
-            "displayName": "VS 2022 - Debug", 
-            "generator": "Visual Studio 17 2022", 
-            "binaryDir": "${sourceDir}/build/vs/x64/Debug", 
-            "architecture": { 
-                "value": "x64" 
-            }, 
-            "cacheVariables": { 
-                "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/vcpkg/scripts/buildsystems/vcpkg.cmake", 
-                "CMAKE_CXX_STANDARD": "20", 
-                "CMAKE_CXX_STANDARD_REQUIRED": "ON", 
-                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON" 
-            }, 
-            "environment": { 
-                "VCPKG_FEATURE_FLAGS": "manifests,binarycaching,versions", 
-                "VCPKG_BINARY_SOURCES": "files,$env{USERPROFILE}/.vcpkg-cache,readwrite", 
-                "VCPKG_MAX_CONCURRENCY": "22" 
-            } 
-        }, 
-        { 
-            "name": "vs-release", 
-            "displayName": "VS 2022 - Release", 
-            "generator": "Visual Studio 17 2022", 
-            "binaryDir": "${sourceDir}/build/vs/x64/Release", 
-            "architecture": { 
-                "value": "x64" 
-            }, 
-            "cacheVariables": { 
-                "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/vcpkg/scripts/buildsystems/vcpkg.cmake", 
-                "CMAKE_CXX_STANDARD": "20", 
-                "CMAKE_CXX_STANDARD_REQUIRED": "ON", 
-                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON" 
-            }, 
-            "environment": { 
-                "VCPKG_FEATURE_FLAGS": "manifests,binarycaching,versions", 
-                "VCPKG_BINARY_SOURCES": "files,$env{USERPROFILE}/.vcpkg-cache,readwrite", 
-                "VCPKG_MAX_CONCURRENCY": "22" 
-            } 
-        }, 
-        { 
-            "name": "ninja-debug", 
-            "displayName": "Ninja - Debug (MSVC, Optimized)", 
-            "generator": "Ninja", 
-            "binaryDir": "${sourceDir}/build/ninja/x64/Debug", 
-            "cacheVariables": { 
-                "CMAKE_BUILD_TYPE": "Debug", 
-                "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/vcpkg/scripts/buildsystems/vcpkg.cmake", 
-                "CMAKE_CXX_STANDARD": "20", 
-                "CMAKE_CXX_STANDARD_REQUIRED": "ON", 
-                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON", 
-                "CMAKE_JOB_POOLS": "compile=22;link=8", 
-                "CMAKE_JOB_POOL_COMPILE": "compile", 
-                "CMAKE_JOB_POOL_LINK": "link", 
-                "CMAKE_DEPENDS_USE_COMPILER": "ON", 
-                "CMAKE_VERBOSE_MAKEFILE": "OFF", 
-                "CMAKE_COLOR_MAKEFILE": "ON", 
-                "CMAKE_UNITY_BUILD": "OFF" 
-            }, 
-            "environment": { 
-                "VCPKG_FEATURE_FLAGS": "manifests,binarycaching,versions", 
-                "VCPKG_BINARY_SOURCES": "files,$env{USERPROFILE}/.vcpkg-cache,readwrite", 
-                "VCPKG_MAX_CONCURRENCY": "22", 
-                "NINJA_STATUS": "[%f/%t %es] ", 
-                "NINJA_PARALLEL_JOBS": "22" 
-            } 
-        }, 
-        { 
-            "name": "ninja-release", 
-            "displayName": "Ninja - Release (MSVC, Optimized)", 
-            "generator": "Ninja", 
-            "binaryDir": "${sourceDir}/build/ninja/x64/Release", 
-            "cacheVariables": { 
-                "CMAKE_BUILD_TYPE": "Release", 
-                "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/vcpkg/scripts/buildsystems/vcpkg.cmake", 
-                "CMAKE_CXX_STANDARD": "20", 
-                "CMAKE_CXX_STANDARD_REQUIRED": "ON", 
-                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON", 
-                "CMAKE_JOB_POOLS": "compile=22;link=8", 
-                "CMAKE_JOB_POOL_COMPILE": "compile", 
-                "CMAKE_JOB_POOL_LINK": "link", 
-                "CMAKE_DEPENDS_USE_COMPILER": "ON", 
-                "CMAKE_VERBOSE_MAKEFILE": "OFF", 
-                "CMAKE_COLOR_MAKEFILE": "ON", 
-                "CMAKE_UNITY_BUILD": "OFF", 
-                "CMAKE_INTERPROCEDURAL_OPTIMIZATION": "ON" 
-            }, 
-            "environment": { 
-                "VCPKG_FEATURE_FLAGS": "manifests,binarycaching,versions", 
-                "VCPKG_BINARY_SOURCES": "files,$env{USERPROFILE}/.vcpkg-cache,readwrite", 
-                "VCPKG_MAX_CONCURRENCY": "22", 
-                "NINJA_STATUS": "[%f/%t %es] ", 
-                "NINJA_PARALLEL_JOBS": "22" 
-            } 
-        }, 
-        { 
-            "name": "ninja-relwithdebinfo", 
-            "displayName": "Ninja - RelWithDebInfo (MSVC, Optimized)", 
-            "generator": "Ninja", 
-            "binaryDir": "${sourceDir}/build/ninja/x64/RelWithDebInfo", 
-            "cacheVariables": { 
-                "CMAKE_BUILD_TYPE": "RelWithDebInfo", 
-                "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/vcpkg/scripts/buildsystems/vcpkg.cmake", 
-                "CMAKE_CXX_STANDARD": "20", 
-                "CMAKE_CXX_STANDARD_REQUIRED": "ON", 
-                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON", 
-                "CMAKE_JOB_POOLS": "compile=22;link=8", 
-                "CMAKE_JOB_POOL_COMPILE": "compile", 
-                "CMAKE_JOB_POOL_LINK": "link", 
-                "CMAKE_DEPENDS_USE_COMPILER": "ON", 
-                "CMAKE_VERBOSE_MAKEFILE": "OFF", 
-                "CMAKE_COLOR_MAKEFILE": "ON", 
-                "CMAKE_UNITY_BUILD": "OFF", 
-                "CMAKE_INTERPROCEDURAL_OPTIMIZATION": "ON" 
-            }, 
-            "environment": { 
-                "VCPKG_FEATURE_FLAGS": "manifests,binarycaching,versions", 
-                "VCPKG_BINARY_SOURCES": "files,$env{USERPROFILE}/.vcpkg-cache,readwrite", 
-                "VCPKG_MAX_CONCURRENCY": "22", 
-                "NINJA_STATUS": "[%f/%t %es] ", 
-                "NINJA_PARALLEL_JOBS": "22" 
-            } 
-        } 
-    ], 
-    "buildPresets": [ 
-        { 
-            "name": "vs-debug", 
-            "configurePreset": "vs-debug", 
-            "configuration": "Debug" 
-        }, 
-        { 
-            "name": "vs-release", 
-            "configurePreset": "vs-release", 
-            "configuration": "Release" 
-        }, 
-        { 
-            "name": "ninja-debug", 
-            "configurePreset": "ninja-debug", 
-            "jobs": 22 
-        }, 
-        { 
-            "name": "ninja-release", 
-            "configurePreset": "ninja-release", 
-            "jobs": 22 
-        }, 
-        { 
-            "name": "ninja-relwithdebinfo", 
-            "configurePreset": "ninja-relwithdebinfo", 
-            "jobs": 22 
-        } 
-    ], 
-    "testPresets": [ 
-        { 
-            "name": "vs-debug-test", 
-            "configurePreset": "vs-debug", 
-            "configuration": "Debug", 
-            "output": { 
-                "outputOnFailure": true 
-            } 
-        }, 
-        { 
-            "name": "vs-release-test", 
-            "configurePreset": "vs-release", 
-            "configuration": "Release", 
-            "output": { 
-                "outputOnFailure": true 
-            } 
-        }, 
-        { 
-            "name": "ninja-debug-test", 
-            "configurePreset": "ninja-debug", 
-            "output": { 
-                "outputOnFailure": true 
-            }, 
-            "execution": { 
-                "jobs": 22 
-            } 
-        }, 
-        { 
-            "name": "ninja-release-test", 
-            "configurePreset": "ninja-release", 
-            "output": { 
-                "outputOnFailure": true 
-            }, 
-            "execution": { 
-                "jobs": 22 
-            } 
-        }, 
-        { 
-            "name": "ninja-relwithdebinfo-test", 
-            "configurePreset": "ninja-relwithdebinfo", 
-            "output": { 
-                "outputOnFailure": true 
-            }, 
-            "execution": { 
-                "jobs": 22 
-            } 
-        } 
-    ] 
-} 
+{
+    "version": 6,
+    "configurePresets": [
+        {
+            "name": "vs-debug",
+            "displayName": "VS 2022 - Debug",
+            "generator": "Visual Studio 17 2022",
+            "binaryDir": "${sourceDir}/build/vs/x64/Debug",
+            "architecture": {
+                "value": "x64"
+            },
+            "cacheVariables": {
+                "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/vcpkg/scripts/buildsystems/vcpkg.cmake",
+                "CMAKE_CXX_STANDARD": "20",
+                "CMAKE_CXX_STANDARD_REQUIRED": "ON",
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+            },
+            "environment": {
+                "VCPKG_FEATURE_FLAGS": "manifests,binarycaching,versions",
+                "VCPKG_BINARY_SOURCES": "files,$env{USERPROFILE}/.vcpkg-cache,readwrite",
+                "VCPKG_MAX_CONCURRENCY": "22"
+            }
+        },
+        {
+            "name": "vs-release",
+            "displayName": "VS 2022 - Release",
+            "generator": "Visual Studio 17 2022",
+            "binaryDir": "${sourceDir}/build/vs/x64/Release",
+            "architecture": {
+                "value": "x64"
+            },
+            "cacheVariables": {
+                "CMAKE_TOOLCHAIN_FILE": "${sourceDir}/vcpkg/scripts/buildsystems/vcpkg.cmake",
+                "CMAKE_CXX_STANDARD": "20",
+                "CMAKE_CXX_STANDARD_REQUIRED": "ON",
+                "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+            },
+            "environment": {
+                "VCPKG_FEATURE_FLAGS": "manifests,binarycaching,versions",
+                "VCPKG_BINARY_SOURCES": "files,$env{USERPROFILE}/.vcpkg-cache,readwrite",
+                "VCPKG_MAX_CONCURRENCY": "22"
+            }
+        }
+    ],
+    "buildPresets": [
+        {
+            "name": "vs-debug",
+            "configurePreset": "vs-debug",
+            "configuration": "Debug"
+        },
+        {
+            "name": "vs-release",
+            "configurePreset": "vs-release",
+            "configuration": "Release"
+        }
+    ],
+    "testPresets": [
+        {
+            "name": "vs-debug-test",
+            "configurePreset": "vs-debug",
+            "configuration": "Debug",
+            "output": {
+                "outputOnFailure": true
+            }
+        },
+        {
+            "name": "vs-release-test",
+            "configurePreset": "vs-release",
+            "configuration": "Release",
+            "output": {
+                "outputOnFailure": true
+            }
+        }
+    ]
+}

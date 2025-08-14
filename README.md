@@ -9,7 +9,7 @@ A modern 3D game engine built with AI assistance, designed for third-person acti
 .\scripts\build_unified.bat
 
 # Build with tests
-.\scripts\build_unified.bat --tests
+.\scripts\build_unified.bat --clean-tests --tests
 
 # Run example game
 build\projects\GameExample\Release\GameExample.exe
@@ -27,11 +27,13 @@ The unified build system supports flexible build configurations:
 .\scripts\build_unified.bat --engine          # Engine library only
 .\scripts\build_unified.bat --projects        # All game projects
 .\scripts\build_unified.bat --tests           # All test suites
+.\scripts\build_unified.bat  --clean-tests --tests           # All test suites with clean tests
 .\scripts\build_unified.bat --all             # Everything (default)
 
 # Specific Builds
 .\scripts\build_unified.bat --project GameExample     # Specific project
 .\scripts\build_unified.bat --tests MathTest          # Specific test
+.\scripts\build_unified.bat  --clean-tests --tests MathTest          # Specific test with clean tests
 
 # Build Types
 .\scripts\build_unified.bat --debug           # Debug build
@@ -104,6 +106,7 @@ git clone https://github.com/yourusername/GameEngineKiro.git
 cd GameEngineKiro
 setup_dependencies.bat
 .\scripts\build_unified.bat --tests
+.\scripts\build_unified.bat  --clean-tests --tests
 ```
 
 ## 📚 Documentation

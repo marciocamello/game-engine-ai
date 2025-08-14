@@ -71,3 +71,4 @@ Convert the simple testing system design into a series of implementation tasks t
 **Windows Development Workflow:**
 
 - Use `.\scripts\build_unified.bat --tests` to build project
+- Use `.\scripts\build_unified.bat  --clean-tests --tests` to build project and clean tests

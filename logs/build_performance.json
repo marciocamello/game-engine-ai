@@ -1,16 +1,16 @@
 { 
-  "timestamp": "14/08/2025 23:27:36,10", 
-  "last_duration": 214, 
+  "timestamp": "14/08/2025 23:40:43,07", 
+  "last_duration": 10, 
   "build_type": "Release", 
-  "build_signature": "Release_ON_OFF_ON__MathTest", 
-  "source_files": 114, 
-  "header_files": 117, 
-  "test_files": 102, 
-  "compiled_files": 85, 
-  "cached_files": 114, 
+  "build_signature": "Release_ON_OFF_ON__AnimationlodTest", 
+  "source_files": 116, 
+  "header_files": 119, 
+  "test_files": 103, 
+  "compiled_files": 29, 
+  "cached_files": 116, 
   "cache_hit_rate": 100, 
   "total_targets": 2, 
   "generator": "vs-release", 
   "cache_enabled": false, 
-  "performance_classification": "slow" 
+  "performance_classification": "excellent" 
 } 

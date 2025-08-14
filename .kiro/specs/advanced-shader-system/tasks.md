@@ -259,4 +259,5 @@
 **Windows Development Workflow:**
 
 - Use `.\scripts\build_unified.bat --tests` to build project
+- Use `.\scripts\build_unified.bat  --clean-tests --tests` to build project and clean tests
 - Use `build\projects\GameExample\Release\GameExample.exe` to run GameExample

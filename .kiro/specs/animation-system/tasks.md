@@ -160,16 +160,17 @@
     - Create animation metadata preservation and property mapping
     - _Requirements: 8.4, 8.5, 8.7_
 
-- [ ] 11. Implement performance optimization features
+- [-] 11. Implement performance optimization features
 
-  - [ ] 11.1 Add animation LOD and culling system
+  - [x] 11.1 Add animation LOD and culling system
 
     - Implement animation level-of-detail for distant characters
     - Add animation culling for off-screen characters
     - Create performance scaling based on system capabilities
     - _Requirements: 9.4, 9.1, 9.5_
 
-  - [ ] 11.2 Create multi-threading and GPU acceleration support
+  - [-] 11.2 Create multi-threading and GPU acceleration support
+
     - Add multi-threaded animation updates for multiple characters
     - Implement GPU-accelerated skinning with compute shaders
     - Create efficient memory allocation and pooling
@@ -232,4 +233,5 @@
 **Windows Development Workflow:**
 
 - Use `.\scripts\build_unified.bat --tests` to build project
+- Use `.\scripts\build_unified.bat --clean-tests --tests` to build project and clean tests
 - Use `.\scripts\build_unified.bat --tests TestName` to build single test

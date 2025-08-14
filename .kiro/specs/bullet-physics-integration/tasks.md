@@ -234,6 +234,7 @@
 **Windows Development Workflow:**
 
 - Use `.\scripts\build_unified.bat --tests` to build project with Bullet Physics integration
+- Use `.\scripts\build_unified.bat  --clean-tests --tests` to build project and clean tests
 - Use `.\scripts\dev.bat` for development builds with debug symbols
 - Visual Studio 2022 for debugging and development
 

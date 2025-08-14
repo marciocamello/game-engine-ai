@@ -12,6 +12,7 @@
 #include <future>
 #include <queue>
 #include <functional>
+#include <chrono>
 
 namespace GameEngine {
 namespace Animation {
@@ -54,11 +55,11 @@ namespace Animation {
         AnimationTaskPriority priority = AnimationTaskPriority::Normal;
         uint32_t instanceId = 0;
         float deltaTime = 0.0f;
-        std::chrono::high_resolution_clock::time_point submitTime;
+        std::chrono::steady_clock::time_point submitTime;
         
         AnimationTask() = default;
         AnimationTask(std::function<void()> t, AnimationTaskPriority p = AnimationTaskPriority::Normal)
-            : task(std::move(t)), priority(p), submitTime(std::chrono::high_resolution_clock::now()) {}
+            : task(std::move(t)), priority(p), submitTime(std::chrono::steady_clock::now()) {}
         
         bool operator<(const AnimationTask& other) const {
             return priority < other.priority;
@@ -146,11 +147,11 @@ namespace Animation {
         // Statistics
         mutable std::mutex m_statsMutex;
         ThreadPoolStats m_stats;
-        std::chrono::high_resolution_clock::time_point m_lastStatsUpdate;
+        std::chrono::steady_clock::time_point m_lastStatsUpdate;
         
         // Work stealing queues (one per thread)
         std::vector<std::queue<AnimationTask>> m_workStealingQueues;
-        std::vector<std::mutex> m_workStealingMutexes;
+        std::vector<std::unique_ptr<std::mutex>> m_workStealingMutexes;
         
         // Thread worker function
         void WorkerThread(size_t threadId);
@@ -199,7 +200,7 @@ namespace Animation {
             float totalUpdateTime = 0.0f;
             float averageUpdateTime = 0.0f;
             float parallelEfficiency = 0.0f;  // Parallel speedup factor
-            ThreadPoolStats threadPoolStats;
+            AnimationThreadPool::ThreadPoolStats threadPoolStats;
         };
         
         AnimationManagerStats GetStats() const;
@@ -240,7 +241,7 @@ namespace Animation {
         // Statistics
         mutable std::mutex m_statsMutex;
         AnimationManagerStats m_stats;
-        std::chrono::high_resolution_clock::time_point m_lastUpdateTime;
+        std::chrono::steady_clock::time_point m_lastUpdateTime;
         
         // Helper methods
         void CreateBatches(const std::vector<AnimationInstance*>& instances, 

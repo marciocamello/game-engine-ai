@@ -20,11 +20,26 @@ if "%1"=="--integration" set TEST_TYPE=integration
 if "%1"=="--help" goto :help
 if "%1"=="-h" goto :help
 
-REM Check if build directory exists
-if not exist "build\Release" (
+REM Check if build directory exists and detect build structure
+set "BUILD_STRUCTURE=unknown"
+set "TEST_PATH="
+
+if exist "build\vs\x64\Release\Release" (
+    set "BUILD_STRUCTURE=vs-preset"
+    set "TEST_PATH=build\vs\x64\Release\Release"
+) else if exist "build\ninja\x64\Release" (
+    set "BUILD_STRUCTURE=ninja-preset"
+    set "TEST_PATH=build\ninja\x64\Release"
+) else if exist "build\Release" (
+    set "BUILD_STRUCTURE=manual"
+    set "TEST_PATH=build\Release"
+) else (
     echo [ERROR] Build directory not found. Please run scripts\build_unified.bat --tests first.
     exit /b 1
 )
+
+echo Build Structure: %BUILD_STRUCTURE%
+echo Test Path: %TEST_PATH%
 
 echo Test Configuration: %TEST_TYPE%
 if not "%SPECIFIC_PROJECT%"=="" echo Specific Project: %SPECIFIC_PROJECT%
@@ -95,7 +110,7 @@ exit /b 0
 
 :run_unit_tests_internal
 REM Auto-discover and run unit tests (exclude Integration tests and EnhancedTestRunner)
-for %%f in ("build\Release\*Test.exe") do (
+for %%f in ("%TEST_PATH%\*Test.exe") do (
     set "testname=%%~nf"
     setlocal enabledelayedexpansion
     REM Skip integration tests and test runner utility
@@ -123,7 +138,7 @@ exit /b 0
 
 :run_integration_tests_internal
 REM Auto-discover and run integration tests
-for %%f in ("build\Release\*IntegrationTest.exe") do (
+for %%f in ("%TEST_PATH%\*IntegrationTest.exe") do (
     set "testname=%%~nf"
     setlocal enabledelayedexpansion
     echo [INFO] Running !testname!...
@@ -191,7 +206,7 @@ exit /b 0
 
 :run_engine_unit_tests_only
 REM Auto-discover and run unit tests only (exclude Integration tests and utilities)
-for %%f in ("build\Release\*Test.exe") do (
+for %%f in ("%TEST_PATH%\*Test.exe") do (
     set "testname=%%~nf"
     setlocal enabledelayedexpansion
     REM Skip integration tests and test runner utilities
@@ -219,7 +234,7 @@ exit /b 0
 
 :run_engine_integration_tests_only
 REM Auto-discover and run integration tests only
-for %%f in ("build\Release\*IntegrationTest.exe") do (
+for %%f in ("%TEST_PATH%\*IntegrationTest.exe") do (
     set "testname=%%~nf"
     setlocal enabledelayedexpansion
     echo [INFO] Running !testname!...

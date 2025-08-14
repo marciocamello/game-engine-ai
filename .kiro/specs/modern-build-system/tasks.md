@@ -63,7 +63,7 @@
     - Add cache statistics and reporting
     - _Requirements: 4.3, 4.4, 4.5_
 
-- [-] 5. Add build diagnostics and performance monitoring
+- [ ] 5. Add build diagnostics and performance monitoring
 
   - [x] 5.1 Implement build time measurement and reporting
 
@@ -79,7 +79,7 @@
     - Add timestamp and dependency problem detection
     - _Requirements: 7.1, 7.2, 7.3, 7.4_
 
-  - [-] 5.3 Add granular rebuild options
+  - [x] 5.3 Add granular rebuild options
 
     - Implement selective rebuild commands (engine-only, tests-only)
     - Add cache clearing options for specific components

@@ -417,6 +417,12 @@ if exist "build\.last_build_signature" (
     )
 )
 
+REM Process granular cleaning options
+if defined CLEAN_ENGINE call :clean_engine_artifacts
+if defined CLEAN_TESTS call :clean_test_artifacts
+if defined CLEAN_PROJECTS call :clean_project_artifacts
+if defined CLEAN_CACHE call :clean_cache_artifacts
+
 REM Create build directory
 if "%USE_PRESETS%"=="ON" (
     REM Presets handle their own build directories
@@ -981,6 +987,98 @@ if exist "%BUILD_STATS_FILE%" del "%BUILD_STATS_FILE%"
 
 goto :eof
 
+:clean_engine_artifacts
+echo Cleaning engine artifacts...
+REM Clean engine library files
+if exist "build\Release\GameEngineKiro.lib" del "build\Release\GameEngineKiro.lib"
+if exist "build\Debug\GameEngineKiro.lib" del "build\Debug\GameEngineKiro.lib"
+if exist "build\vs\x64\Release\Release\GameEngineKiro.lib" del "build\vs\x64\Release\Release\GameEngineKiro.lib"
+if exist "build\vs\x64\Debug\Debug\GameEngineKiro.lib" del "build\vs\x64\Debug\Debug\GameEngineKiro.lib"
+if exist "build\ninja\x64\Release\GameEngineKiro.lib" del "build\ninja\x64\Release\GameEngineKiro.lib"
+if exist "build\ninja\x64\Debug\GameEngineKiro.lib" del "build\ninja\x64\Debug\GameEngineKiro.lib"
+
+REM Clean engine object files
+if exist "build\CMakeFiles\GameEngineKiro.dir" rmdir /s /q "build\CMakeFiles\GameEngineKiro.dir" 2>nul
+if exist "build\vs\x64\Release\GameEngineKiro.dir" rmdir /s /q "build\vs\x64\Release\GameEngineKiro.dir" 2>nul
+if exist "build\vs\x64\Debug\GameEngineKiro.dir" rmdir /s /q "build\vs\x64\Debug\GameEngineKiro.dir" 2>nul
+if exist "build\ninja\x64\Release\CMakeFiles\GameEngineKiro.dir" rmdir /s /q "build\ninja\x64\Release\CMakeFiles\GameEngineKiro.dir" 2>nul
+if exist "build\ninja\x64\Debug\CMakeFiles\GameEngineKiro.dir" rmdir /s /q "build\ninja\x64\Debug\CMakeFiles\GameEngineKiro.dir" 2>nul
+
+echo   Engine artifacts cleaned
+goto :eof
+
+:clean_test_artifacts
+echo Cleaning test artifacts...
+REM Clean test executables
+for %%f in (build\Release\*Test.exe) do del "%%f" 2>nul
+for %%f in (build\Debug\*Test.exe) do del "%%f" 2>nul
+for %%f in (build\vs\x64\Release\Release\*Test.exe) do del "%%f" 2>nul
+for %%f in (build\vs\x64\Debug\Debug\*Test.exe) do del "%%f" 2>nul
+for %%f in (build\ninja\x64\Release\*Test.exe) do del "%%f" 2>nul
+for %%f in (build\ninja\x64\Debug\*Test.exe) do del "%%f" 2>nul
+
+REM Clean test object files
+for /d %%d in (build\CMakeFiles\*Test.dir) do rmdir /s /q "%%d" 2>nul
+for /d %%d in (build\vs\x64\Release\*Test.dir) do rmdir /s /q "%%d" 2>nul
+for /d %%d in (build\vs\x64\Debug\*Test.dir) do rmdir /s /q "%%d" 2>nul
+for /d %%d in (build\ninja\x64\Release\CMakeFiles\*Test.dir) do rmdir /s /q "%%d" 2>nul
+for /d %%d in (build\ninja\x64\Debug\CMakeFiles\*Test.dir) do rmdir /s /q "%%d" 2>nul
+
+echo   Test artifacts cleaned
+goto :eof
+
+:clean_project_artifacts
+echo Cleaning project artifacts...
+REM Clean project executables and directories
+if exist "build\projects" rmdir /s /q "build\projects" 2>nul
+if exist "build\vs\x64\Release\projects" rmdir /s /q "build\vs\x64\Release\projects" 2>nul
+if exist "build\vs\x64\Debug\projects" rmdir /s /q "build\vs\x64\Debug\projects" 2>nul
+if exist "build\ninja\x64\Release\projects" rmdir /s /q "build\ninja\x64\Release\projects" 2>nul
+if exist "build\ninja\x64\Debug\projects" rmdir /s /q "build\ninja\x64\Debug\projects" 2>nul
+
+REM Clean project object files
+for /d %%d in (build\CMakeFiles\*Example.dir) do rmdir /s /q "%%d" 2>nul
+for /d %%d in (build\vs\x64\Release\*Example.dir) do rmdir /s /q "%%d" 2>nul
+for /d %%d in (build\vs\x64\Debug\*Example.dir) do rmdir /s /q "%%d" 2>nul
+for /d %%d in (build\ninja\x64\Release\CMakeFiles\*Example.dir) do rmdir /s /q "%%d" 2>nul
+for /d %%d in (build\ninja\x64\Debug\CMakeFiles\*Example.dir) do rmdir /s /q "%%d" 2>nul
+
+echo   Project artifacts cleaned
+goto :eof
+
+:clean_cache_artifacts
+echo Cleaning cache artifacts...
+REM Clean CMake cache files
+if exist "build\CMakeCache.txt" del "build\CMakeCache.txt"
+if exist "build\vs\x64\Release\CMakeCache.txt" del "build\vs\x64\Release\CMakeCache.txt"
+if exist "build\vs\x64\Debug\CMakeCache.txt" del "build\vs\x64\Debug\CMakeCache.txt"
+if exist "build\ninja\x64\Release\CMakeCache.txt" del "build\ninja\x64\Release\CMakeCache.txt"
+if exist "build\ninja\x64\Debug\CMakeCache.txt" del "build\ninja\x64\Debug\CMakeCache.txt"
+
+REM Clean CMake files directories
+if exist "build\CMakeFiles" rmdir /s /q "build\CMakeFiles" 2>nul
+if exist "build\vs\x64\Release\CMakeFiles" rmdir /s /q "build\vs\x64\Release\CMakeFiles" 2>nul
+if exist "build\vs\x64\Debug\CMakeFiles" rmdir /s /q "build\vs\x64\Debug\CMakeFiles" 2>nul
+if exist "build\ninja\x64\Release\CMakeFiles" rmdir /s /q "build\ninja\x64\Release\CMakeFiles" 2>nul
+if exist "build\ninja\x64\Debug\CMakeFiles" rmdir /s /q "build\ninja\x64\Debug\CMakeFiles" 2>nul
+
+REM Clean vcpkg binary cache if requested
+if defined CLEAN_CACHE (
+    set "VCPKG_CACHE_DIR=%USERPROFILE%\.vcpkg-cache"
+    if exist "!VCPKG_CACHE_DIR!" (
+        echo Cleaning vcpkg binary cache...
+        rmdir /s /q "!VCPKG_CACHE_DIR!" 2>nul
+        echo   vcpkg binary cache cleaned
+    )
+)
+
+REM Clean build state files
+if exist "build\.last_build_signature" del "build\.last_build_signature"
+if exist "build\.build_failed" del "build\.build_failed"
+
+echo   Cache artifacts cleaned
+goto :eof
+
 :help
 echo Game Engine Kiro - Unified Build System
 echo.
@@ -1004,6 +1102,13 @@ echo   --ninja           Force Ninja generator usage ^(requires Ninja in PATH + 
 echo                     Note: Ninja is automatically selected when available unless GAMEENGINE_PREFER_VS=1
 echo   --no-cache        Disable vcpkg binary cache ^(compile all dependencies from source^)
 echo.
+echo Granular Cleaning Options:
+echo   --clean-engine    Clean only engine artifacts before building
+echo   --clean-tests     Clean only test artifacts before building
+echo   --clean-projects  Clean only project artifacts before building
+echo   --clean-cache     Clean CMake cache and build state before building
+echo   --clean-all       Clean all artifacts and cache before building
+echo.
 echo Common Combinations:
 echo   build_unified.bat                                    # Build everything
 echo   build_unified.bat --engine                          # Engine only
@@ -1019,6 +1124,10 @@ echo   build_unified.bat --debug --tests                   # Debug build with te
 echo   build_unified.bat --coverage                        # Coverage analysis build
 echo   build_unified.bat --ninja --tests                   # Use Ninja generator ^(advanced^)
 echo   build_unified.bat --ninja --debug --all             # Ninja debug build
+echo   build_unified.bat --clean-engine --engine           # Clean and rebuild engine only
+echo   build_unified.bat --clean-tests --tests             # Clean and rebuild tests only
+echo   build_unified.bat --clean-cache --all               # Clean cache and rebuild all
+echo   build_unified.bat --clean-all --all                 # Full clean rebuild
 echo.
 echo Legacy Compatibility:
 echo   --engine-only     Same as --engine

@@ -1,5 +1,4 @@
 #include "Animation/Keyframe.h"
-#include "Core/Logger.h"
 #include <algorithm>
 #include <cmath>
 

@@ -8,6 +8,7 @@ namespace Animation {
 
     SkeletalAnimation::SkeletalAnimation(const std::string& name)
         : m_name(name), m_eventManager(std::make_unique<AnimationEventManager>()) {
+        // Duration will be updated as keyframes are added
     }
 
     BoneAnimation* SkeletalAnimation::GetBoneAnimation(const std::string& boneName) {
@@ -169,7 +170,7 @@ namespace Animation {
 
     float SkeletalAnimation::WrapTime(float time) const {
         if (m_duration <= 0.0f) {
-            return 0.0f;
+            return time; // Allow time to pass through if duration is not set
         }
 
         switch (m_loopMode) {
@@ -180,6 +181,10 @@ namespace Animation {
             case LoopMode::Loop:
                 if (time < 0.0f) {
                     return m_duration + std::fmod(time, m_duration);
+                }
+                // Special case: if time equals duration exactly, return duration
+                if (time == m_duration) {
+                    return m_duration;
                 }
                 return std::fmod(time, m_duration);
 

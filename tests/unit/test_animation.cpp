@@ -56,17 +56,31 @@ bool TestKeyframeInterpolation() {
     animation.AddPositionKeyframe("Bone", 0.0f, startPos);
     animation.AddPositionKeyframe("Bone", 2.0f, endPos);
 
+    // Debug: Check if track was created properly
+    auto* boneAnim = animation.GetBoneAnimation("Bone");
+    if (!boneAnim) {
+        TestOutput::PrintTestFail("keyframe interpolation and sampling", "BoneAnimation not found", "BoneAnimation found");
+        return false;
+    }
+    
+    if (!boneAnim->HasPositionTrack()) {
+        TestOutput::PrintTestFail("keyframe interpolation and sampling", "HasPositionTrack() = true", "HasPositionTrack() = false");
+        return false;
+    }
+
     // Test sampling at different times
     auto pose0 = animation.SampleBone("Bone", 0.0f);
-    auto pose1 = animation.SampleBone("Bone", 1.0f); // Middle
     auto pose2 = animation.SampleBone("Bone", 2.0f);
 
     EXPECT_TRUE(pose0.hasPosition);
-    EXPECT_TRUE(pose1.hasPosition);
     EXPECT_TRUE(pose2.hasPosition);
 
     EXPECT_VEC3_NEARLY_EQUAL(pose0.position, startPos);
     EXPECT_VEC3_NEARLY_EQUAL(pose2.position, endPos);
+    
+    // Test middle interpolation
+    auto pose1 = animation.SampleBone("Bone", 1.0f); // Middle
+    EXPECT_TRUE(pose1.hasPosition);
     
     // Middle should be interpolated
     Math::Vec3 expectedMiddle(5.0f, 0.0f, 0.0f);

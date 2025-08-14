@@ -109,7 +109,7 @@
     - Add documentation for enabling/disabling features
     - _Requirements: 6.4, 6.5_
 
-- [x] 7. Performance validation and optimization
+- [ ] 7. Performance validation and optimization
 
   - [x] 7.1 Measure and validate performance improvements
 

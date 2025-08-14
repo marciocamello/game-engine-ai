@@ -7,6 +7,9 @@ echo ========================================
 echo Game Engine Kiro - Unified Build System
 echo ========================================
 
+REM Initialize build diagnostics and performance monitoring
+call :init_build_diagnostics
+
 REM Default values
 set BUILD_ENGINE=OFF
 set BUILD_PROJECTS=OFF
@@ -92,6 +95,34 @@ if /i "%~1"=="--ninja" (
 )
 if /i "%~1"=="--no-cache" (
     set DISABLE_VCPKG_CACHE=ON
+    shift
+    goto :parse_args
+)
+if /i "%~1"=="--clean-engine" (
+    set CLEAN_ENGINE=ON
+    shift
+    goto :parse_args
+)
+if /i "%~1"=="--clean-tests" (
+    set CLEAN_TESTS=ON
+    shift
+    goto :parse_args
+)
+if /i "%~1"=="--clean-projects" (
+    set CLEAN_PROJECTS=ON
+    shift
+    goto :parse_args
+)
+if /i "%~1"=="--clean-cache" (
+    set CLEAN_CACHE=ON
+    shift
+    goto :parse_args
+)
+if /i "%~1"=="--clean-all" (
+    set CLEAN_ENGINE=ON
+    set CLEAN_TESTS=ON
+    set CLEAN_PROJECTS=ON
+    set CLEAN_CACHE=ON
     shift
     goto :parse_args
 )
@@ -513,6 +544,9 @@ if exist build_state.tmp (
     del build_state.tmp
 )
 
+REM Measure build performance and generate reports
+call :measure_build_time
+
 REM Success message with file locations and cache statistics
 echo.
 echo ========================================
@@ -738,6 +772,213 @@ if exist "%VCPKG_CACHE_DIR%" (
     REM Log cache usage for future analysis
     echo %DATE% %TIME% - Build completed, cache packages: !POST_BUILD_PACKAGES! >> build_cache.log
 )
+goto :eof
+
+:init_build_diagnostics
+REM Initialize build diagnostics and performance monitoring
+set "BUILD_START_TIME=%TIME%"
+set "BUILD_START_DATE=%DATE%"
+set "BUILD_LOG_FILE=build_diagnostics.log"
+set "BUILD_PERF_FILE=build_performance.json"
+set "BUILD_STATS_FILE=build_statistics.tmp"
+
+REM Create diagnostics directory if it doesn't exist
+if not exist "logs" mkdir logs
+
+REM Initialize build statistics
+echo Build started at %BUILD_START_DATE% %BUILD_START_TIME% > "%BUILD_STATS_FILE%"
+echo. >> "%BUILD_STATS_FILE%"
+
+REM Log build start
+echo [%BUILD_START_DATE% %BUILD_START_TIME%] Build diagnostics initialized >> "logs\%BUILD_LOG_FILE%"
+goto :eof
+
+:measure_build_time
+REM Calculate build duration and report performance metrics
+set "BUILD_END_TIME=%TIME%"
+set "BUILD_END_DATE=%DATE%"
+
+REM Calculate duration (simplified - works for same-day builds)
+call :calculate_time_diff "%BUILD_START_TIME%" "%BUILD_END_TIME%" BUILD_DURATION_SECONDS
+
+REM Log build completion
+echo [%BUILD_END_DATE% %BUILD_END_TIME%] Build completed in %BUILD_DURATION_SECONDS% seconds >> "logs\%BUILD_LOG_FILE%"
+
+REM Report build performance
+echo.
+echo ========================================
+echo Build Performance Report
+echo ========================================
+echo Build Duration: %BUILD_DURATION_SECONDS% seconds
+echo Start Time: %BUILD_START_DATE% %BUILD_START_TIME%
+echo End Time: %BUILD_END_DATE% %BUILD_END_TIME%
+
+REM Generate compilation statistics
+call :generate_compilation_stats
+
+REM Compare with previous builds
+call :compare_build_performance
+
+REM Save performance data for future comparisons
+call :save_build_performance_data
+
+goto :eof
+
+:calculate_time_diff
+REM Calculate time difference in seconds (simplified version)
+REM Parameters: %1=start_time, %2=end_time, %3=result_variable
+set "start_time=%~1"
+set "end_time=%~2"
+
+REM Convert times to seconds (simplified - assumes same day)
+for /f "tokens=1-3 delims=:." %%a in ("%start_time%") do (
+    set /a start_seconds=%%a*3600+%%b*60+%%c
+)
+for /f "tokens=1-3 delims=:." %%a in ("%end_time%") do (
+    set /a end_seconds=%%a*3600+%%b*60+%%c
+)
+
+REM Handle day rollover (basic check)
+if %end_seconds% lss %start_seconds% (
+    set /a end_seconds+=86400
+)
+
+set /a duration=%end_seconds%-%start_seconds%
+set "%~3=%duration%"
+goto :eof
+
+:generate_compilation_stats
+REM Generate detailed compilation statistics
+echo.
+echo Compilation Statistics:
+
+REM Count source files in project
+set "SOURCE_FILES=0"
+set "HEADER_FILES=0"
+set "TEST_FILES=0"
+
+REM Count source files
+for /f %%i in ('dir /s /b "src\*.cpp" 2^>nul ^| find /c /v ""') do set SOURCE_FILES=%%i
+for /f %%i in ('dir /s /b "include\*.h" 2^>nul ^| find /c /v ""') do set HEADER_FILES=%%i
+for /f %%i in ('dir /s /b "tests\*.cpp" 2^>nul ^| find /c /v ""') do set TEST_FILES=%%i
+
+REM Report file statistics
+echo   Source Files: %SOURCE_FILES%
+echo   Header Files: %HEADER_FILES%
+echo   Test Files: %TEST_FILES%
+
+REM Estimate build complexity
+set /a TOTAL_FILES=%SOURCE_FILES%+%HEADER_FILES%+%TEST_FILES%
+echo   Total Files: %TOTAL_FILES%
+
+REM Analyze build targets based on configuration
+call :analyze_build_targets
+
+REM Log statistics
+echo Source Files: %SOURCE_FILES% >> "%BUILD_STATS_FILE%"
+echo Header Files: %HEADER_FILES% >> "%BUILD_STATS_FILE%"
+echo Test Files: %TEST_FILES% >> "%BUILD_STATS_FILE%"
+echo Build Duration: %BUILD_DURATION_SECONDS% seconds >> "%BUILD_STATS_FILE%"
+
+goto :eof
+
+:analyze_build_targets
+REM Analyze what was built based on configuration
+set "ESTIMATED_TARGETS=0"
+
+if "%BUILD_ENGINE%"=="ON" (
+    set /a ESTIMATED_TARGETS+=1
+    echo   Engine Library: Built
+)
+
+if "%BUILD_PROJECTS%"=="ON" (
+    if not "%SPECIFIC_PROJECT%"=="" (
+        set /a ESTIMATED_TARGETS+=1
+        echo   Project ^(%SPECIFIC_PROJECT%^): Built
+    ) else (
+        REM Count project directories
+        for /f %%i in ('dir /b "examples" 2^>nul ^| find /c /v ""') do (
+            set /a ESTIMATED_TARGETS+=%%i
+            echo   Projects: %%i built
+        )
+    )
+)
+
+if "%BUILD_TESTS%"=="ON" (
+    if not "%SPECIFIC_TEST%"=="" (
+        set /a ESTIMATED_TARGETS+=1
+        echo   Test ^(%SPECIFIC_TEST%^): Built
+    ) else (
+        REM Count test files
+        for /f %%i in ('dir /s /b "tests\test_*.cpp" 2^>nul ^| find /c /v ""') do (
+            set /a ESTIMATED_TARGETS+=%%i
+            echo   Tests: %%i built
+        )
+    )
+)
+
+echo   Estimated Targets: %ESTIMATED_TARGETS%
+goto :eof
+
+:compare_build_performance
+REM Compare current build performance with previous builds
+echo.
+echo Performance Comparison:
+
+if exist "logs\%BUILD_PERF_FILE%" (
+    REM Read last build performance
+    for /f "tokens=2 delims=:" %%a in ('findstr "last_duration" "logs\%BUILD_PERF_FILE%" 2^>nul') do (
+        set "LAST_DURATION=%%a"
+        set "LAST_DURATION=!LAST_DURATION: =!"
+        set "LAST_DURATION=!LAST_DURATION:,=!"
+    )
+    
+    if defined LAST_DURATION (
+        if !LAST_DURATION! gtr 0 (
+            set /a PERF_DIFF=%BUILD_DURATION_SECONDS%-!LAST_DURATION!
+            if !PERF_DIFF! lss 0 (
+                set /a PERF_IMPROVEMENT=!LAST_DURATION!-!BUILD_DURATION_SECONDS!
+                set /a PERF_PERCENT=!PERF_IMPROVEMENT!*100/!LAST_DURATION!
+                echo   Performance: !PERF_IMPROVEMENT!s faster than last build ^(!PERF_PERCENT!%% improvement^)
+            ) else if !PERF_DIFF! gtr 0 (
+                set /a PERF_DEGRADATION=!PERF_DIFF!
+                set /a PERF_PERCENT=!PERF_DEGRADATION!*100/!LAST_DURATION!
+                echo   Performance: !PERF_DEGRADATION!s slower than last build ^(!PERF_PERCENT!%% degradation^)
+            ) else (
+                echo   Performance: Same as last build ^(!BUILD_DURATION_SECONDS!s^)
+            )
+        )
+    )
+) else (
+    echo   Performance: First build - no comparison available
+)
+
+REM Check for performance targets
+if %BUILD_DURATION_SECONDS% lss 60 (
+    echo   Status: Fast build ^(under 1 minute^)
+) else if %BUILD_DURATION_SECONDS% lss 300 (
+    echo   Status: Moderate build ^(1-5 minutes^)
+) else (
+    echo   Status: Slow build ^(over 5 minutes^) - consider optimization
+)
+
+goto :eof
+
+:save_build_performance_data
+REM Save current build performance data for future comparisons
+echo { > "logs\%BUILD_PERF_FILE%"
+echo   "timestamp": "%BUILD_END_DATE% %BUILD_END_TIME%", >> "logs\%BUILD_PERF_FILE%"
+echo   "last_duration": %BUILD_DURATION_SECONDS%, >> "logs\%BUILD_PERF_FILE%"
+echo   "build_type": "%BUILD_TYPE%", >> "logs\%BUILD_PERF_FILE%"
+echo   "build_signature": "%BUILD_SIGNATURE%", >> "logs\%BUILD_PERF_FILE%"
+echo   "compiled_files": %COMPILED_FILES%, >> "logs\%BUILD_PERF_FILE%"
+echo   "cached_files": %CACHED_FILES%, >> "logs\%BUILD_PERF_FILE%"
+echo   "total_targets": %TOTAL_TARGETS% >> "logs\%BUILD_PERF_FILE%"
+echo } >> "logs\%BUILD_PERF_FILE%"
+
+REM Clean up temporary files
+if exist "%BUILD_STATS_FILE%" del "%BUILD_STATS_FILE%"
+
 goto :eof
 
 :help

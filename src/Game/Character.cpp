@@ -10,6 +10,8 @@
 #include "Animation/AnimationImporter.h"
 #include "Animation/AnimationSkeleton.h"
 #include "Animation/SkeletalAnimation.h"
+#include "Animation/AnimationStateMachine.h"
+#include "Animation/AnimationTransition.h"
 
 #include "Core/Logger.h"
 
@@ -406,38 +408,13 @@ namespace GameEngine {
             return false;
         }
 
-        // Load individual animation files
-        std::vector<std::pair<std::string, std::string>> animationFiles = {
-            {"Idle", "assets/meshes/Idle.fbx"},
-            {"Walking", "assets/meshes/Walking.fbx"},
-            {"Running", "assets/meshes/Running.fbx"},
-            {"Jump", "assets/meshes/Jump.fbx"},
-            {"Attack", "assets/meshes/Attack.fbx"},
-            {"Block", "assets/meshes/Block.fbx"},
-            {"Hit", "assets/meshes/Hit.fbx"},
-            {"Dying", "assets/meshes/Dying.fbx"},
-            {"Celebrate", "assets/meshes/Celebrate.fbx"},
-            {"LeftTurn", "assets/meshes/Left Turn.fbx"},
-            {"RightTurn", "assets/meshes/Right Turn.fbx"},
-            {"CrouchedWalking", "assets/meshes/Crouched Walking.fbx"}
-        };
-
-        int loadedAnimations = 0;
-        for (const auto& animPair : animationFiles) {
-            if (LoadAnimationFromFBX(animPair.second, animPair.first)) {
-                loadedAnimations++;
-            }
+        // Load character-specific animations (to be overridden by derived classes)
+        if (!LoadCharacterAnimations()) {
+            LOG_WARNING("No character-specific animations loaded - using base character");
         }
 
-        if (loadedAnimations == 0) {
-            LOG_ERROR("No animations were loaded successfully");
-            return false;
-        }
-
-        LOG_INFO("Loaded " + std::to_string(loadedAnimations) + " animations for Xbot character");
-
-        // Setup animation parameters for state machine
-        SetupAnimationStateMachine();
+        // Setup character-specific animation state machine (to be overridden by derived classes)
+        SetupCharacterAnimationStateMachine();
 
         return true;
     }
@@ -477,26 +454,27 @@ namespace GameEngine {
         }
     }
 
-    void Character::SetupAnimationStateMachine() {
+    bool Character::LoadCharacterAnimations() {
+        // Base implementation - no specific animations
+        // Derived classes should override this method to load their specific animations
+        LOG_INFO("Base Character class - no specific animations to load");
+        return true;
+    }
+
+    void Character::SetupCharacterAnimationStateMachine() {
         if (!m_animationController) {
             return;
         }
 
-        // Initialize animation parameters for movement synchronization
+        // Base implementation - create minimal state machine
+        // Derived classes should override this method to create their specific state machines
+        LOG_INFO("Base Character class - using minimal animation state machine");
+        
+        // Initialize basic animation parameters
         m_animationController->SetFloat("Speed", 0.0f);
         m_animationController->SetBool("IsGrounded", true);
         m_animationController->SetBool("IsJumping", false);
         m_animationController->SetBool("IsCrouching", false);
-        m_animationController->SetTrigger("Attack");
-        m_animationController->SetTrigger("Block");
-        m_animationController->SetTrigger("Hit");
-        m_animationController->SetTrigger("Die");
-        m_animationController->SetTrigger("Celebrate");
-
-        // Start with idle animation
-        PlayAnimation("Idle");
-        
-        LOG_INFO("Animation state machine parameters initialized");
     }
 
     void Character::UpdateAnimationState(float deltaTime) {
@@ -522,30 +500,19 @@ namespace GameEngine {
         bool isGrounded = m_movementComponent->IsGrounded();
         bool isJumping = m_movementComponent->IsJumping();
 
-        // Update animation parameters
+        // Update animation parameters - the state machine will handle transitions automatically
         m_animationController->SetFloat("Speed", speed);
         m_animationController->SetBool("IsGrounded", isGrounded);
         m_animationController->SetBool("IsJumping", isJumping);
 
-        // Simple state machine logic for basic movement animations
-        std::string targetAnimation = "Idle";
-        
-        if (isJumping) {
-            targetAnimation = "Jump";
-        } else if (isGrounded) {
-            if (speed > 4.0f) {
-                targetAnimation = "Running";
-            } else if (speed > 0.5f) {
-                targetAnimation = "Walking";
-            } else {
-                targetAnimation = "Idle";
+        // Get current state from state machine for tracking
+        auto stateMachine = m_animationController->GetStateMachine();
+        if (stateMachine) {
+            std::string currentState = stateMachine->GetCurrentStateName();
+            if (currentState != m_currentAnimationState) {
+                m_currentAnimationState = currentState;
+                LOG_DEBUG("Animation state changed to: " + currentState + " (Speed: " + std::to_string(speed) + ")");
             }
-        }
-
-        // Change animation if state changed
-        if (targetAnimation != m_currentAnimationState) {
-            PlayAnimation(targetAnimation, 0.2f); // 0.2s fade time
-            m_currentAnimationState = targetAnimation;
         }
 
         // Store previous state for next frame

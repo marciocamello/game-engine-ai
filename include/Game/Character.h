@@ -188,9 +188,10 @@ namespace GameEngine {
         bool m_wasGrounded = true;
         bool m_wasJumping = false;
 
-        // Animation asset loading
+        // Animation asset loading (virtual methods for derived classes)
+        virtual bool LoadCharacterAnimations();
+        virtual void SetupCharacterAnimationStateMachine();
         bool LoadAnimationFromFBX(const std::string& fbxPath, const std::string& animationName);
-        void SetupAnimationStateMachine();
         void UpdateMovementAnimationParameters();
 
     };

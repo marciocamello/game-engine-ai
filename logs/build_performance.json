@@ -1,16 +1,16 @@
 { 
-  "timestamp": "15/08/2025 17:50:38,80", 
-  "last_duration": 9, 
+  "timestamp": "15/08/2025 18:38:04,08", 
+  "last_duration": 327, 
   "build_type": "Release", 
-  "build_signature": "Release_ON_OFF_ON__CharacteranimationintegrationTest", 
+  "build_signature": "Release_OFF_OFF_ON__", 
   "source_files": 121, 
   "header_files": 124, 
   "test_files": 110, 
-  "compiled_files": 30, 
+  "compiled_files": 90, 
   "cached_files": 121, 
   "cache_hit_rate": 100, 
-  "total_targets": 2, 
+  "total_targets": 107, 
   "generator": "vs-release", 
-  "cache_enabled": false, 
-  "performance_classification": "excellent" 
+  "cache_enabled": true, 
+  "performance_classification": "very_slow" 
 } 

@@ -104,11 +104,38 @@ Each game project follows a standardized structure:
 projects/YourGame/
 ├── CMakeLists.txt           # Project build configuration
 ├── src/                     # Game-specific source code
-├── include/                 # Game-specific headers
+│   ├── main.cpp            # Project entry point
+│   ├── YourCharacter.cpp   # Project-specific character classes
+│   ├── YourCharacter.h     # Project-specific headers
+│   └── ...                 # Other project-specific code
 ├── assets/                  # Game-specific assets
+│   ├── models/             # Project 3D models and animations
+│   ├── textures/           # Project textures
+│   ├── audio/              # Project audio files
+│   └── shaders/            # Project-specific shaders
 ├── config/                  # Game configuration files
+│   ├── config.json         # Main project configuration
+│   ├── engine_config.json  # Engine module configuration
+│   └── project_config.json # Project-specific settings
 └── README.md               # Project documentation
 ```
+
+### Critical Separation Rules
+
+**NEVER put project-specific code in the base engine:**
+
+- ❌ **WRONG**: `include/Game/XBotCharacter.h` (engine directory)
+- ✅ **CORRECT**: `projects/GameExample/src/XBotCharacter.h` (project directory)
+
+**NEVER put project-specific assets in shared locations:**
+
+- ❌ **WRONG**: `assets/models/XBot.fbx` (shared engine assets)
+- ✅ **CORRECT**: `projects/GameExample/assets/models/XBot.fbx` (project assets)
+
+**Base engine provides generic interfaces only:**
+
+- ✅ **CORRECT**: `include/Game/Character.h` (generic base class)
+- ✅ **CORRECT**: `include/Animation/AnimationController.h` (generic animation system)
 
 ### Project Configuration
 
@@ -232,11 +259,13 @@ projects/YourGame/assets/
 
 ### Asset Path Resolution
 
-The engine automatically resolves asset paths:
+The engine automatically resolves asset paths following standardized naming conventions:
 
-1. Check project-specific assets first
-2. Fall back to shared engine assets
-3. Use default fallback assets if needed
+1. **Project-specific assets**: `projects/[ProjectName]/assets/characters/[CharacterName]/`
+2. **Shared engine assets**: `assets/meshes/primitives/`, `assets/textures/defaults/`
+3. **Fallback assets**: `assets/meshes/fallbacks/`, `assets/textures/fallbacks/`
+
+**See [Asset Naming Conventions](asset-naming-conventions.md) for complete asset organization standards.**
 
 ## Testing Architecture
 

@@ -224,47 +224,48 @@
     - Create animation validation and optimization tools
     - _Requirements: 10.6, 7.7, 10.4_
 
-- [x] 15. Final integration and optimization
+- [ ] 15. Modular Character Animation System
 
-  - [x] 15.1 Create Xbot character animation system integration
+  - [x] 15.1 Refactor Character class for modular animation
 
-    - Integrate AnimationController with Character class for Xbot model
-    - Load and configure Xbot skeleton from FBX file
-    - Create animation asset loading system for Xbot animations
-    - Implement animation state synchronization with character movement
-    - _Requirements: 8.1, 8.2, 1.1, 2.1_
+    - Remove specific animation asset loading from base Character class
+    - Create generic animation interface in base Character
+    - Provide virtual methods for animation initialization and updates
+    - Ensure base Character remains asset-agnostic
+    - _Requirements: 8.1, 8.2, 8.5_
 
-  - [ ] 15.2 Implement basic animation states (Idle and Walk)
+  - [ ] 15.2 Create XBotCharacter in GameExample project
 
-    - Load Idle.fbx animation and configure as default state
-    - Load Walking.fbx animation and integrate with movement input
-    - Create state machine with Idle-to-Walk transitions based on movement speed
+    - Create XBotCharacter class extending base Character in projects/GameExample/src/
+    - Implement XBot-specific animation asset loading from projects/GameExample/assets/
+    - Create XBot-specific animation state machine with Idle-to-Walk transitions
     - Implement smooth blending between idle and walking animations
-    - _Requirements: 2.1, 2.2, 2.3, 3.1_
+    - Update projects/GameExample/src/main.cpp to use XBotCharacter
+    - _Requirements: 8.2, 8.3, 8.8, 2.1, 2.2, 2.3, 3.1_
 
-  - [ ] 15.3 Add running animation with blend tree system
+  - [ ] 15.3 Implement XBot movement-based animation parameters
 
-    - Load Running.fbx animation for high-speed movement
-    - Create 1D blend tree for Idle -> Walk -> Run based on speed parameter
-    - Implement speed-based animation blending with smooth transitions
-    - Configure blend thresholds for natural movement animation
-    - _Requirements: 3.2, 3.3, 3.6, 2.5_
+    - Synchronize XBot animation parameters with character movement state
+    - Implement speed-based animation blending for XBot character
+    - Add ground detection for XBot animation state changes
+    - Create parameter mapping for different XBot movement types
+    - _Requirements: 8.3, 2.2, 2.5_
 
-  - [ ] 15.4 Implement jump animation with state machine
+  - [ ] 15.4 Add XBot running animation with blend tree system
 
-    - Load Jump.fbx animation for jump movement
-    - Create jump state with entry/exit conditions based on character physics
-    - Implement jump animation timing synchronization with physics
-    - Add smooth transitions from any movement state to jump and back
-    - _Requirements: 2.1, 2.4, 6.1, 6.4_
+    - Load Running.fbx animation for XBot high-speed movement
+    - Create 1D blend tree for XBot Idle -> Walk -> Run based on speed parameter
+    - Implement speed-based animation blending with smooth transitions for XBot
+    - Configure blend thresholds for natural XBot movement animation
+    - _Requirements: 8.3, 3.2, 3.3, 3.6, 2.5_
 
-  - [ ] 15.5 Add combat animations (Attack and Block)
+  - [ ] 15.5 Implement XBot jump animation with state machine
 
-    - Load Attack.fbx and Block.fbx animations for combat system
-    - Create combat state machine with attack and defense states
-    - Implement input-triggered combat animations with proper timing
-    - Add animation events for combat hit detection and sound effects
-    - _Requirements: 2.1, 6.1, 6.2, 6.4_
+    - Load Jump.fbx animation for XBot jump movement
+    - Create XBot jump state with entry/exit conditions based on character physics
+    - Implement XBot jump animation timing synchronization with physics
+    - Add smooth transitions from any XBot movement state to jump and back
+    - _Requirements: 8.3, 2.1, 2.4, 6.1, 6.4_
 
   - [ ] 15.6 Implement damage and death animations
 
@@ -328,3 +329,4 @@
 - Use `.\scripts\build_unified.bat --tests` to build project
 - Use `.\scripts\build_unified.bat --clean-tests --tests` to build project and clean tests
 - Use `.\scripts\build_unified.bat --tests TestName` to build single test
+- Use `.\scripts\build_unified.bat --project GameExample` to build single project

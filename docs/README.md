@@ -15,11 +15,14 @@ New to Game Engine Kiro? Start here:
 
 - **[Architecture Overview](architecture.md)** - Engine design principles and patterns
 - **[Modular Architecture](modular-architecture.md)** - Plugin system and module management
+- **[Project Development Guide](project-development-guide.md)** - How to create game projects with proper separation
+- **[Asset Naming Conventions](asset-naming-conventions.md)** - Standardized asset organization and naming rules
 - **[API Reference](api-reference.md)** - Complete API documentation with examples
 
 ### Development Standards
 
 - **[Coding Standards](coding-standards.md)** - Code style and best practices
+- **[Engine Naming Conventions](engine-naming-conventions.md)** - Comprehensive naming standards for all code elements
 - **[Module Development Guide](module-development-guide.md)** - Creating custom engine modules
 - **[Module Development Best Practices](module-development-best-practices.md)** - Advanced module patterns
 

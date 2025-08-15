@@ -6,11 +6,22 @@ This design document outlines the implementation of a comprehensive animation sy
 
 ## Architecture
 
-### Animation System Architecture
+### Modular Animation System Architecture
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
+│                    Project Layer                            │
+│              (projects/GameExample/src/)                    │
+├─────────────────────────────────────────────────────────────┤
+│  XBotCharacter  │  PlayerCharacter  │  NPCCharacter       │
+│  (GameExample)  │  (UserProject)    │  (UserProject)      │
+├─────────────────────────────────────────────────────────────┤
+│                   Base Character                            │
+│              (include/Game/Character.h)                     │
+│              (Generic Animation Interface)                  │
+├─────────────────────────────────────────────────────────────┤
 │                   Animation Controller                      │
+│              (include/Animation/)                           │
 ├─────────────────────────────────────────────────────────────┤
 │ State Machine │ Blend Trees │ Parameters │ Event System    │
 ├─────────────────────────────────────────────────────────────┤
@@ -31,6 +42,15 @@ This design document outlines the implementation of a comprehensive animation sy
 │ Graphics │ Physics │ Audio │ Resource │ Model Loading      │
 └─────────────────────────────────────────────────────────────┘
 ```
+
+### Modular Design Principles
+
+1. **Base Character Class**: Provides generic animation interface without specific asset knowledge (engine/include/Game/Character.h)
+2. **Project-Specific Characters**: Extend base Character with custom animation logic and assets (projects/[ProjectName]/src/)
+3. **Asset Isolation**: Each project manages its own animation assets in projects/[ProjectName]/assets/
+4. **Engine Agnostic**: Base engine remains completely unaware of specific character implementations
+5. **Clear Separation**: Engine code in include/src/, project code in projects/[ProjectName]/
+6. **Modular Structure**: Projects can be developed independently without affecting engine or other projects
 
 ## Components and Interfaces
 

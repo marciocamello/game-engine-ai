@@ -9,6 +9,7 @@
 #include "Core/AssetValidator.h"
 #include "Core/ResourcePool.h"
 #include "Game/Character.h"
+#include "XBotCharacter.h"
 #include "Game/GameAudioManager.h"
 #include "Game/ThirdPersonCameraSystem.h"
 #include "Graphics/Camera.h"
@@ -100,7 +101,7 @@ public:
 
     CreateGroundPlane();
 
-    m_character = std::make_unique<Character>();
+    m_character = std::make_unique<GameExample::XBotCharacter>();
     if (!m_character->Initialize(m_engine.GetPhysics())) {
       LOG_ERROR("Failed to initialize character");
       return false;
@@ -1265,7 +1266,7 @@ private:
 
   Engine m_engine;
   std::unique_ptr<ThirdPersonCameraSystem> m_camera;
-  std::unique_ptr<Character> m_character;
+  std::unique_ptr<GameExample::XBotCharacter> m_character;
   std::unique_ptr<PrimitiveRenderer> m_primitiveRenderer;
   std::unique_ptr<GameAudioManager> m_audioManager;
   std::unique_ptr<GridRenderer> m_gridRenderer;

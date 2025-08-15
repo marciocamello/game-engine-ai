@@ -6,6 +6,10 @@
 #include "Resource/ModelLoader.h"
 #include "Input/InputManager.h"
 #include "Physics/PhysicsEngine.h"
+#include "Animation/AnimationController.h"
+#include "Animation/AnimationImporter.h"
+#include "Animation/AnimationSkeleton.h"
+#include "Animation/SkeletalAnimation.h"
 
 #include "Core/Logger.h"
 
@@ -15,9 +19,16 @@ namespace GameEngine {
     {
         // Initialize model loader
         m_modelLoader = std::make_unique<ModelLoader>();
+        
+        // Initialize animation system components
+        m_animationController = std::make_unique<Animation::AnimationController>();
+        m_animationImporter = std::make_unique<Animation::AnimationImporter>();
     }
 
     Character::~Character() {
+        // Shutdown animation system
+        ShutdownAnimationSystem();
+        
         // Movement component cleanup is handled automatically by unique_ptr
     }
 
@@ -37,6 +48,11 @@ namespace GameEngine {
             return false;
         }
         
+        // Initialize animation system
+        if (!InitializeAnimationSystem()) {
+            LOG_WARNING("Failed to initialize animation system - animations will not be available");
+        }
+        
         LOG_INFO("Character initialized with component-based movement system (" + 
                 std::string(GetMovementTypeName()) + ")");
         return true;
@@ -47,6 +63,9 @@ namespace GameEngine {
             // Update movement
             m_movementComponent->Update(deltaTime, input, camera);
         }
+        
+        // Update animation system
+        UpdateAnimationState(deltaTime);
     }
 
     void Character::Render(PrimitiveRenderer* renderer) {
@@ -335,5 +354,263 @@ namespace GameEngine {
         }
     }
 
+    // Animation system implementation
+    bool Character::InitializeAnimationSystem() {
+        if (!m_animationController || !m_animationImporter) {
+            LOG_ERROR("Animation system components not initialized");
+            return false;
+        }
+
+        // Load Xbot skeleton and animations
+        if (!LoadXbotAnimations()) {
+            LOG_WARNING("Failed to load Xbot animations - using fallback rendering");
+            return false;
+        }
+
+        m_animationSystemInitialized = true;
+        LOG_INFO("Animation system initialized successfully");
+        return true;
+    }
+
+    void Character::ShutdownAnimationSystem() {
+        if (m_animationController) {
+            m_animationController->Shutdown();
+        }
+        
+        m_xbotSkeleton.reset();
+        m_animationSystemInitialized = false;
+        
+        LOG_INFO("Animation system shutdown complete");
+    }
+
+    bool Character::LoadXbotAnimations() {
+        if (!m_animationImporter) {
+            LOG_ERROR("Animation importer not available");
+            return false;
+        }
+
+        // Import Xbot skeleton from the main FBX file
+        LOG_INFO("Loading Xbot skeleton from XBot.fbx");
+        auto skeletonResult = m_animationImporter->ImportFromFile("assets/meshes/XBot.fbx");
+        
+        if (!skeletonResult.success || !skeletonResult.skeleton) {
+            LOG_ERROR("Failed to load Xbot skeleton: " + skeletonResult.errorMessage);
+            return false;
+        }
+
+        m_xbotSkeleton = skeletonResult.skeleton;
+        
+        // Initialize animation controller with skeleton
+        if (!m_animationController->Initialize(m_xbotSkeleton)) {
+            LOG_ERROR("Failed to initialize animation controller with Xbot skeleton");
+            return false;
+        }
+
+        // Load individual animation files
+        std::vector<std::pair<std::string, std::string>> animationFiles = {
+            {"Idle", "assets/meshes/Idle.fbx"},
+            {"Walking", "assets/meshes/Walking.fbx"},
+            {"Running", "assets/meshes/Running.fbx"},
+            {"Jump", "assets/meshes/Jump.fbx"},
+            {"Attack", "assets/meshes/Attack.fbx"},
+            {"Block", "assets/meshes/Block.fbx"},
+            {"Hit", "assets/meshes/Hit.fbx"},
+            {"Dying", "assets/meshes/Dying.fbx"},
+            {"Celebrate", "assets/meshes/Celebrate.fbx"},
+            {"LeftTurn", "assets/meshes/Left Turn.fbx"},
+            {"RightTurn", "assets/meshes/Right Turn.fbx"},
+            {"CrouchedWalking", "assets/meshes/Crouched Walking.fbx"}
+        };
+
+        int loadedAnimations = 0;
+        for (const auto& animPair : animationFiles) {
+            if (LoadAnimationFromFBX(animPair.second, animPair.first)) {
+                loadedAnimations++;
+            }
+        }
+
+        if (loadedAnimations == 0) {
+            LOG_ERROR("No animations were loaded successfully");
+            return false;
+        }
+
+        LOG_INFO("Loaded " + std::to_string(loadedAnimations) + " animations for Xbot character");
+
+        // Setup animation parameters for state machine
+        SetupAnimationStateMachine();
+
+        return true;
+    }
+
+    bool Character::LoadAnimationFromFBX(const std::string& fbxPath, const std::string& animationName) {
+        if (!m_animationImporter || !m_xbotSkeleton) {
+            return false;
+        }
+
+        try {
+            // Import animations from FBX file using existing skeleton
+            auto animations = m_animationImporter->ImportAnimationsFromFile(fbxPath, m_xbotSkeleton);
+            
+            if (animations.empty()) {
+                LOG_WARNING("No animations found in " + fbxPath);
+                return false;
+            }
+
+            // Use the first animation found (most FBX files contain one animation)
+            auto animation = animations[0];
+            if (!animation) {
+                LOG_WARNING("Invalid animation in " + fbxPath);
+                return false;
+            }
+
+            // Set animation name and add to controller
+            animation->SetName(animationName);
+            m_animationController->AddAnimation(animationName, animation);
+            
+            LOG_INFO("Loaded animation '" + animationName + "' from " + fbxPath + 
+                    " (duration: " + std::to_string(animation->GetDuration()) + "s)");
+            return true;
+            
+        } catch (const std::exception& e) {
+            LOG_ERROR("Exception loading animation from " + fbxPath + ": " + std::string(e.what()));
+            return false;
+        }
+    }
+
+    void Character::SetupAnimationStateMachine() {
+        if (!m_animationController) {
+            return;
+        }
+
+        // Initialize animation parameters for movement synchronization
+        m_animationController->SetFloat("Speed", 0.0f);
+        m_animationController->SetBool("IsGrounded", true);
+        m_animationController->SetBool("IsJumping", false);
+        m_animationController->SetBool("IsCrouching", false);
+        m_animationController->SetTrigger("Attack");
+        m_animationController->SetTrigger("Block");
+        m_animationController->SetTrigger("Hit");
+        m_animationController->SetTrigger("Die");
+        m_animationController->SetTrigger("Celebrate");
+
+        // Start with idle animation
+        PlayAnimation("Idle");
+        
+        LOG_INFO("Animation state machine parameters initialized");
+    }
+
+    void Character::UpdateAnimationState(float deltaTime) {
+        if (!m_animationSystemInitialized || !m_animationController) {
+            return;
+        }
+
+        // Update animation controller
+        m_animationController->Update(deltaTime);
+
+        // Synchronize animation parameters with movement state
+        SynchronizeAnimationWithMovement();
+    }
+
+    void Character::SynchronizeAnimationWithMovement() {
+        if (!m_animationController || !m_movementComponent) {
+            return;
+        }
+
+        // Get current movement state
+        Math::Vec3 velocity = m_movementComponent->GetVelocity();
+        float speed = glm::length(Math::Vec3(velocity.x, 0.0f, velocity.z)); // Horizontal speed only
+        bool isGrounded = m_movementComponent->IsGrounded();
+        bool isJumping = m_movementComponent->IsJumping();
+
+        // Update animation parameters
+        m_animationController->SetFloat("Speed", speed);
+        m_animationController->SetBool("IsGrounded", isGrounded);
+        m_animationController->SetBool("IsJumping", isJumping);
+
+        // Simple state machine logic for basic movement animations
+        std::string targetAnimation = "Idle";
+        
+        if (isJumping) {
+            targetAnimation = "Jump";
+        } else if (isGrounded) {
+            if (speed > 4.0f) {
+                targetAnimation = "Running";
+            } else if (speed > 0.5f) {
+                targetAnimation = "Walking";
+            } else {
+                targetAnimation = "Idle";
+            }
+        }
+
+        // Change animation if state changed
+        if (targetAnimation != m_currentAnimationState) {
+            PlayAnimation(targetAnimation, 0.2f); // 0.2s fade time
+            m_currentAnimationState = targetAnimation;
+        }
+
+        // Store previous state for next frame
+        m_lastMovementSpeed = speed;
+        m_wasGrounded = isGrounded;
+        m_wasJumping = isJumping;
+    }
+
+    void Character::UpdateMovementAnimationParameters() {
+        if (!m_animationController || !m_movementComponent) {
+            return;
+        }
+
+        // This method can be extended for more complex parameter updates
+        // Currently handled by SynchronizeAnimationWithMovement()
+    }
+
+    // Animation control methods
+    void Character::PlayAnimation(const std::string& animationName, float fadeTime) {
+        if (m_animationController) {
+            m_animationController->Play(animationName, fadeTime);
+        }
+    }
+
+    void Character::StopAnimation(const std::string& animationName, float fadeTime) {
+        if (m_animationController) {
+            m_animationController->Stop(animationName, fadeTime);
+        }
+    }
+
+    void Character::SetAnimationSpeed(float speed) {
+        if (m_animationController) {
+            m_animationController->SetPlaybackSpeed(speed);
+        }
+    }
+
+    float Character::GetAnimationSpeed() const {
+        if (m_animationController) {
+            return m_animationController->GetPlaybackSpeed();
+        }
+        return 1.0f;
+    }
+
+    void Character::SetAnimationParameter(const std::string& name, float value) {
+        if (m_animationController) {
+            m_animationController->SetFloat(name, value);
+        }
+    }
+
+    void Character::SetAnimationParameter(const std::string& name, int value) {
+        if (m_animationController) {
+            m_animationController->SetInt(name, value);
+        }
+    }
+
+    void Character::SetAnimationParameter(const std::string& name, bool value) {
+        if (m_animationController) {
+            m_animationController->SetBool(name, value);
+        }
+    }
+
+    void Character::TriggerAnimationEvent(const std::string& name) {
+        if (m_animationController) {
+            m_animationController->SetTrigger(name);
+        }
+    }
 
 }

@@ -12,6 +12,13 @@ namespace GameEngine {
     class Model;
     class ModelLoader;
 
+    namespace Animation {
+        class AnimationController;
+        class AnimationSkeleton;
+        class SkeletalAnimation;
+        class AnimationImporter;
+    }
+
     /**
      * @brief Configuration structure for character model offset system
      * 
@@ -115,8 +122,28 @@ namespace GameEngine {
         void SetShowDebugCapsule(bool show) { m_showDebugCapsule = show; }
         bool IsShowingDebugCapsule() const { return m_showDebugCapsule; }
 
-
-
+        // Animation system integration
+        bool InitializeAnimationSystem();
+        void ShutdownAnimationSystem();
+        bool LoadXbotAnimations();
+        Animation::AnimationController* GetAnimationController() const { return m_animationController.get(); }
+        bool HasAnimationController() const { return m_animationController != nullptr; }
+        
+        // Animation state synchronization with movement
+        void UpdateAnimationState(float deltaTime);
+        void SynchronizeAnimationWithMovement();
+        
+        // Animation control
+        void PlayAnimation(const std::string& animationName, float fadeTime = 0.3f);
+        void StopAnimation(const std::string& animationName, float fadeTime = 0.3f);
+        void SetAnimationSpeed(float speed);
+        float GetAnimationSpeed() const;
+        
+        // Animation parameters for state machine
+        void SetAnimationParameter(const std::string& name, float value);
+        void SetAnimationParameter(const std::string& name, int value);
+        void SetAnimationParameter(const std::string& name, bool value);
+        void TriggerAnimationEvent(const std::string& name);
 
     private:
         void InitializeDefaultMovementComponent(PhysicsEngine* physicsEngine);
@@ -149,6 +176,22 @@ namespace GameEngine {
         // Debug visualization
         bool m_showDebugCapsule = false;
 
+        // Animation system
+        std::unique_ptr<Animation::AnimationController> m_animationController;
+        std::unique_ptr<Animation::AnimationImporter> m_animationImporter;
+        std::shared_ptr<Animation::AnimationSkeleton> m_xbotSkeleton;
+        bool m_animationSystemInitialized = false;
+        
+        // Animation state tracking
+        std::string m_currentAnimationState = "Idle";
+        float m_lastMovementSpeed = 0.0f;
+        bool m_wasGrounded = true;
+        bool m_wasJumping = false;
+
+        // Animation asset loading
+        bool LoadAnimationFromFBX(const std::string& fbxPath, const std::string& animationName);
+        void SetupAnimationStateMachine();
+        void UpdateMovementAnimationParameters();
 
     };
 }

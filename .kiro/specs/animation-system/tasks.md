@@ -162,6 +162,7 @@
 
 - [x] 11. Implement performance optimization features
 
+
   - [x] 11.1 Add animation LOD and culling system
 
     - Implement animation level-of-detail for distant characters

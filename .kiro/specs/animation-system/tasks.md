@@ -234,7 +234,7 @@
     - Ensure base Character remains asset-agnostic
     - _Requirements: 8.1, 8.2, 8.5_
 
-  - [ ] 15.2 Create XBotCharacter in GameExample project
+  - [x] 15.2 Create XBotCharacter in GameExample project
 
     - Create XBotCharacter class extending base Character in projects/GameExample/src/
     - Implement XBot-specific animation asset loading from projects/GameExample/assets/

@@ -1,16 +1,16 @@
 { 
-  "timestamp": "15/08/2025 18:38:04,08", 
-  "last_duration": 327, 
+  "timestamp": "16/08/2025  0:34:40,58", 
+  "last_duration": 117, 
   "build_type": "Release", 
-  "build_signature": "Release_OFF_OFF_ON__", 
+  "build_signature": "Release_ON_ON_OFF_GameExample_", 
   "source_files": 121, 
   "header_files": 124, 
   "test_files": 110, 
-  "compiled_files": 90, 
+  "compiled_files": 60, 
   "cached_files": 121, 
   "cache_hit_rate": 100, 
-  "total_targets": 107, 
+  "total_targets": 2, 
   "generator": "vs-release", 
   "cache_enabled": true, 
-  "performance_classification": "very_slow" 
+  "performance_classification": "moderate" 
 } 

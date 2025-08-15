@@ -104,10 +104,14 @@ Each game project follows a standardized structure:
 projects/YourGame/
 ├── CMakeLists.txt           # Project build configuration
 ├── src/                     # Game-specific source code
-│   ├── main.cpp            # Project entry point
-│   ├── YourCharacter.cpp   # Project-specific character classes
-│   ├── YourCharacter.h     # Project-specific headers
-│   └── ...                 # Other project-specific code
+│   ├── main.cpp            # Project entry point (stays in src/)
+│   ├── public/             # Public headers (.h files)
+│   │   ├── YourCharacter.h # Project-specific character classes
+│   │   └── ...             # Other public headers
+│   ├── private/            # Private implementations (.cpp files)
+│   │   ├── YourCharacter.cpp # Character implementation
+│   │   └── ...             # Other implementation files
+│   └── ...                 # Additional source organization
 ├── assets/                  # Game-specific assets
 │   ├── models/             # Project 3D models and animations
 │   ├── textures/           # Project textures
@@ -125,7 +129,7 @@ projects/YourGame/
 **NEVER put project-specific code in the base engine:**
 
 - ❌ **WRONG**: `include/Game/XBotCharacter.h` (engine directory)
-- ✅ **CORRECT**: `projects/GameExample/src/XBotCharacter.h` (project directory)
+- ✅ **CORRECT**: `projects/GameExample/src/public/XBotCharacter.h` (project directory)
 
 **NEVER put project-specific assets in shared locations:**
 

@@ -81,3 +81,14 @@ assets/meshes/Left Turn.fbx
 assets/meshes/Right Turn.fbx
 assets/meshes/Running.fbx
 assets/meshes/Walking.fbx
+projects/GameExample/assets/characters/XBotCharacter/XBotCharacter.fbx
+projects/GameExample/assets/characters/XBotCharacter/animations/Celebrate.fbx
+projects/GameExample/assets/characters/XBotCharacter/animations/Dying.fbx
+projects/GameExample/assets/characters/XBotCharacter/animations/Hit.fbx
+projects/GameExample/assets/characters/XBotCharacter/animations/Idle.fbx
+projects/GameExample/assets/characters/XBotCharacter/animations/Jump.fbx
+projects/GameExample/assets/characters/XBotCharacter/animations/Left Turn.fbx
+projects/GameExample/assets/characters/XBotCharacter/animations/Right Turn.fbx
+projects/GameExample/assets/characters/XBotCharacter/animations/Running.fbx
+projects/GameExample/assets/characters/XBotCharacter/animations/Walking.fbx
+projects/GameExample/assets/characters/XBotCharacter/animations/Crouched Walking.fbx

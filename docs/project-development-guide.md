@@ -48,12 +48,15 @@ projects/YourGame/
 ├── CMakeLists.txt           # Build configuration
 ├── README.md               # Project documentation
 ├── src/                    # ALL project-specific code goes here
-│   ├── main.cpp           # Project entry point
-│   ├── YourCharacter.h    # Custom character class header
-│   ├── YourCharacter.cpp  # Custom character implementation
-│   ├── YourGameLogic.h    # Game-specific logic
-│   ├── YourGameLogic.cpp  # Game-specific implementation
-│   └── ...                # Other project files
+│   ├── main.cpp           # Project entry point (stays in src/)
+│   ├── public/            # Public headers (.h files)
+│   │   ├── YourCharacter.h    # Custom character class header
+│   │   ├── YourGameLogic.h    # Game-specific logic header
+│   │   └── ...                # Other public headers
+│   ├── private/           # Private implementations (.cpp files)
+│   │   ├── YourCharacter.cpp  # Custom character implementation
+│   │   ├── YourGameLogic.cpp  # Game-specific implementation
+│   │   └── ...                # Other implementation files
 ├── assets/                # ALL project-specific assets
 │   ├── models/           # Project 3D models and animations
 │   │   ├── YourCharacter.fbx
@@ -103,7 +106,7 @@ namespace GameEngine {
 **Project Implementation (Specific Character):**
 
 ```cpp
-// projects/GameExample/src/XBotCharacter.h - PROJECT SPECIFIC
+// projects/GameExample/src/public/XBotCharacter.h - PROJECT SPECIFIC
 #include "Game/Character.h"
 
 namespace GameExample {
@@ -129,7 +132,7 @@ namespace GameExample {
 ```
 
 ```cpp
-// projects/GameExample/src/XBotCharacter.cpp - PROJECT SPECIFIC
+// projects/GameExample/src/private/XBotCharacter.cpp - PROJECT SPECIFIC
 #include "XBotCharacter.h"
 #include "Resource/ResourceManager.h"
 
@@ -351,8 +354,8 @@ add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
 
    ```cpp
    // ✅ CORRECT: Project-specific classes in project directory
-   projects/GameExample/src/XBotCharacter.h
-   projects/GameExample/src/XBotCharacter.cpp
+   projects/GameExample/src/public/XBotCharacter.h
+   projects/GameExample/src/private/XBotCharacter.cpp
    ```
 
 2. **Virtual interfaces in base classes:**
@@ -393,7 +396,7 @@ projects/YourGame/
 ```cpp
 // projects/GameExample/tests/unit/test_xbot_character.cpp
 #include "TestUtils.h"
-#include "../src/XBotCharacter.h"
+#include "../src/public/XBotCharacter.h"
 
 using namespace GameExample;
 using namespace GameEngine::Testing;

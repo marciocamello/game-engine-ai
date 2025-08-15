@@ -6,23 +6,30 @@ inclusion: always
 
 ## MANDATORY Asset Structure
 
-### Project Asset Organization
+### Project Structure Organization
 
 ```
-projects/[ProjectName]/assets/
-├── characters/[CharacterName]/    # Character-specific assets
-│   ├── [CharacterName].fbx       # Main character model
-│   ├── animations/               # Character animations
-│   ├── textures/                 # Character textures
-│   └── materials/                # Character materials
-├── animations/                   # Shared animations
-├── meshes/                       # Static meshes (non-character)
-├── materials/                    # Project materials
-├── textures/                     # Project textures
-├── sounds/                       # Audio assets
-├── vfx/                          # Visual effects
-├── ui/                           # User interface assets
-└── input/                        # Input-related assets
+projects/[ProjectName]/
+├── src/
+│   ├── main.cpp                  # Project entry point (stays in src/)
+│   ├── public/                   # Public headers (.h files)
+│   │   └── [CharacterName].h     # Character class headers
+│   └── private/                  # Private implementations (.cpp files)
+│       └── [CharacterName].cpp   # Character implementations
+└── assets/
+    ├── characters/[CharacterName]/    # Character-specific assets
+    │   ├── [CharacterName].fbx       # Main character model
+    │   ├── animations/               # Character animations
+    │   ├── textures/                 # Character textures
+    │   └── materials/                # Character materials
+    ├── animations/                   # Shared animations
+    ├── meshes/                       # Static meshes (non-character)
+    ├── materials/                    # Project materials
+    ├── textures/                     # Project textures
+    ├── sounds/                       # Audio assets
+    ├── vfx/                          # Visual effects
+    ├── ui/                           # User interface assets
+    └── input/                        # Input-related assets
 ```
 
 ### Character Asset Rules - MANDATORY

@@ -24,11 +24,12 @@ set(OPTIONAL_ENGINE_MODULES
 # Project source files
 set(PROJECT_SOURCES
     src/main.cpp
+    src/private/XBotCharacter.cpp
 )
 
 # Project header files (if any)
 set(PROJECT_HEADERS
-    # Add project headers here
+    src/public/XBotCharacter.h
 )
 
 # Create the project executable

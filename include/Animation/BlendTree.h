@@ -30,6 +30,18 @@ namespace Animation {
      */
     class BlendTree {
     public:
+        struct BlendTreeNode {
+            std::shared_ptr<SkeletalAnimation> animation;
+            std::shared_ptr<BlendTree> childTree;
+            float threshold = 0.0f;
+            Math::Vec2 position = Math::Vec2(0.0f);
+            float weight = 0.0f;
+            std::string name;
+
+            bool IsAnimation() const { return animation != nullptr; }
+            bool IsChildTree() const { return childTree != nullptr; }
+            bool IsValid() const { return IsAnimation() || IsChildTree(); }
+        };
         enum class Type { 
             Simple1D,               // 1D blend space with single parameter
             SimpleDirectional2D,    // 2D directional blend space
@@ -84,24 +96,12 @@ namespace Animation {
         size_t GetMotionCount() const { return m_nodes.size(); }
         bool IsEmpty() const { return m_nodes.empty(); }
         std::vector<std::string> GetMotionNames() const;
+        const std::vector<BlendTreeNode>& GetNodes() const { return m_nodes; }
 
         // Debugging
         void PrintBlendTreeInfo() const;
 
     private:
-        struct BlendTreeNode {
-            std::shared_ptr<SkeletalAnimation> animation;
-            std::shared_ptr<BlendTree> childTree;
-            float threshold = 0.0f;
-            Math::Vec2 position = Math::Vec2(0.0f);
-            float weight = 0.0f;
-            std::string name;
-
-            bool IsAnimation() const { return animation != nullptr; }
-            bool IsChildTree() const { return childTree != nullptr; }
-            bool IsValid() const { return IsAnimation() || IsChildTree(); }
-        };
-
         Type m_type;
         std::string m_parameterX;
         std::string m_parameterY;

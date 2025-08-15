@@ -208,7 +208,7 @@
     - Implement tests for morph target application and blending
     - _Requirements: 2.1, 4.2, 5.1_
 
-- [ ] 14. Implement animation serialization and asset pipeline
+- [-] 14. Implement animation serialization and asset pipeline
 
   - [ ] 14.1 Add animation data serialization
 

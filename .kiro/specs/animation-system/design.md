@@ -1,8 +1,16 @@
-# Design Document - Animation System
+# Design Document - Enhanced Animation System
 
 ## Overview
 
-This design document outlines the implementation of a comprehensive animation system for Game Engine Kiro v1.1. The system provides skeletal animation, state machines, blend trees, inverse kinematics, morph targets, and advanced animation techniques for creating lifelike character movement and object animations.
+This design document outlines the enhancement of the animation system for Game Engine Kiro v1.2, focusing on performance optimization through offline asset pipeline, binary formats, and optional ozz-animation integration. The enhanced system maintains our existing architecture while providing significant performance improvements and better asset management.
+
+## Key Enhancements
+
+1. **Offline Asset Pipeline**: Assimp-based converter tool that processes FBX/GLTF/DAE → optimized binary formats
+2. **Binary Format System**: Custom .skeleton, .mesh, .anim formats optimized for fast loading and minimal memory usage
+3. **Performance Optimization**: SIMD-friendly data structures, cache optimization, and memory pooling
+4. **Optional ozz-animation Integration**: Pluggable ozz-animation core for maximum performance while keeping our interfaces
+5. **Enhanced Asset Management**: Streaming, caching, and intelligent memory management for large animation libraries
 
 ## Architecture
 

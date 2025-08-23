@@ -31,6 +31,7 @@ namespace GameEngine {
     void PrimitiveRenderer::Shutdown() {
         m_colorShader.reset();
         m_texturedShader.reset();
+        m_skinnedShader.reset();
         m_cubeMesh.reset();
         m_sphereMesh.reset();
         m_capsuleMesh.reset();
@@ -160,9 +161,108 @@ namespace GameEngine {
             }
         )";
 
+        // Skinned mesh shader
+        std::string skinnedVertexShader = R"(
+            #version 330 core
+            layout (location = 0) in vec3 aPos;
+            layout (location = 1) in vec3 aNormal;
+            layout (location = 2) in vec2 aTexCoords;
+            layout (location = 3) in vec4 aBoneIds;
+            layout (location = 4) in vec4 aBoneWeights;
+            
+            uniform mat4 u_mvp;
+            uniform mat4 u_model;
+            uniform mat4 u_view;
+            uniform mat4 u_projection;
+            uniform mat4 u_boneMatrices[64]; // Support up to 64 bones
+            
+            out vec3 FragPos;
+            out vec3 Normal;
+            out vec2 TexCoords;
+            
+            void main() {
+                // Calculate skinned position and normal
+                mat4 boneTransform = mat4(0.0);
+                for(int i = 0; i < 4; i++) {
+                    int boneIndex = int(aBoneIds[i]);
+                    if(boneIndex >= 0 && boneIndex < 64) {
+                        boneTransform += u_boneMatrices[boneIndex] * aBoneWeights[i];
+                    }
+                }
+                
+                vec4 skinnedPos = boneTransform * vec4(aPos, 1.0);
+                vec4 skinnedNormal = boneTransform * vec4(aNormal, 0.0);
+                
+                FragPos = vec3(u_model * skinnedPos);
+                Normal = mat3(transpose(inverse(u_model))) * skinnedNormal.xyz;
+                TexCoords = aTexCoords;
+                
+                gl_Position = u_mvp * skinnedPos;
+            }
+        )";
+
+        std::string skinnedFragmentShader = R"(
+            #version 330 core
+            out vec4 FragColor;
+            
+            in vec3 FragPos;
+            in vec3 Normal;
+            in vec2 TexCoords;
+            
+            uniform vec4 u_color;
+            uniform bool u_hasTexture;
+            uniform sampler2D u_texture;
+            
+            // Lighting uniforms
+            uniform vec3 u_cameraPos;
+            uniform vec3 u_lightDir;
+            uniform vec3 u_lightColor;
+            uniform float u_lightIntensity;
+            
+            void main() {
+                vec4 baseColor = u_color;
+                if(u_hasTexture) {
+                    baseColor *= texture(u_texture, TexCoords);
+                }
+                
+                // Simple lighting calculation
+                vec3 norm = normalize(Normal);
+                vec3 lightDir = normalize(-u_lightDir);
+                float diff = max(dot(norm, lightDir), 0.0);
+                vec3 diffuse = diff * u_lightColor * u_lightIntensity;
+                
+                vec3 ambient = 0.3 * u_lightColor;
+                vec3 result = (ambient + diffuse) * baseColor.rgb;
+                
+                FragColor = vec4(result, baseColor.a);
+            }
+        )";
+
         // Use ShaderManager to create and manage shaders
         m_colorShader = ShaderManager::GetInstance().LoadShaderFromSource(DEFAULT_COLOR_SHADER_NAME, colorVertexShader, colorFragmentShader);
         m_texturedShader = ShaderManager::GetInstance().LoadShaderFromSource(DEFAULT_TEXTURED_SHADER_NAME, texturedVertexShader, texturedFragmentShader);
+        m_skinnedShader = ShaderManager::GetInstance().LoadShaderFromSource("primitive_skinned", skinnedVertexShader, skinnedFragmentShader);
+        
+        // Debug shader creation
+        if (m_skinnedShader && m_skinnedShader->IsValid()) {
+            LOG_INFO("PrimitiveRenderer: Skinned shader created successfully");
+        } else {
+            LOG_ERROR("PrimitiveRenderer: Failed to create skinned shader");
+            if (m_skinnedShader) {
+                LOG_ERROR("PrimitiveRenderer: Shader object exists but is not valid");
+                LOG_ERROR("PrimitiveRenderer: Shader program ID: " + std::to_string(m_skinnedShader->GetProgramID()));
+                LOG_ERROR("PrimitiveRenderer: Shader state: " + std::to_string(static_cast<int>(m_skinnedShader->GetState())));
+                
+                // Get validation warnings to understand why it failed
+                auto warnings = m_skinnedShader->GetValidationWarnings();
+                LOG_INFO("PrimitiveRenderer: Found " + std::to_string(warnings.size()) + " validation warnings");
+                for (const auto& warning : warnings) {
+                    LOG_ERROR("PrimitiveRenderer: Shader validation warning: " + warning);
+                }
+            } else {
+                LOG_ERROR("PrimitiveRenderer: Shader object is null");
+            }
+        }
         
         // Initialize shader management state
         m_usingCustomColorShader = false;
@@ -591,6 +691,127 @@ namespace GameEngine {
 
     void PrimitiveRenderer::DrawMesh(std::shared_ptr<Mesh> mesh, const Math::Vec3& position, const Math::Quat& rotation, const Math::Vec3& scale, std::shared_ptr<Material> material) {
         DrawPrimitive(mesh, position, rotation, scale, material);
+    }
+
+    // Skinned mesh drawing methods
+    void PrimitiveRenderer::DrawSkinnedMesh(std::shared_ptr<Mesh> mesh, const Math::Vec3& position, const Math::Quat& rotation, const Math::Vec3& scale, const std::vector<Math::Mat4>& boneMatrices, const Math::Vec4& color) {
+        if (!mesh || !m_skinnedShader || !m_skinnedShader->IsValid()) {
+            LOG_WARNING("PrimitiveRenderer: Cannot draw skinned mesh - invalid mesh or shader");
+            return;
+        }
+
+        m_skinnedShader->Use();
+
+        // Set transformation matrices
+        Math::Mat4 model = Math::CreateTransform(position, rotation, scale);
+        Math::Mat4 mvp = m_viewProjectionMatrix * model;
+
+        m_skinnedShader->SetMat4("u_mvp", mvp);
+        m_skinnedShader->SetMat4("u_model", model);
+        m_skinnedShader->SetMat4("u_view", m_viewMatrix);
+        m_skinnedShader->SetMat4("u_projection", m_projectionMatrix);
+
+        // Set bone matrices (up to 64 bones)
+        int numBones = std::min(static_cast<int>(boneMatrices.size()), 64);
+        for (int i = 0; i < numBones; i++) {
+            std::string uniformName = "u_boneMatrices[" + std::to_string(i) + "]";
+            m_skinnedShader->SetMat4(uniformName, boneMatrices[i]);
+        }
+
+        // Set material properties
+        m_skinnedShader->SetVec4("u_color", color);
+        m_skinnedShader->SetBool("u_hasTexture", false);
+
+        // Apply lighting uniforms
+        ApplyLightingUniforms(m_skinnedShader);
+
+        // Render the mesh
+        mesh->Draw();
+    }
+
+    void PrimitiveRenderer::DrawSkinnedMesh(std::shared_ptr<Mesh> mesh, const Math::Vec3& position, const Math::Quat& rotation, const Math::Vec3& scale, const std::vector<Math::Mat4>& boneMatrices, std::shared_ptr<Texture> texture) {
+        if (!mesh || !m_skinnedShader || !m_skinnedShader->IsValid()) {
+            LOG_WARNING("PrimitiveRenderer: Cannot draw skinned mesh - invalid mesh or shader");
+            return;
+        }
+
+        m_skinnedShader->Use();
+
+        // Set transformation matrices
+        Math::Mat4 model = Math::CreateTransform(position, rotation, scale);
+        Math::Mat4 mvp = m_viewProjectionMatrix * model;
+
+        m_skinnedShader->SetMat4("u_mvp", mvp);
+        m_skinnedShader->SetMat4("u_model", model);
+        m_skinnedShader->SetMat4("u_view", m_viewMatrix);
+        m_skinnedShader->SetMat4("u_projection", m_projectionMatrix);
+
+        // Set bone matrices (up to 64 bones)
+        int numBones = std::min(static_cast<int>(boneMatrices.size()), 64);
+        for (int i = 0; i < numBones; i++) {
+            std::string uniformName = "u_boneMatrices[" + std::to_string(i) + "]";
+            m_skinnedShader->SetMat4(uniformName, boneMatrices[i]);
+        }
+
+        // Set material properties
+        m_skinnedShader->SetVec4("u_color", Math::Vec4(1.0f));
+        m_skinnedShader->SetBool("u_hasTexture", texture != nullptr);
+        
+        if (texture) {
+            texture->Bind(0);
+            m_skinnedShader->SetInt("u_texture", 0);
+        }
+
+        // Apply lighting uniforms
+        ApplyLightingUniforms(m_skinnedShader);
+
+        // Render the mesh
+        mesh->Draw();
+    }
+
+    void PrimitiveRenderer::DrawSkinnedMesh(std::shared_ptr<Mesh> mesh, const Math::Vec3& position, const Math::Quat& rotation, const Math::Vec3& scale, const std::vector<Math::Mat4>& boneMatrices, std::shared_ptr<Material> material) {
+        if (!mesh || !material) {
+            LOG_WARNING("PrimitiveRenderer: Cannot draw skinned mesh - invalid mesh or material");
+            return;
+        }
+
+        auto shader = material->GetShader();
+        if (!shader || !shader->IsValid()) {
+            LOG_WARNING("PrimitiveRenderer: Material has invalid shader, falling back to default skinned shader");
+            shader = m_skinnedShader;
+        }
+
+        if (!shader || !shader->IsValid()) {
+            LOG_WARNING("PrimitiveRenderer: No valid shader available for skinned mesh");
+            return;
+        }
+
+        shader->Use();
+
+        // Set transformation matrices
+        Math::Mat4 model = Math::CreateTransform(position, rotation, scale);
+        Math::Mat4 mvp = m_viewProjectionMatrix * model;
+
+        shader->SetMat4("u_mvp", mvp);
+        shader->SetMat4("u_model", model);
+        shader->SetMat4("u_view", m_viewMatrix);
+        shader->SetMat4("u_projection", m_projectionMatrix);
+
+        // Set bone matrices (up to 64 bones)
+        int numBones = std::min(static_cast<int>(boneMatrices.size()), 64);
+        for (int i = 0; i < numBones; i++) {
+            std::string uniformName = "u_boneMatrices[" + std::to_string(i) + "]";
+            shader->SetMat4(uniformName, boneMatrices[i]);
+        }
+
+        // Apply material properties
+        material->ApplyToShader(shader);
+
+        // Apply lighting uniforms
+        ApplyLightingUniforms(shader);
+
+        // Render the mesh
+        mesh->Draw();
     }
 
     // Material-aware DrawPrimitive method

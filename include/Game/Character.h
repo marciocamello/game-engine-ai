@@ -191,8 +191,11 @@ namespace GameEngine {
         // Animation asset loading (virtual methods for derived classes)
         virtual bool LoadCharacterAnimations();
         virtual void SetupCharacterAnimationStateMachine();
-        bool LoadAnimationFromFBX(const std::string& fbxPath, const std::string& animationName);
         void UpdateMovementAnimationParameters();
+
+    protected:
+        // Protected methods for derived classes
+        bool LoadAnimationFromFBX(const std::string& fbxPath, const std::string& animationName);
 
     };
 }

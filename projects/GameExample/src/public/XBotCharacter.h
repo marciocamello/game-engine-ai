@@ -21,6 +21,11 @@ namespace GameExample {
         // Character lifecycle
         bool Initialize(GameEngine::PhysicsEngine* physicsEngine = nullptr);
         void Update(float deltaTime, GameEngine::InputManager* input, class GameEngine::ThirdPersonCameraSystem* camera = nullptr);
+        void Render(GameEngine::PrimitiveRenderer* renderer);
+
+        // Movement-based animation parameter synchronization
+        void UpdateMovementAnimationParameters();
+        void SynchronizeXBotAnimationWithMovement();
 
         // XBot-specific functionality
         void SetCrouching(bool crouching);
@@ -58,6 +63,18 @@ namespace GameExample {
         std::string m_previousMovementState = "Idle";
         float m_celebrationTimer = 0.0f;
         float m_hitReactionTimer = 0.0f;
+        
+        // Movement-based animation parameters
+        float m_currentSpeed = 0.0f;
+        float m_previousSpeed = 0.0f;
+        bool m_wasGrounded = true;
+        bool m_wasJumping = false;
+        bool m_wasFalling = false;
+        
+        // Animation parameter thresholds for XBot
+        static constexpr float WALK_SPEED_THRESHOLD = 0.5f;
+        static constexpr float RUN_SPEED_THRESHOLD = 3.0f;
+        static constexpr float SPEED_CHANGE_SMOOTHING = 5.0f;
         
         // XBot-specific animation names (matching FBX files)
         static constexpr const char* ANIM_IDLE = "Idle";

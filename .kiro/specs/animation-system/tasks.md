@@ -1,326 +1,175 @@
-# Implementation Plan - Animation System
+# Implementation Plan - Enhanced Animation System
+
+## CRITICAL PRIORITY: Fix Animation Mesh Rendering
+
+- [ ] 1. Debug and fix animation mesh rendering issues
+
+  - Debug bone matrix calculation during Idle animation playback
+  - Verify skinning matrices are being generated correctly for animated poses
+  - Check if bone transforms are being applied properly to mesh vertices
+  - Compare T-Pose bone matrices vs Idle animation bone matrices
+  - Identify where the rendering pipeline breaks during animation
+  - _Requirements: 1.4, 1.5, 9.1_
+
+- [ ] 1.1 Investigate why T-Pose works but Idle animation doesn't render correctly
+
+  - Debug bone matrix calculation during Idle animation playback
+  - Verify skinning matrices are being generated correctly for animated poses
+  - Check if bone transforms are being applied properly to mesh vertices
+  - Compare T-Pose bone matrices vs Idle animation bone matrices
+  - Identify where the rendering pipeline breaks during animation
+  - _Requirements: 1.4, 1.5, 9.1_
+
+- [ ] 1.2 Fix bone transform calculation and skinning matrix generation for animations
+
+  - Ensure AnimationController properly updates skeleton bone transforms
+  - Fix skinning matrix computation to work correctly with animated bone poses
+  - Verify bone hierarchy transforms are calculated correctly during animation
+  - Test that bone matrices are uploaded to GPU correctly for animated meshes
+  - Validate that vertex skinning works properly with animated bone data
+  - _Requirements: 1.4, 1.5, 1.6_
+
+- [ ] 2. Fix animation sampling and pose evaluation
+
+  - Verify Idle animation keyframes are loaded correctly from FBX/GLTF
+  - Check that keyframe interpolation produces valid bone transforms
+  - Ensure animation time progression works correctly
+  - Debug pose evaluation to confirm bone transforms are calculated properly
+  - Test that sampled poses produce visible mesh deformation
+  - _Requirements: 1.2, 1.3, 2.1_
+
+- [ ] 2.1 Debug animation keyframe sampling for Idle animation
+
+  - Verify Idle animation keyframes are loaded correctly from FBX/GLTF
+  - Check that keyframe interpolation produces valid bone transforms
+  - Ensure animation time progression works correctly
+  - Debug pose evaluation to confirm bone transforms are calculated properly
+  - Test that sampled poses produce visible mesh deformation
+  - _Requirements: 1.2, 1.3, 2.1_
 
-- [x] 1. Implement core Skeleton system with bone hierarchy
+- [ ] 2.2 Fix AnimationController integration with rendering pipeline
+
+  - Ensure AnimationController properly updates skeleton during animation playback
+  - Fix bone matrix upload to GPU for animated characters
+  - Verify that animated bone matrices reach the vertex shader correctly
+  - Test that mesh rendering uses animated bone data instead of bind pose
+  - Confirm that animation updates are synchronized with rendering
+  - _Requirements: 1.5, 9.1, 9.2_
+
+- [ ] 3. Verify and fix core animation data structures
+
+  - Verify that Idle.fbx animation data is loaded correctly by ModelLoader
+  - Check that bone names in animation match skeleton bone names exactly
+  - Ensure keyframe data contains valid position, rotation, and scale values
+  - Validate that animation duration and timing information is correct
+  - Test that animation tracks map correctly to skeleton bones
+  - _Requirements: 1.2, 1.3, 8.1_
 
-  - [x] 1.1 Create Skeleton class with bone management
+- [ ] 3.1 Validate animation loading and keyframe data integrity
 
-    - Implement Skeleton class with hierarchical bone structure support
-    - Add bone creation with parent-child relationships and bind poses
-    - Create bone indexing system with name-based and index-based lookup
-    - _Requirements: 1.1, 1.4, 8.2_
+  - Verify that Idle.fbx animation data is loaded correctly by ModelLoader
+  - Check that bone names in animation match skeleton bone names exactly
+  - Ensure keyframe data contains valid position, rotation, and scale values
+  - Validate that animation duration and timing information is correct
+  - Test that animation tracks map correctly to skeleton bones
+  - _Requirements: 1.2, 1.3, 8.1_
 
-  - [x] 1.2 Add bone transform calculation and skinning matrix generation
+- [ ] 3.2 Fix animation-to-skeleton bone mapping
 
-    - Implement world transform calculation for bone hierarchy
-    - Add skinning matrix computation with inverse bind pose multiplication
-    - Create efficient bone transform update algorithms
-    - _Requirements: 1.4, 1.5, 9.2_
+  - Ensure animation bone indices match skeleton bone indices exactly
+  - Fix any bone name mismatches between animation and skeleton data
+  - Verify that bone hierarchy is consistent between animation and skeleton
+  - Test that all animated bones have corresponding skeleton bones
+  - Validate that bone remapping works correctly for complex hierarchies
+  - _Requirements: 1.1, 1.4, 8.2_
 
-- [x] 2. Create Animation class with keyframe data management
+- [ ] 4. Fix GPU skinning and shader integration
 
-  - [x] 2.1 Implement Animation class with track-based keyframe storage
+  - [ ] 4.1 Debug vertex skinning in shaders
 
-    - Create Animation class with bone track management
-    - Add keyframe structures for position, rotation, and scale
-    - Implement keyframe interpolation with multiple interpolation types
-    - _Requirements: 1.2, 1.3, 7.1_
+    - Verify that bone matrices are uploaded to GPU correctly as UBO/SSBO
+    - Check that vertex shader receives correct bone indices and weights
+    - Ensure bone matrix multiplication in vertex shader produces correct positions
+    - Test that skinned vertex positions are calculated correctly
+    - Debug any issues with bone matrix format or layout in shaders
+    - _Requirements: 1.5, 9.2, 9.7_
 
-  - [x] 2.2 Add animation sampling and pose evaluation
+  - [ ] 4.2 Fix mesh rendering pipeline for animated characters
 
-    - Implement bone transform sampling at specific time points
-    - Add pose evaluation with complete skeleton pose generation
-    - Create animation looping and end behavior handling
-    - _Requirements: 1.3, 1.6, 1.7_
+    - Ensure animated meshes use the correct skinned vertex shader
+    - Verify that bone data is bound correctly before rendering animated meshes
+    - Fix any issues with vertex attribute setup for bone indices and weights
+    - Test that animated mesh rendering produces visible character deformation
+    - Validate that animation updates are reflected in rendered output
+    - _Requirements: 1.5, 9.1, 9.2_
 
-- [x] 3. Build AnimationController with parameter system
+- [ ] 5. Test and validate animation rendering with XBot character
 
-  - [x] 3.1 Create AnimationController class
+  - [ ] 5.1 Create comprehensive animation rendering test
 
-    - Implement AnimationController with skeleton binding
-    - Add parameter system for float, int, bool, and trigger parameters
-    - Create animation playback control with play, stop, and pause
-    - _Requirements: 2.7, 9.1, 10.3_
+    - Test XBot character with T-Pose to confirm baseline rendering works
+    - Test XBot character with Idle animation to identify specific rendering issues
+    - Compare bone matrices between T-Pose and Idle animation states
+    - Verify that all XBot animations (Walk, Run, Jump) render correctly
+    - Create visual validation test to ensure animations look correct
+    - _Requirements: 8.3, 1.5, 10.1_
 
-  - [x] 3.2 Add animation blending and evaluation system
+  - [ ] 5.2 Fix any remaining animation rendering issues
 
-    - Implement multi-animation blending with weight management
-    - Add pose blending algorithms with quaternion slerp
-    - Create final pose evaluation and bone matrix generation
-    - _Requirements: 3.1, 3.4, 3.5_
+    - Address any bone weight or vertex skinning problems discovered in testing
+    - Fix animation timing or interpolation issues that affect visual quality
+    - Ensure smooth animation playback without visual artifacts
+    - Validate that animation events and state changes work correctly
+    - Test animation blending and transitions produce smooth visual results
+    - _Requirements: 1.6, 1.7, 3.1_
 
-- [x] 4. Implement AnimationStateMachine system
+- [ ] 6. Implement enhanced animation system features (after rendering is fixed)
 
-  - [x] 4.1 Create AnimationStateMachine and AnimationState classes
+  - [ ] 6.1 Add offline asset pipeline for optimized animation loading
 
-    - Implement state machine with state management and transitions
-    - Add AnimationState class with single animation, blend tree, and sub-state machine support
-    - Create state entry, update, and exit callback system
-    - _Requirements: 2.1, 2.2, 2.4_
+    - Create command-line converter tool that processes FBX/GLTF using Assimp
+    - Implement binary format generation for .skeleton, .mesh, and .anim files
+    - Add coordinate system normalization and bone hierarchy optimization
+    - Test that converted binary formats load faster than original model files
+    - _Requirements: 11.1, 11.2, 11.3_
 
-  - [x] 4.2 Build transition system with condition evaluation
+  - [ ] 6.2 Implement performance optimizations for animation processing
 
-    - Implement AnimationTransition class with condition-based triggering
-    - Add transition condition evaluation with parameter comparison
-    - Create smooth state transitions with configurable blend times
-    - _Requirements: 2.2, 2.3, 2.5_
+    - Add cache-friendly data structures for bone transforms and animation data
+    - Implement SIMD-optimized animation blending and interpolation
+    - Create memory pooling system to avoid runtime allocations
+    - Add animation LOD system for distant or less important characters
+    - _Requirements: 12.1, 12.2, 12.3, 12.6_
 
-- [x] 5. Create BlendTree system for animation blending
+- [ ] 7. Optional ozz-animation integration (after core rendering is working)
 
-  - [x] 5.1 Implement BlendTree class with 1D and 2D blending
+  - [ ] 7.1 Implement ozz-animation integration layer
 
-    - Create BlendTree class with multiple blend tree types
-    - Add 1D blend tree for simple parameter-based blending
-    - Implement 2D blend trees for directional and cartesian blending
-    - _Requirements: 3.2, 3.3, 3.6_
+    - Create conversion utilities from our binary formats to ozz::Animation and ozz::Skeleton
+    - Implement ozz-based sampling and blending while maintaining our AnimationController interface
+    - Add fallback mechanisms when ozz-animation is not available
+    - Test that ozz integration provides performance improvements without breaking existing workflows
+    - _Requirements: 13.1, 13.2, 13.6_
 
-  - [x] 5.2 Add blend tree evaluation and weight calculation
+  - [ ] 7.2 Add advanced compression and streaming features
 
-    - Implement blend weight calculation algorithms for different blend tree types
-    - Add animation sampling and blending from multiple input animations
-    - Create blend tree validation and error checking
-    - _Requirements: 3.4, 3.5, 3.7_
+    - Implement intelligent asset management with on-demand loading and unloading
+    - Add LRU caching for frequently accessed animations
+    - Create background loading system to prevent gameplay interruptions
+    - Test that large animation libraries are handled efficiently
+    - _Requirements: 14.1, 14.2, 14.4, 14.7_
 
-- [x] 6. Implement Inverse Kinematics (IK) system
+## CRITICAL SUCCESS CRITERIA
 
-  - [x] 6.1 Create IKSolver base class and TwoBoneIK implementation
+**Before moving to advanced features, these MUST work:**
 
-    - Implement IKSolver base class with common IK functionality
-    - Add TwoBoneIK solver for arm and leg IK chains
-    - Create IK target setting and constraint management
-    - _Requirements: 4.1, 4.2, 4.4_
+1. XBot character renders correctly in T-Pose ✓ (already working)
+2. XBot character renders correctly during Idle animation (CRITICAL FIX NEEDED)
+3. All XBot animations (Walk, Run, Jump, etc.) render with proper mesh deformation
+4. Animation transitions are smooth and visually correct
+5. No visual artifacts or mesh corruption during animation playback
 
-  - [x] 6.2 Add FABRIK IK solver and constraint system
-
-    - Implement FABRIK (Forward and Backward Reaching IK) solver
-    - Add joint angle constraints and bone length validation
-    - Create IK/FK blending for smooth transitions
-    - _Requirements: 4.3, 4.5, 4.7_
-
-- [x] 7. Create MorphTarget system for facial animation
-
-  - [x] 7.1 Implement MorphTarget class with vertex delta storage
-
-    - Create MorphTarget class with vertex position, normal, and tangent deltas
-    - Add morph target weight management and animation
-    - Implement morph target application to mesh vertices
-    - _Requirements: 5.1, 5.2, 5.3_
-
-  - [x] 7.2 Build MorphTargetController for weight management
-
-    - Implement MorphTargetController with multiple morph target management
-    - Add morph target weight animation with keyframe interpolation
-    - Create morph target blending with additive and override modes
-    - _Requirements: 5.4, 5.5, 5.6_
-
-- [x] 8. Add animation event system
-
-  - [x] 8.1 Create AnimationEvent structure and event management
-
-    - Implement AnimationEvent structure with time and parameter data
-    - Add event registration and callback system to animations
-    - Create event triggering during animation playback
-    - _Requirements: 6.1, 6.2, 6.4_
-
-  - [x] 8.2 Implement event handling and debugging
-
-    - Add event callback registration and parameter passing
-    - Implement event history and debugging information
-    - Create event handling for non-linear playback and scrubbing
-    - _Requirements: 6.3, 6.5, 6.7_
-
-- [x] 9. Create animation compression and optimization
-
-  - [x] 9.1 Implement keyframe optimization and compression
-
-    - Add keyframe reduction algorithms with configurable tolerance
-    - Implement animation curve compression for memory efficiency
-    - Create redundant keyframe removal and optimization
-    - _Requirements: 7.1, 7.2, 7.4_
-
-  - [x] 9.2 Add animation streaming and memory management
-
-    - Implement animation data streaming for large animation sets
-    - Add animation unloading and memory management
-    - Create animation data sharing and optimization
-    - _Requirements: 7.5, 7.6, 9.6_
-
-- [x] 10. Integrate with 3D model loading system
-
-  - [x] 10.1 Add animation import from model files
-
-    - Integrate animation loading with ModelLoader for automatic import
-    - Add skeleton creation from model bone hierarchy
-    - Implement animation track mapping to skeleton bones
-    - _Requirements: 8.1, 8.2, 8.3_
-
-  - [x] 10.2 Handle animation data validation and conversion
-
-    - Add animation data validation and error correction
-    - Implement coordinate system conversion for imported animations
-    - Create animation metadata preservation and property mapping
-    - _Requirements: 8.4, 8.5, 8.7_
-
-- [x] 11. Implement performance optimization features
-
-  - [x] 11.1 Add animation LOD and culling system
-
-    - Implement animation level-of-detail for distant characters
-    - Add animation culling for off-screen characters
-    - Create performance scaling based on system capabilities
-    - _Requirements: 9.4, 9.1, 9.5_
-
-  - [x] 11.2 Create multi-threading and GPU acceleration support
-
-    - Add multi-threaded animation updates for multiple characters
-    - Implement GPU-accelerated skinning with compute shaders
-    - Create efficient memory allocation and pooling
-    - _Requirements: 9.6, 9.7, 9.5_
-
-- [x] 12. Build development and debugging tools
-
-  - [x] 12.1 Create animation debugging visualization
-
-    - Implement bone hierarchy visualization with debug rendering
-    - Add animation state machine debugging with current state display
-    - Create IK chain visualization and target display
-    - _Requirements: 10.1, 10.3, 10.6_
-
-  - [x] 12.2 Add performance profiling and analysis tools
-
-    - Implement animation performance timing and profiling
-    - Add memory usage analysis for animation data
-    - Create animation validation and issue detection tools
-    - _Requirements: 10.2, 10.5, 10.4_
-
-- [x] 13. Create comprehensive testing suite
-
-  - [x] 13.1 Implement unit tests for animation components
-
-    - Create tests for Skeleton bone hierarchy and transform calculations
-    - Add tests for Animation keyframe sampling and interpolation
-    - Implement tests for BlendTree weight calculation and evaluation
-    - _Requirements: 1.1, 1.3, 3.2_
-
-  - [x] 13.2 Add integration tests for animation system
-
-    - Create tests for AnimationController with state machine integration
-    - Add tests for IK solver accuracy and constraint handling
-    - Implement tests for morph target application and blending
-    - _Requirements: 2.1, 4.2, 5.1_
-
-- [x] 14. Implement animation serialization and asset pipeline
-
-  - [x] 14.1 Add animation data serialization
-
-    - Implement animation serialization for caching and storage
-    - Add state machine and blend tree serialization
-    - Create animation asset pipeline integration
-    - _Requirements: 7.3, 8.6, 8.7_
-
-  - [x] 14.2 Create animation hot-reloading and development workflow
-
-    - Add animation hot-reloading for development iteration
-    - Implement animation asset watching and automatic reloading
-    - Create animation validation and optimization tools
-    - _Requirements: 10.6, 7.7, 10.4_
-
-- [ ] 15. Modular Character Animation System
-
-  - [x] 15.1 Refactor Character class for modular animation
-
-    - Remove specific animation asset loading from base Character class
-    - Create generic animation interface in base Character
-    - Provide virtual methods for animation initialization and updates
-    - Ensure base Character remains asset-agnostic
-    - _Requirements: 8.1, 8.2, 8.5_
-
-  - [x] 15.2 Create XBotCharacter in GameExample project
-
-    - Create XBotCharacter class extending base Character in projects/GameExample/src/
-    - Implement XBot-specific animation asset loading from projects/GameExample/assets/
-    - Create XBot-specific animation state machine with Idle-to-Walk transitions
-    - Implement smooth blending between idle and walking animations
-    - Update projects/GameExample/src/main.cpp to use XBotCharacter
-    - _Requirements: 8.2, 8.3, 8.8, 2.1, 2.2, 2.3, 3.1_
-
-  - [ ] 15.3 Implement XBot movement-based animation parameters
-
-    - Synchronize XBot animation parameters with character movement state
-    - Implement speed-based animation blending for XBot character
-    - Add ground detection for XBot animation state changes
-    - Create parameter mapping for different XBot movement types
-    - _Requirements: 8.3, 2.2, 2.5_
-
-  - [ ] 15.4 Add XBot running animation with blend tree system
-
-    - Load Running.fbx animation for XBot high-speed movement
-    - Create 1D blend tree for XBot Idle -> Walk -> Run based on speed parameter
-    - Implement speed-based animation blending with smooth transitions for XBot
-    - Configure blend thresholds for natural XBot movement animation
-    - _Requirements: 8.3, 3.2, 3.3, 3.6, 2.5_
-
-  - [ ] 15.5 Implement XBot jump animation with state machine
-
-    - Load Jump.fbx animation for XBot jump movement
-    - Create XBot jump state with entry/exit conditions based on character physics
-    - Implement XBot jump animation timing synchronization with physics
-    - Add smooth transitions from any XBot movement state to jump and back
-    - _Requirements: 8.3, 2.1, 2.4, 6.1, 6.4_
-
-  - [ ] 15.6 Implement damage and death animations
-
-    - Load Hit.fbx and Dying.fbx animations for damage system
-    - Create damage response state with hit reaction animations
-    - Implement death state with proper animation sequencing
-    - Add animation events for damage effects and game state changes
-    - _Requirements: 2.1, 6.1, 6.2, 1.7_
-
-  - [ ] 15.7 Add celebration and turn animations
-
-    - Load Celebrate.fbx, Left Turn.fbx, and Right Turn.fbx animations
-    - Implement celebration state for achievement/victory scenarios
-    - Create directional turning animations for smooth character rotation
-    - Add input-based triggers for celebration and turning animations
-    - _Requirements: 2.1, 2.4, 6.1, 3.1_
-
-  - [ ] 15.8 Implement crouched movement animation
-
-    - Load Crouched Walking.fbx animation for stealth/crouch mechanics
-    - Create crouch state machine with crouch movement blending
-    - Implement crouch toggle input with smooth state transitions
-    - Add crouch movement speed modulation and animation synchronization
-    - _Requirements: 2.1, 2.3, 3.1, 3.4_
-
-  - [ ] 15.9 Create comprehensive GameExample animation demonstration
-
-    - Update GameExample to showcase all Xbot animations
-    - Implement keyboard controls for testing each animation state
-    - Create animation state display UI for debugging and demonstration
-    - Add animation parameter visualization and real-time control
-    - _Requirements: 10.1, 10.3, 10.6, 2.7_
-
-  - [ ] 15.10 Create animation system documentation and workflow guide
-
-    - Document complete animation integration workflow for developers
-    - Create step-by-step guide for adding new character animations
-    - Document animation state machine configuration and best practices
-    - Provide examples of animation parameter setup and event handling
-    - _Requirements: 10.4, 10.7, 8.7, 6.7_
-
-  - [ ] 15.11 Implement performance optimization and testing
-
-    - Run comprehensive integration tests with graphics and physics systems
-    - Validate animation performance with multiple animated characters
-    - Test memory usage and optimization under various animation scenarios
-    - Implement animation LOD system for performance scaling
-    - _Requirements: 9.1, 9.3, 9.4, 11.1_
-
-  - [ ] 15.12 Final validation and quality assurance
-    - Verify animation quality and visual correctness across all Xbot animations
-    - Test animation synchronization with physics and movement systems
-    - Validate animation event system with sound effects and game logic
-    - Ensure modular design allows easy addition of new characters and animations
-    - _Requirements: 10.7, 1.5, 6.3, 8.4_
+**The first 5 tasks are BLOCKING - nothing else matters until animation rendering works perfectly.**
 
 ## Build and Development Notes
 
@@ -330,3 +179,70 @@
 - Use `.\scripts\build_unified.bat --clean-tests --tests` to build project and clean tests
 - Use `.\scripts\build_unified.bat --tests TestName` to build single test
 - Use `.\scripts\build_unified.bat --project GameExample` to build single project
+
+---
+
+## 🔍 **PROBLEMA CRÍTICO IDENTIFICADO** (Sessão Atual)
+
+### **Shader Skinned Falhando na Compilação**
+
+**Status**: ❌ **BLOQUEADOR** - Sistema de animação não funciona
+
+**Logs de Erro**:
+
+```
+[ERROR] PrimitiveRenderer: Failed to create skinned shader
+[ERROR] PrimitiveRenderer: Shader object exists but is not valid
+[ERROR] PrimitiveRenderer: Shader program ID: 12
+[ERROR] PrimitiveRenderer: Shader state: 0
+[INFO] PrimitiveRenderer: Found 0 validation warnings
+```
+
+**Problemas Identificados**:
+
+1. **ShaderValidator Missing**:
+
+   - Classe `ShaderValidator` referenciada mas não implementada
+   - `GetValidationWarnings()` não retorna erros reais
+   - Sistema de validação de shaders não funcional
+
+2. **Shader Compilation Failure**:
+
+   - Shader `primitive_skinned` inline no PrimitiveRenderer.cpp falha
+   - Sem mensagens de erro detalhadas
+   - Possível problema de sintaxe ou uniforms
+
+3. **Error Reporting Broken**:
+   - Logs não mostram detalhes do erro de compilação
+   - Debugging dificultado pela falta de informações
+
+### **Soluções Necessárias**:
+
+**PRIORIDADE 1**: Implementar ShaderValidator
+
+- [ ] Criar classe ShaderValidator com métodos de validação
+- [ ] Implementar captura de logs de compilação OpenGL
+- [ ] Integrar com sistema de error reporting
+
+**PRIORIDADE 2**: Corrigir Shader Skinned
+
+- [ ] Analisar shader inline no PrimitiveRenderer.cpp
+- [ ] Testar com shader simplificado (test_skinned.vert/frag criados)
+- [ ] Validar sintaxe e uniforms
+
+**PRIORIDADE 3**: Melhorar Error Reporting
+
+- [ ] Capturar glGetShaderInfoLog para erros detalhados
+- [ ] Implementar logging estruturado de erros de shader
+- [ ] Adicionar debugging visual para shaders
+
+### **Arquivos Criados para Teste**:
+
+- `assets/shaders/test_skinned.vert` - Shader vertex simplificado
+- `assets/shaders/test_skinned.frag` - Shader fragment simplificado
+
+### **Próximos Passos**:
+
+1. Implementar ShaderValidator para obter erros detalhados
+2. Testar shader simplificado para isolar o problema
+3. Corrigir shader skinned baseado nos erros encontrados

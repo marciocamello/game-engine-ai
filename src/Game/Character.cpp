@@ -89,12 +89,26 @@ namespace GameEngine {
             // The offset is applied in world space for simplicity
             Math::Vec3 offsetPosition = basePosition + m_modelOffset;
             
+            // Get bone matrices for skinning if animation system is available
+            std::vector<Math::Mat4> boneMatrices;
+            if (m_animationSystemInitialized && m_animationController) {
+                m_animationController->Evaluate(boneMatrices);
+                LOG_DEBUG("Evaluated " + std::to_string(boneMatrices.size()) + " bone matrices for skinning");
+            }
+            
             // Render all meshes from the FBX model
             auto meshes = m_fbxModel->GetMeshes();
             for (const auto& mesh : meshes) {
                 if (mesh) {
-                    // Use the movement type color for the FBX model with rotation and offset
-                    renderer->DrawMesh(mesh, offsetPosition, rotation, scale, currentColor);
+                    // Use skinned rendering if bone matrices are available
+                    if (!boneMatrices.empty()) {
+                        renderer->DrawSkinnedMesh(mesh, offsetPosition, rotation, scale, boneMatrices, currentColor);
+                        LOG_DEBUG("Rendered skinned mesh with " + std::to_string(boneMatrices.size()) + " bone matrices");
+                    } else {
+                        // Fallback to regular mesh rendering
+                        renderer->DrawMesh(mesh, offsetPosition, rotation, scale, currentColor);
+                        LOG_DEBUG("Rendered mesh without skinning (no bone matrices available)");
+                    }
                 }
             }
             

@@ -1,6 +1,12 @@
 #include "../public/XBotCharacter.h"
 #include "Core/Logger.h"
+#include "Animation/AnimationController.h"
+#include "Animation/AnimationImporter.h"
+#include "Graphics/PrimitiveRenderer.h"
 #include <GLFW/glfw3.h>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <algorithm>
 
 namespace GameExample {
 
@@ -45,33 +51,103 @@ namespace GameExample {
             m_hitReactionTimer -= deltaTime;
         }
 
-        // XBot-specific input handling will be implemented later
-        // For now, just log that we're updating XBot character
-        if (input) {
-            // Placeholder for XBot-specific input handling
-            LOG_INFO("XBot character input handling - placeholder");
-        }
+        // Update movement-based animation parameters
+        UpdateMovementAnimationParameters();
+
+        // Synchronize XBot-specific animation parameters with movement
+        SynchronizeXBotAnimationWithMovement();
     }
 
     bool XBotCharacter::LoadCharacterAnimations() {
         LOG_INFO("Loading XBot character animations");
 
-        // For now, just log that we're loading XBot-specific animations
-        // The actual animation loading will be implemented when the animation system is complete
-        LOG_INFO("XBot animation loading - placeholder implementation");
-        LOG_INFO("Will load animations from: " + GetXBotAnimationPath("Idle"));
-        LOG_INFO("Will load animations from: " + GetXBotAnimationPath("Walking"));
+        auto* controller = GetAnimationController();
+        if (!controller) {
+            LOG_ERROR("No animation controller available for XBot");
+            return false;
+        }
 
-        return true;
+        // Get the skeleton from the controller
+        auto skeleton = controller->GetSkeleton();
+        if (!skeleton) {
+            LOG_ERROR("No skeleton available in animation controller for XBot");
+            return false;
+        }
+
+        // Load essential XBot animations using the base Character method
+        std::vector<std::string> animationsToLoad = {
+            ANIM_IDLE,
+            ANIM_WALK,
+            ANIM_RUN,
+            ANIM_JUMP,
+            ANIM_CELEBRATE,
+            ANIM_HIT,
+            ANIM_DEATH,
+            ANIM_LEFT_TURN,
+            ANIM_RIGHT_TURN,
+            ANIM_CROUCH_WALK
+        };
+
+        int loadedCount = 0;
+        
+        // Load each animation file using the base Character method
+        for (const std::string& animName : animationsToLoad) {
+            std::string animPath = GetXBotAnimationPath(animName);
+            LOG_INFO("Loading XBot animation: " + animName + " from " + animPath);
+            
+            if (LoadAnimationFromFBX(animPath, animName)) {
+                loadedCount++;
+                LOG_INFO("Successfully loaded XBot animation: " + animName);
+            } else {
+                LOG_WARNING("Failed to load XBot animation: " + animName + " from " + animPath);
+            }
+        }
+
+        LOG_INFO("XBot animation loading complete: " + std::to_string(loadedCount) + "/" + 
+                std::to_string(animationsToLoad.size()) + " animations loaded");
+
+        return loadedCount > 0; // Return true if at least some animations were loaded
     }
 
     void XBotCharacter::SetupCharacterAnimationStateMachine() {
         LOG_INFO("Setting up XBot animation state machine");
 
-        // For now, just log that we're setting up XBot-specific state machine
-        // The actual state machine setup will be implemented when the animation system is complete
-        LOG_INFO("XBot state machine setup - placeholder implementation");
-        LOG_INFO("Will create states for: Idle, Walk, Run, Jump, etc.");
+        auto* controller = GetAnimationController();
+        if (!controller) {
+            LOG_ERROR("No animation controller available for XBot state machine setup");
+            return;
+        }
+
+        // Create a simple state machine for XBot
+        // For now, we'll use the controller's parameter system to manage states
+        // A full state machine implementation would create AnimationStateMachine objects
+
+        // Set up basic animation parameters for XBot
+        controller->SetFloat("Speed", 0.0f);
+        controller->SetBool("IsGrounded", true);
+        controller->SetBool("IsJumping", false);
+        controller->SetBool("IsFalling", false);
+        controller->SetBool("IsIdle", true);
+        controller->SetBool("IsWalking", false);
+        controller->SetBool("IsRunning", false);
+        controller->SetBool("IsCrouching", false);
+        controller->SetBool("IsInCombat", false);
+        controller->SetBool("IsDead", false);
+
+        // Set normalized speed for blend trees
+        controller->SetFloat("NormalizedSpeed", 0.0f);
+        
+        // Set directional parameters
+        controller->SetFloat("ForwardDot", 1.0f);
+        controller->SetFloat("RightDot", 0.0f);
+
+        // Start with idle animation if available
+        try {
+            controller->Play(ANIM_IDLE, 0.0f);
+            LOG_INFO("Started XBot idle animation");
+        } catch (const std::exception& e) {
+            LOG_WARNING("Could not start idle animation: " + std::string(e.what()));
+        }
 
         LOG_INFO("XBot animation state machine setup complete");
     }
@@ -154,6 +230,137 @@ namespace GameExample {
 
     void XBotCharacter::TriggerRightTurn() {
         LOG_INFO("XBot right turn triggered");
+    }
+
+    void XBotCharacter::UpdateMovementAnimationParameters() {
+        auto* movementComponent = GetMovementComponent();
+        if (!movementComponent) {
+            return;
+        }
+
+        // Get current movement state
+        glm::vec3 velocity = movementComponent->GetVelocity();
+        float horizontalSpeed = glm::length(glm::vec3(velocity.x, 0.0f, velocity.z));
+        bool isGrounded = movementComponent->IsGrounded();
+        bool isJumping = movementComponent->IsJumping();
+        bool isFalling = !isGrounded && velocity.y < -0.1f;
+
+        // Smooth speed changes to avoid animation jitter
+        float targetSpeed = horizontalSpeed;
+        m_currentSpeed = glm::mix(m_currentSpeed, targetSpeed, SPEED_CHANGE_SMOOTHING * 0.016f); // Assuming ~60 FPS
+
+        // Store previous state for change detection
+        m_previousSpeed = m_currentSpeed;
+        m_wasGrounded = isGrounded;
+        m_wasJumping = isJumping;
+        m_wasFalling = isFalling;
+    }
+
+    void XBotCharacter::SynchronizeXBotAnimationWithMovement() {
+        auto* controller = GetAnimationController();
+        if (!controller) {
+            return;
+        }
+
+        auto* movementComponent = GetMovementComponent();
+        if (!movementComponent) {
+            return;
+        }
+
+        // Get current movement state
+        glm::vec3 velocity = movementComponent->GetVelocity();
+        bool isGrounded = movementComponent->IsGrounded();
+        bool isJumping = movementComponent->IsJumping();
+        bool isFalling = !isGrounded && velocity.y < -0.1f;
+
+        // Set basic movement parameters
+        controller->SetFloat("Speed", m_currentSpeed);
+        controller->SetBool("IsGrounded", isGrounded);
+        controller->SetBool("IsJumping", isJumping);
+        controller->SetBool("IsFalling", isFalling);
+
+        // Set XBot-specific movement type parameters
+        bool isIdle = m_currentSpeed < 0.1f && isGrounded;
+        bool isWalking = m_currentSpeed >= WALK_SPEED_THRESHOLD && m_currentSpeed < RUN_SPEED_THRESHOLD && isGrounded;
+        bool isRunning = m_currentSpeed >= RUN_SPEED_THRESHOLD && isGrounded;
+
+        controller->SetBool("IsIdle", isIdle);
+        controller->SetBool("IsWalking", isWalking);
+        controller->SetBool("IsRunning", isRunning);
+
+        // Set XBot-specific state parameters
+        controller->SetBool("IsCrouching", m_isCrouching);
+        controller->SetBool("IsInCombat", m_isInCombat);
+        controller->SetBool("IsDead", m_isDead);
+
+        // Ground detection for animation state changes
+        if (!m_wasGrounded && isGrounded) {
+            // Just landed
+            controller->SetTrigger("OnLanded");
+            LOG_DEBUG("XBot landed - triggering OnLanded event");
+        }
+
+        if (m_wasGrounded && !isGrounded) {
+            // Just left ground
+            controller->SetTrigger("OnLeftGround");
+            LOG_DEBUG("XBot left ground - triggering OnLeftGround event");
+        }
+
+        // Speed-based state change detection
+        std::string newMovementState = "Idle";
+        if (isJumping) {
+            newMovementState = "Jump";
+        } else if (isFalling) {
+            newMovementState = "Fall";
+        } else if (m_isCrouching && isWalking) {
+            newMovementState = "CrouchWalk";
+        } else if (isRunning) {
+            newMovementState = "Run";
+        } else if (isWalking) {
+            newMovementState = "Walk";
+        }
+
+        // Log state changes for debugging
+        if (newMovementState != m_previousMovementState) {
+            LOG_DEBUG("XBot movement state changed from " + m_previousMovementState + " to " + newMovementState + 
+                     " (Speed: " + std::to_string(m_currentSpeed) + ")");
+            m_previousMovementState = newMovementState;
+        }
+
+        // Set normalized speed parameter for blend trees (0-1 range)
+        float normalizedSpeed = 0.0f;
+        if (m_currentSpeed > 0.1f) {
+            // Map speed to 0-1 range: 0 = idle, 0.5 = walk threshold, 1.0 = run threshold
+            normalizedSpeed = glm::clamp(m_currentSpeed / RUN_SPEED_THRESHOLD, 0.0f, 1.0f);
+        }
+        controller->SetFloat("NormalizedSpeed", normalizedSpeed);
+
+        // Set directional movement parameters for turning animations
+        glm::vec3 forward = glm::vec3(0.0f, 0.0f, 1.0f); // Character forward direction
+        glm::vec3 velocityDirection = glm::normalize(glm::vec3(velocity.x, 0.0f, velocity.z));
+        
+        if (glm::length(velocityDirection) > 0.1f) {
+            float dotProduct = glm::dot(forward, velocityDirection);
+            float crossProduct = glm::cross(forward, velocityDirection).y;
+            
+            controller->SetFloat("ForwardDot", dotProduct);
+            controller->SetFloat("RightDot", crossProduct);
+            
+            // Trigger turn animations based on direction change
+            if (crossProduct > 0.7f && m_currentSpeed > WALK_SPEED_THRESHOLD) {
+                controller->SetTrigger("TurnRight");
+            } else if (crossProduct < -0.7f && m_currentSpeed > WALK_SPEED_THRESHOLD) {
+                controller->SetTrigger("TurnLeft");
+            }
+        } else {
+            controller->SetFloat("ForwardDot", 1.0f);
+            controller->SetFloat("RightDot", 0.0f);
+        }
+    }
+
+    void XBotCharacter::Render(GameEngine::PrimitiveRenderer* renderer) {
+        // Use the base Character render method which handles FBX models and animation
+        Character::Render(renderer);
     }
 
 } // namespace GameExample

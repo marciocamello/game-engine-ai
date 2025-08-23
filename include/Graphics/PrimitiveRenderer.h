@@ -49,6 +49,11 @@ namespace GameEngine {
         // Render loaded meshes with rotation
         void DrawMesh(std::shared_ptr<Mesh> mesh, const Math::Vec3& position, const Math::Quat& rotation, const Math::Vec3& scale = Math::Vec3(1.0f), const Math::Vec4& color = Math::Vec4(1.0f));
         void DrawMesh(std::shared_ptr<Mesh> mesh, const Math::Vec3& position, const Math::Quat& rotation, const Math::Vec3& scale, std::shared_ptr<Texture> texture);
+        
+        // Render loaded meshes with skinning support
+        void DrawSkinnedMesh(std::shared_ptr<Mesh> mesh, const Math::Vec3& position, const Math::Quat& rotation, const Math::Vec3& scale, const std::vector<Math::Mat4>& boneMatrices, const Math::Vec4& color = Math::Vec4(1.0f));
+        void DrawSkinnedMesh(std::shared_ptr<Mesh> mesh, const Math::Vec3& position, const Math::Quat& rotation, const Math::Vec3& scale, const std::vector<Math::Mat4>& boneMatrices, std::shared_ptr<Texture> texture);
+        void DrawSkinnedMesh(std::shared_ptr<Mesh> mesh, const Math::Vec3& position, const Math::Quat& rotation, const Math::Vec3& scale, const std::vector<Math::Mat4>& boneMatrices, std::shared_ptr<Material> material);
 
         // Material-aware rendering methods
         void DrawCube(const Math::Vec3& position, const Math::Vec3& scale, std::shared_ptr<Material> material);
@@ -97,6 +102,7 @@ namespace GameEngine {
 
         std::shared_ptr<Shader> m_colorShader;
         std::shared_ptr<Shader> m_texturedShader;
+        std::shared_ptr<Shader> m_skinnedShader;
         std::shared_ptr<Mesh> m_cubeMesh;
         std::shared_ptr<Mesh> m_sphereMesh;
         std::shared_ptr<Mesh> m_capsuleMesh;

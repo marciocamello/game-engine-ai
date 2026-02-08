@@ -5,14 +5,25 @@
 namespace GameEngine {
     
     bool OpenGLContext::HasActiveContext() {
-        // Try to get OpenGL version - this will fail if no context is active
-        const GLubyte* version = glGetString(GL_VERSION);
+        // First check if GLAD is loaded
+        if (!gladLoadGL()) {
+            return false;
+        }
         
-        // Check for OpenGL errors
-        GLenum error = glGetError();
-        
-        // If we got a version string and no error, context is active
-        return (version != nullptr && error == GL_NO_ERROR);
+        // Try to check if GLAD has been initialized
+        try {
+            // Try to get OpenGL version - this will fail if no context is active
+            const GLubyte* version = glGetString(GL_VERSION);
+            
+            // Check for OpenGL errors
+            GLenum error = glGetError();
+            
+            // If we got a version string and no error, context is active
+            return (version != nullptr && error == GL_NO_ERROR);
+        } catch (...) {
+            // If any exception occurs, assume no context
+            return false;
+        }
     }
     
     bool OpenGLContext::IsReady() {

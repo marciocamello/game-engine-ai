@@ -313,6 +313,7 @@ if(TRUE)
         "src/AI/*.cpp"
         "src/Scripting/*.cpp"
         "src/Network/*.cpp"
+        "src/Power/*.cpp"
     )
 
     file(GLOB_RECURSE ENGINE_LEGACY_HEADERS
@@ -327,6 +328,7 @@ if(TRUE)
         "include/AI/*.h"
         "include/Scripting/*.h"
         "include/Network/*.h"
+        "include/Power/*.h"
     )
 
     # Module source files (until fully modularized)

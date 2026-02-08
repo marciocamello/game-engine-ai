@@ -3,6 +3,7 @@
 #include "../../engine/core/Math.h"
 #include "Resource/ResourceManager.h"
 #include "Graphics/BoundingVolumes.h"
+#include "Graphics/SkeletalMeshData.h"
 #include <vector>
 #include <memory>
 #include <string>
@@ -143,6 +144,17 @@ namespace GameEngine {
         std::shared_ptr<MorphTargetSet> GetMorphTargets() const { return m_morphTargets; }
         bool HasMorphTargets() const { return m_morphTargets != nullptr; }
         
+        // Skeletal mesh support
+        bool HasSkeletalData() const { return m_skeletalData != nullptr; }
+        const Graphics::SkeletalMeshData* GetSkeletalData() const { return m_skeletalData.get(); }
+        Graphics::SkeletalMeshData* GetSkeletalData() { return m_skeletalData.get(); }
+        void SetSkeletalData(std::unique_ptr<Graphics::SkeletalMeshData> data);
+        
+        // OpenGL buffer management for skeletal data
+        void UploadSkeletalDataToGPU();
+        void CleanupSkeletalBuffers();
+        void BindSkeletalAttributes(GLuint boneIndicesLocation, GLuint boneWeightsLocation) const;
+        
         // Bounding volume management
         BoundingBox GetBoundingBox() const { return m_boundingBox; }
         BoundingSphere GetBoundingSphere() const { return m_boundingSphere; }
@@ -201,6 +213,9 @@ namespace GameEngine {
         
         // Morph targets
         std::shared_ptr<MorphTargetSet> m_morphTargets;
+        
+        // Skeletal data (optional)
+        std::unique_ptr<Graphics::SkeletalMeshData> m_skeletalData;
         
         // Bounding volumes
         BoundingBox m_boundingBox;

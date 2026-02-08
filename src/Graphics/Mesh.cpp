@@ -155,6 +155,9 @@ namespace GameEngine {
     }
 
     Mesh::~Mesh() {
+        // Cleanup skeletal data first
+        CleanupSkeletalBuffers();
+        
         // Only cleanup OpenGL resources if context is available
         if (OpenGLContext::HasActiveContext()) {
             if (m_VAO != 0) {
@@ -513,6 +516,9 @@ namespace GameEngine {
     void Mesh::Cleanup() {
         Logger::GetInstance().Log(LogLevel::Debug, "Explicitly cleaning up mesh resources");
         
+        // Cleanup skeletal data first
+        CleanupSkeletalBuffers();
+        
         // Unbind any currently bound VAO to avoid issues
         glBindVertexArray(0);
         
@@ -547,10 +553,16 @@ namespace GameEngine {
         size_t vertexMemory = m_vertices.size() * sizeof(Vertex);
         size_t indexMemory = m_indices.size() * sizeof(uint32_t);
         
-        // Add estimated GPU memory usage (VAO, VBO, EBO are relatively small)
-        size_t gpuMemory = vertexMemory + indexMemory;
+        // Add skeletal data memory usage
+        size_t skeletalMemory = 0;
+        if (m_skeletalData) {
+            skeletalMemory = m_skeletalData->GetMemoryUsage();
+        }
         
-        return baseSize + vertexMemory + indexMemory + gpuMemory;
+        // Add estimated GPU memory usage (VAO, VBO, EBO are relatively small)
+        size_t gpuMemory = vertexMemory + indexMemory + skeletalMemory;
+        
+        return baseSize + vertexMemory + indexMemory + skeletalMemory + gpuMemory;
     }
     
     void Mesh::EnsureGPUResourcesCreated() const {
@@ -1203,5 +1215,55 @@ namespace GameEngine {
         
         // Check if triangle area is too small
         return CalculateTriangleArea(i0, i1, i2) < epsilon;
+    }
+    
+    // Skeletal mesh support methods
+    void Mesh::SetSkeletalData(std::unique_ptr<Graphics::SkeletalMeshData> data) {
+        m_skeletalData = std::move(data);
+        
+        // If we have skeletal data, ensure bone attributes are enabled
+        if (m_skeletalData && m_skeletalData->IsValid()) {
+            EnableAttribute(VertexAttribute::BoneIds);
+            EnableAttribute(VertexAttribute::BoneWeights);
+            
+            LOG_INFO("Set skeletal data for mesh with " + 
+                    std::to_string(m_skeletalData->GetVertexCount()) + " vertices");
+            
+            // Upload to GPU if context is available
+            if (OpenGLContext::HasActiveContext()) {
+                UploadSkeletalDataToGPU();
+            }
+        }
+    }
+    
+    void Mesh::UploadSkeletalDataToGPU() {
+        if (!m_skeletalData) {
+            LOG_WARNING("Cannot upload skeletal data: No skeletal data available");
+            return;
+        }
+        
+        if (!OpenGLContext::HasActiveContext()) {
+            LOG_WARNING("Cannot upload skeletal data: No OpenGL context available");
+            return;
+        }
+        
+        if (!m_skeletalData->UploadToGPU()) {
+            LOG_ERROR("Failed to upload skeletal data to GPU");
+        }
+    }
+    
+    void Mesh::CleanupSkeletalBuffers() {
+        if (m_skeletalData) {
+            m_skeletalData->CleanupGPUResources();
+        }
+    }
+    
+    void Mesh::BindSkeletalAttributes(GLuint boneIndicesLocation, GLuint boneWeightsLocation) const {
+        if (!m_skeletalData) {
+            LOG_WARNING("Cannot bind skeletal attributes: No skeletal data available");
+            return;
+        }
+        
+        m_skeletalData->BindForRendering(boneIndicesLocation, boneWeightsLocation);
     }
 }

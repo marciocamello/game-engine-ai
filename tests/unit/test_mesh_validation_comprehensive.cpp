@@ -184,7 +184,7 @@ bool TestMeshOptimizationStatistics() {
     TestOutput::PrintTestStart("mesh optimization statistics");
     
     auto originalMesh = CreateValidMesh();
-    auto optimizedMesh = std::make_shared<Mesh>(*originalMesh); // Copy for optimization
+    auto optimizedMesh = CreateValidMesh(); // Create new mesh instead of copying
     
     // Get original statistics
     auto originalStats = MeshOptimizer::AnalyzeMesh(*originalMesh);
